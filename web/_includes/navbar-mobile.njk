@@ -1,0 +1,105 @@
+<!-- mobile menu — right-side drawer, fatetell-style -->
+<div x-show="$store.ui.mobileOpen"
+     class="fixed inset-0 top-20 z-40 lg:hidden"
+     x-transition:enter="transition ease-out duration-200"
+     x-transition:enter-start="opacity-0"
+     x-transition:enter-end="opacity-100"
+     x-transition:leave="transition ease-in duration-150"
+     x-transition:leave-start="opacity-100"
+     x-transition:leave-end="opacity-0">
+  <!-- backdrop -->
+  <div class="absolute inset-0 bg-neutral/30" @click="$store.ui.mobileOpen = false"></div>
+  <!-- drawer panel — right side, 80% width -->
+  <div class="absolute right-0 top-0 bottom-0 w-4/5 max-w-sm bg-base-100 shadow-2xl overflow-y-auto"
+       @click.stop="">
+    <nav class="flex flex-col px-6 pt-8 pb-6 gap-1">
+      <a href="/{{ site.locale }}/" @click="$store.ui.mobileOpen = false"
+         class="flex items-center h-14 px-4 text-base font-semibold rounded-xl hover:bg-base-200 active:bg-base-300 transition-colors">
+        <span x-text="$store.locale.t('nav.home')">Home</span>
+      </a>
+      <a href="/{{ site.locale }}/types" @click="$store.ui.mobileOpen = false"
+         class="flex items-center h-14 px-4 text-base font-semibold rounded-xl hover:bg-base-200 active:bg-base-300 transition-colors">
+        <span x-text="$store.locale.t('nav.types')">25 Types</span>
+      </a>
+      <a href="/{{ site.locale }}/assess" @click="$store.ui.mobileOpen = false"
+         class="flex items-center h-14 px-4 text-base font-semibold rounded-xl hover:bg-base-200 active:bg-base-300 transition-colors">
+        <span x-text="$store.locale.t('nav.assess')">Assess</span>
+      </a>
+      <a href="/{{ site.locale }}/mingli/bazi" @click="$store.ui.mobileOpen = false"
+         class="flex items-center h-14 px-4 text-base font-semibold rounded-xl hover:bg-base-200 active:bg-base-300 transition-colors">
+        <span x-text="$store.locale.t('nav.mingli.bazi')">Mingli</span>
+      </a>
+
+      <!-- divider -->
+      <div class="border-t border-base-300 my-3"></div>
+
+      <!-- city location picker -->
+      <div class="px-4 py-2" x-data>
+        <div class="flex items-center gap-2 mb-2" x-show="$store.location.hasCity">
+          <span>📍</span>
+          <span class="text-sm font-semibold" x-text="$store.location.displayName"></span>
+          <button class="btn btn-ghost btn-xs ml-auto" @click="$store.location.selectCity(null); $store.location.detected = false" x-text="'✕'"></button>
+        </div>
+        <input type="text" class="input input-bordered input-sm w-full" :placeholder="$store.locale.t('location.searchPlaceholder')" x-model="$store.location.searchQuery" @input="$store.location.onSearchInput()">
+        <ul class="menu menu-sm mt-1 max-h-40 overflow-y-auto" x-show="$store.location.searchResults.length > 0">
+          <template x-for="c in $store.location.searchResults" :key="c.lat">
+            <li><a href="#" @click.prevent="$store.location.selectCity(c); $store.ui.mobileOpen = false">
+              <span x-text="(window.CURRENT_LOCALE === 'zh-CN' ? (c.name_zh || c.name) : c.name) + (c.country ? ', ' + c.country : '')"></span>
+            </a></li>
+          </template>
+        </ul>
+        <div class="flex flex-wrap gap-1 mt-2" x-show="$store.location.searchResults.length === 0">
+          <span class="text-xs opacity-50 w-full mb-1" x-text="$store.locale.t('location.popular')">Popular</span>
+          <template x-for="c in $store.location.popularCities" :key="c.name">
+            <button class="btn btn-xs btn-ghost" @click="$store.location.selectCity(c); $store.ui.mobileOpen = false" x-text="window.CURRENT_LOCALE === 'zh-CN' ? (c.name_zh || c.name) : c.name"></button>
+          </template>
+        </div>
+      </div>
+
+      <!-- theme toggle -->
+      <button class="flex items-center h-14 px-4 text-base font-semibold rounded-xl hover:bg-base-200 active:bg-base-300 transition-colors w-full"
+              @click="$store.theme.toggle()">
+        <span class="mr-3 text-lg" x-show="!$store.theme.dark">🌙</span>
+        <span class="mr-3 text-lg" x-show="$store.theme.dark">☀️</span>
+        <span x-text="$store.theme.dark ? 'Light Mode' : 'Dark Mode'"></span>
+      </button>
+
+      <!-- language switcher -->
+      <div class="flex gap-2 px-4 py-2">
+        <a href="#" @click.prevent="switchLocale('en'); $store.ui.mobileOpen = false"
+           class="btn btn-ghost btn-sm flex-1 {% if site.locale == 'en' %}btn-active{% endif %}">English</a>
+        <a href="#" @click.prevent="switchLocale('zh-CN'); $store.ui.mobileOpen = false"
+           class="btn btn-ghost btn-sm flex-1 {% if site.locale == 'zh-CN' %}btn-active{% endif %}">中文</a>
+      </div>
+
+      <!-- auth -->
+      <template x-if="!$store.auth || !$store.auth.id">
+        <a href="/{{ site.locale }}/login" @click="$store.ui.mobileOpen = false"
+           class="flex items-center h-14 px-4 text-base font-semibold rounded-xl hover:bg-base-200 active:bg-base-300 transition-colors">
+          <span x-text="$store.locale.t('nav.login')">Login</span>
+        </a>
+      </template>
+      <template x-if="$store.auth && $store.auth.id">
+        <div>
+          <div class="border-t border-base-300 my-3"></div>
+          <div class="flex items-center h-10 px-4" x-show="$store.auth.isSupporter">
+            <span class="badge badge-accent badge-sm" x-text="$store.locale.t('donate.supporterBadge')">Supporter</span>
+          </div>
+          <a :href="'/' + $store.locale.current + '/profile/' + $store.auth.name" @click="$store.ui.mobileOpen = false"
+             class="flex items-center h-14 px-4 text-base font-semibold rounded-xl hover:bg-base-200 active:bg-base-300 transition-colors">
+            <span x-text="$store.locale.t('nav.profile')">My Profile</span>
+          </a>
+          <a :href="localePath('/settings')" @click="$store.ui.mobileOpen = false"
+             class="flex items-center h-14 px-4 text-base font-semibold rounded-xl hover:bg-base-200 active:bg-base-300 transition-colors">
+            <span x-text="$store.locale.t('profile.settings')">Settings</span>
+          </a>
+          <div class="border-t border-base-300 my-2"></div>
+          <button @click="$store.auth.logout()"
+             class="flex items-center h-14 px-4 text-base font-semibold rounded-xl hover:bg-base-200 active:bg-base-300 transition-colors w-full">
+            <span x-text="$store.locale.t('me.logout')">Logout</span>
+          </button>
+        </div>
+      </template>
+    </nav>
+  </div>
+</div>

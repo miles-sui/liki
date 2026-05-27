@@ -1,0 +1,4 @@
+{
+  "permalink": "/{{ site.locale }}/{{ page.fileSlug }}.html",
+  "eleventyAllowMissingExtension": true
+}

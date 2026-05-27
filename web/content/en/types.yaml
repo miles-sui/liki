@@ -1,0 +1,243 @@
+types:
+- id: W
+  label: Pioneer
+  tagline: You don't wait for the wind. You are the wind.
+  portrait: The Pioneer moves before the path is clear. You don't wait for permission or perfect conditions — you act, and
+    the world adjusts. Your Wood energy gives you a natural drive to initiate, explore, and push boundaries. Others may see
+    you as restless, but your momentum is what turns ideas into reality.
+  classical: In the Five Elements, Wood represents growth, expansion, and the unstoppable force of spring. The Pioneer embodies
+    pure Wood — the seed that cracks stone, the shoot that finds light. Classically, Wood governs the liver and gall bladder,
+    associated with decisiveness and righteous anger.
+  strengths:
+  - Initiative
+  - Vision
+  - Resilience
+  - Adaptability
+  - Leadership
+  blindspots:
+  - Impulsiveness
+  - Over-commitment
+  - Restlessness
+  - Impatience with process
+  growth: Balance your Wood with Earth — ground your initiatives in practical steps. Not every seed needs to be planted today.
+    Learn to let some ideas mature before acting on them.
+  interactions:
+  - with: F
+    summary: Wood fuels Fire. Your initiative gives the Luminary something to illuminate. Together, vision meets expression
+      — but watch for burnout if neither of you pauses.
+  - with: E
+    summary: Wood restrains Earth. Your drive can overwhelm the Cultivator's steady rhythm. Learn to slow down enough to let
+      them build what you start.
+  - with: M
+    summary: Metal chops Wood. The Refiner's critical eye may feel constraining — but their precision is exactly what your
+      raw ideas need to become finished work.
+  - with: R
+    summary: Water nourishes Wood. The Reservoir's depth feeds your growth with insight and patience. A natural creative partnership.
+  figures:
+  - name: Steve Jobs
+    domain: Technology
+    bio: Co-founder of Apple. Known for relentless vision and reality-distortion field.
+    desc: Embodied the Pioneer's drive to push into unknown territory and reshape industries through sheer force of will.
+  - name: Amelia Earhart
+    domain: Aviation
+    bio: First woman to fly solo across the Atlantic.
+    desc: Pure Pioneer energy — breaking barriers not because they were told they could, but because they refused to accept
+      they couldn't.
+  desc: The Pioneer moves before the path is clear. Pure Wood energy — initiation, growth, and the unstoppable force of spring.
+- id: F
+  label: Luminary
+  tagline: You walk in, and the temperature shifts. That's all it takes.
+  portrait: The Luminary walks into a room and the temperature shifts. You don't try to be noticed — you simply are. Your
+    Fire energy radiates warmth, enthusiasm, and presence. People are drawn to your light, and you naturally illuminate what
+    others overlook. But brightness needs fuel — don't burn out.
+  classical: Fire represents passion, transformation, and the peak of summer. The Luminary embodies pure Fire — the sun at
+    noon, the flame that gives light and warmth. Classically, Fire governs the heart and small intestine, associated with
+    joy, connection, and emotional clarity.
+  strengths:
+  - Charisma
+  - Enthusiasm
+  - Warmth
+  - Expressiveness
+  - Inspiration
+  blindspots:
+  - Burnout
+  - Over-dependence on external validation
+  - Intensity that overwhelms others
+  growth: Balance your Fire with Water — learn to reflect before you radiate. Your light is most powerful when it's focused,
+    not scattered. Deep connections matter more than broad influence.
+  interactions:
+  - with: W
+    summary: Wood fuels Fire. The Pioneer gives you direction to channel your energy. A dynamic duo of vision and expression.
+  - with: E
+    summary: Fire creates Earth (ashes). Your passion, when tempered, becomes the Cultivator's stable ground. Let your enthusiasm
+      settle into lasting warmth.
+  - with: M
+    summary: Fire melts Metal. Your warmth can soften the Refiner's rigid standards — but be careful not to overwhelm their
+      need for precision.
+  - with: R
+    summary: Water extinguishes Fire. The Reservoir's depth may feel like it dampens your spark. But their stillness is not
+      rejection — it's containment.
+- id: E
+  label: Cultivator
+  tagline: Not magic. Just showing up, every day, no steps skipped.
+  portrait: The Cultivator doesn't chase glory. You show up, every day, and do the work. Your Earth energy makes you the steady
+    center others orbit around — reliable, nurturing, and grounded. You understand that real growth takes time, and you're
+    willing to wait.
+  classical: Earth represents stability, nourishment, and the late-summer harvest. The Cultivator embodies pure Earth — the
+    soil that receives seeds and returns abundance. Classically, Earth governs the spleen and stomach, associated with digestion,
+    thoughtfulness, and centeredness.
+  strengths:
+  - Reliability
+  - Nurturance
+  - Patience
+  - Practicality
+  - Stability
+  blindspots:
+  - Resistance to change
+  - Over-accommodation
+  - Slowness to act
+  - Taking on others' burdens
+  growth: Balance your Earth with Wood — let some seeds sprout into action. Your stability is a gift, but growth sometimes
+    requires breaking ground.
+  interactions:
+  - with: W
+    summary: Wood restrains Earth. The Pioneer's urgency may feel destabilizing. But their initiatives need your grounding
+      to become real.
+  - with: F
+    summary: Fire creates Earth. The Luminary's passion, when it cools, becomes your stable ground. You give their light a
+      place to land.
+  - with: M
+    summary: Earth bears Metal. Your stability is the foundation from which the Refiner extracts value. A natural producer-craftsman
+      relationship.
+  - with: R
+    summary: Earth dams Water. Your boundaries give the Reservoir's depth a container. But don't wall them off — let their
+      insight seep through.
+- id: M
+  label: Refiner
+  tagline: If it doesn't clear your internal bar, it doesn't count.
+  portrait: The Refiner has an internal bar that most people never see — but everything must clear it. Your Metal energy gives
+    you precision, discernment, and the courage to cut what doesn't matter. You don't do things halfway; you do them right,
+    or not at all.
+  classical: Metal represents structure, precision, and the autumn harvest. The Refiner embodies pure Metal — the blade that
+    separates wheat from chaff, the ore that becomes steel. Classically, Metal governs the lungs and large intestine, associated
+    with grief, letting go, and clarity.
+  strengths:
+  - Precision
+  - Discernment
+  - Integrity
+  - Discipline
+  - Clarity
+  blindspots:
+  - Rigidity
+  - Over-criticism
+  - Difficulty accepting imperfection
+  - Emotional distance
+  growth: Balance your Metal with Fire — let warmth soften your edges. Your standards are high for good reason, but connection
+    sometimes matters more than correctness.
+  interactions:
+  - with: W
+    summary: Metal chops Wood. Your precision can feel harsh to the Pioneer's raw energy. But your discernment is exactly
+      what turns their ideas into excellence.
+  - with: F
+    summary: Fire melts Metal. The Luminary's warmth may feel like it's softening your standards. Let it — some things are
+      better felt than measured.
+  - with: E
+    summary: Earth bears Metal. The Cultivator's stability is the ground from which you extract value. Together, you turn
+      raw material into lasting work.
+  - with: R
+    summary: Metal carries Water. Your structure gives the Reservoir's depth a channel. Your clarity helps their insight find
+      expression.
+- id: R
+  label: Reservoir
+  tagline: You sit with things longer than most. When you speak, people listen.
+  portrait: The Reservoir sits with things longer than most people can stand. You don't speak to fill silence — you speak
+    when something has crystallized. Your Water energy gives you depth, reflection, and the ability to hold complexity without
+    needing to resolve it immediately.
+  classical: Water represents depth, wisdom, and the stillness of winter. The Reservoir embodies pure Water — the deep well,
+    the underground stream. Classically, Water governs the kidneys and bladder, associated with fear, willpower, and the storage
+    of vital essence.
+  strengths:
+  - Depth
+  - Wisdom
+  - Patience
+  - Intuition
+  - Calm under pressure
+  blindspots:
+  - Withdrawal
+  - Over-reflection leading to inaction
+  - Emotional inaccessibility
+  - Difficulty articulating in the moment
+  growth: Balance your Water with Fire — let some of your depth surface as warmth. Not every insight needs to be fully formed
+    before it's shared.
+  interactions:
+  - with: W
+    summary: Water nourishes Wood. Your depth feeds the Pioneer's growth. You give their initiatives roots — they give your
+      wisdom direction.
+  - with: F
+    summary: Water extinguishes Fire — but also contains it. The Luminary may feel you dampen their spark, but your stillness
+      can protect their flame from burning out.
+  - with: E
+    summary: Earth dams Water. The Cultivator's boundaries may feel confining, but they give your depth a container. Let their
+      stability hold you.
+  - with: M
+    summary: Metal carries Water. The Refiner's clarity gives your depth a channel. Together, insight meets expression.
+- id: WF
+  label: Pioneer-Luminary
+  tagline: You get moving, and others just start moving too.
+- id: FE
+  label: Luminary-Cultivator
+  tagline: Your light isn't a spark — it's a hearth people keep coming back to.
+- id: EM
+  label: Cultivator-Refiner
+  tagline: You take things in, then quietly shape them into something clear.
+- id: MR
+  label: Refiner-Reservoir
+  tagline: You cut what doesn't matter, then go deep on what remains.
+- id: RW
+  label: Reservoir-Pioneer
+  tagline: You process long, then act clean. Every move earned.
+- id: FW
+  label: Luminary-Pioneer
+  tagline: When your light lands on someone, they start moving.
+- id: EF
+  label: Cultivator-Luminary
+  tagline: Leaning on you doesn't feel heavy — it feels like recharging.
+- id: ME
+  label: Refiner-Cultivator
+  tagline: Your standards are high, but there's soil underneath.
+- id: RM
+  label: Reservoir-Refiner
+  tagline: Your depth doesn't drift — it builds things that hold.
+- id: WR
+  label: Pioneer-Reservoir
+  tagline: Every move you make carries weight — earned in the deep before you moved.
+- id: WE
+  label: Pioneer-Cultivator
+  tagline: You push forward, but every step lands on solid ground.
+- id: FM
+  label: Luminary-Refiner
+  tagline: Your radiance isn't scattered — where it lands, and how, is filtered.
+- id: ER
+  label: Cultivator-Reservoir
+  tagline: You can go deep without getting lost — grounded by what you do every day.
+- id: MW
+  label: Refiner-Pioneer
+  tagline: Your pause isn't hesitation — you're finding the spot.
+- id: RF
+  label: Reservoir-Luminary
+  tagline: You process deep. You share selectively. Every word earns its place.
+- id: EW
+  label: Cultivator-Pioneer
+  tagline: You don't charge ahead — you make the ground solid first.
+- id: MF
+  label: Refiner-Luminary
+  tagline: Your precision isn't cold — it's been through fire.
+- id: RE
+  label: Reservoir-Cultivator
+  tagline: Your depth has banks — freed by edges to go further.
+- id: WM
+  label: Pioneer-Refiner
+  tagline: You don't do many things. You do the right ones, cleanly.
+- id: FR
+  label: Luminary-Reservoir
+  tagline: Your light doesn't flood out — it surfaces only after it's settled.

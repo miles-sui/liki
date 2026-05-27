@@ -1,0 +1,13 @@
+<div class="{{ deltaCls | default('') }} space-y-1" x-show="{{ items }}.length">
+  <template x-for="item in {{ items }}" :key="item.idx">
+    <div class="flex items-center gap-2 text-xs">
+      <span class="w-10 text-right" :style="'color:' + elementColor(item.idx)" x-text="elementName(item.idx)"></span>
+      <span class="w-14 text-right font-mono" :class="item.delta >= 0 ? 'text-success' : 'text-error'" x-text="item.delta >= 0 ? '+' + item.delta.toFixed(2) : item.delta.toFixed(2)"></span>
+      <div class="flex-1 h-1.5 rounded-full bg-base-300 overflow-hidden">
+        <div class="h-1.5 rounded-full transition-all duration-500"
+             :class="item.delta >= 0 ? 'bg-success' : 'bg-error'"
+             :style="{width: (Math.abs(item.delta) / {{ max | default(0.5) }} * 100) + '%'}"></div>
+      </div>
+    </div>
+  </template>
+</div>

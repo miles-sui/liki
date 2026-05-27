@@ -1,0 +1,125 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@font-face {
+  font-family: "Alimama DaoLiTi";
+  src: url("https://cdn.jsdelivr.net/npm/@fontpkg/alimama-dao-li-ti@1.0.5/AlimamaDaoLiTi.woff2") format("woff2");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@layer base {
+  html {
+    font-family: "Noto Serif", "Noto Serif SC", "Songti SC", "SimSun", "STSong", serif;
+  }
+  h1, h2, h3, h4, .card-title {
+    font-family: "Crimson Pro", "Noto Serif", "Noto Serif SC", "Songti SC", "SimSun", serif;
+    font-weight: normal;
+    letter-spacing: 0.05em;
+  }
+  .home-page h1 {
+    font-family: "Crimson Pro", "Alimama DaoLiTi", "Noto Serif", "Noto Serif SC", "Songti SC", "SimSun", serif;
+  }
+}
+
+@layer components {
+  .toast { animation: slideIn 0.3s ease-out; }
+  @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .card-fade-up { animation: fadeUp 0.5s ease-out both; animation-delay: var(--delay, 0ms); }
+
+  @keyframes breathe {
+    0%, 100% { opacity: 0.35; }
+    50%      { opacity: 0.55; }
+  }
+  .pentagon-vertex { animation: breathe 4s ease-in-out infinite; }
+  .pentagon-vertex:nth-child(1) { animation-delay: 0s; }
+  .pentagon-vertex:nth-child(2) { animation-delay: 0.8s; }
+  .pentagon-vertex:nth-child(3) { animation-delay: 1.6s; }
+  .pentagon-vertex:nth-child(4) { animation-delay: 2.4s; }
+  .pentagon-vertex:nth-child(5) { animation-delay: 3.2s; }
+}
+
+/* Font utility (outside @layer to prevent purging) */
+.font-brand  { font-family: "Cinzel", "Noto Serif", serif; font-weight: 600; letter-spacing: 0.2em; }
+
+.wuxing-wood  { color: var(--wood); }
+.wuxing-fire  { color: var(--fire); }
+.wuxing-earth { color: var(--earth); }
+.wuxing-metal { color: var(--metal); }
+.wuxing-water { color: var(--water); }
+
+[data-theme=wuxing] {
+  --wood: #1A7A6F;
+  --fire: #CB3B2D;
+  --earth: #9A7410;
+  --metal: #8E8880;
+  --water: #1C2238;
+  --chart-bg: transparent;
+}
+[data-theme=wuxing-dark] {
+  --wood: #5CCEC1;
+  --fire: #FF6B5B;
+  --earth: #FFC847;
+  --metal: #DADADA;
+  --water: #C4D5ED;
+  --chart-bg: #1a1a2e;
+}
+
+/* Metal (金=白): near-white fill defined by border — 白底银边, light theme */
+[data-theme=wuxing] .wuxing-metal-bg {
+  background: #D0CBC5;
+  border: 1.5px solid var(--metal);
+  color: var(--base-content);
+}
+/* Water (水=黑): deep fill with cool blue glow — 深底蓝晕, dark theme */
+[data-theme=wuxing-dark] .wuxing-water-bg {
+  background: #0F1420;
+  border: 1px solid var(--water);
+  box-shadow: 0 0 6px rgba(168, 188, 212, 0.15);
+  color: var(--water);
+}
+
+.chart-container {
+  width: 100%;
+  min-height: 320px;
+  background: var(--chart-bg, transparent);
+  border-radius: 0.5rem;
+}
+
+/* Chart heights (ECharts requires explicit height) */
+.chart-h-260 { height: 260px; }
+.chart-h-280 { height: 280px; }
+.chart-h-300 { height: 300px; }
+.chart-h-320 { height: 320px; }
+.chart-h-360 { height: 360px; }
+
+/* Mobile: reduce chart heights for smaller screens */
+@media (max-width: 640px) {
+  .chart-h-260 { height: 220px; }
+  .chart-h-280 { height: 230px; }
+  .chart-h-300 { height: 240px; }
+  .chart-h-320 { height: 260px; }
+  .chart-h-360 { height: 280px; }
+}
+
+/* Mobile: ensure cards don't overflow */
+@media (max-width: 640px) {
+  .card-body { padding: 1rem; }
+  .assess-card-body { min-height: 240px; max-height: calc(100vh - 220px); }
+}
+
+.assess-card-body { min-height: 280px; max-height: calc(100vh - 260px); }
+
+.toast-container {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 9999;
+}

@@ -1,0 +1,11 @@
+{% set pv = pExpr | default('pValues') %}<div class="w-full space-y-1">
+  <template x-for="idx in ELEMENT_HTML_ORDER" :key="idx">
+    <div class="flex items-center gap-2 text-xs">
+      <span class="w-10 text-right" :style="'color:' + elementColor(idx)" x-text="elementName(idx)"></span>
+      <div class="flex-1 h-1.5 rounded-full bg-base-300">
+        <div class="h-1.5 rounded-full" :style="{width: ({{ pv }}[idx] * 100) + '%', background: elementColor(idx)}"></div>
+      </div>
+      <span class="w-8 text-right" x-text="({{ pv }}[idx] * 100).toFixed(0) + '%'"></span>
+    </div>
+  </template>
+</div>

@@ -1,0 +1,44 @@
+{
+  "name": "frontend-build",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "vendor": "cp node_modules/alpinejs/dist/cdn.min.js js/vendor/alpine.min.js && esbuild scripts/build-echarts.js --bundle --minify --outfile=js/vendor/echarts.min.js --format=iife",
+    "build:html:en": "LOCALE=en npx @11ty/eleventy --output=dist",
+    "build:html:zh-CN": "LOCALE=zh-CN npx @11ty/eleventy --output=dist",
+    "build:css": "npx tailwindcss -i css/app.css -o dist/css/tailwind.min.css --minify",
+    "clean": "rm -rf dist/",
+    "build": "npm run vendor && npm run clean && npm run build:html:en && npm run build:html:zh-CN && npm run build:css && mkdir -p dist/content && cp ../configs/prototypes.json dist/content/ && npm run fingerprint && rm -f dist/css/app.css && rm -rf dist/js/__tests__ && npm run check:translations && cd app && npm run build",
+    "dev": "npm run vendor && concurrently \"eleventy --serve\" \"npx tailwindcss -i css/app.css -o dist/css/tailwind.min.css --minify --watch\"",
+    "serve": "npm run vendor && concurrently \"eleventy --serve\" \"npx tailwindcss -i css/app.css -o dist/css/tailwind.min.css --minify --watch\"",
+    "fingerprint": "node scripts/fingerprint.js",
+    "check:translations": "node scripts/check-translations.js",
+    "audit": "npm audit --production",
+    "test:js": "npx vitest run js/__tests__/",
+    "test:js:watch": "npx vitest js/__tests__/",
+    "test:e2e": "node ./node_modules/@playwright/test/cli.js test --config e2e/playwright.config.js",
+    "test:e2e:ui": "node ./node_modules/@playwright/test/cli.js test --ui"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "@11ty/eleventy": "^3.1.5",
+    "@playwright/test": "^1.59.1",
+    "@tailwindcss/typography": "^0.5.19",
+    "@types/node": "^25.6.2",
+    "alpinejs": "^3.15.12",
+    "concurrently": "^9.2.1",
+    "daisyui": "^4.12.24",
+    "echarts": "^5.6.0",
+    "esbuild": "^0.28.0",
+    "tailwindcss": "^3.4.19",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.6"
+  },
+  "dependencies": {
+    "@kabeep/lunar-date-fns": "^1.1.0"
+  }
+}

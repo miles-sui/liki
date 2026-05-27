@@ -1,0 +1,145 @@
+---
+layout: base.njk
+title: 结婚择日 — 免费八字结婚吉日查询
+description: 结婚择日在线工具。输入你们的出生信息，选择合适的婚期候选日期，查看每天的能量标注（建除、干支、神煞），选择最适合你们的结婚吉日。
+permalink: "/{{ site.locale }}/zeri/jiehun.html"
+---
+<div class="max-w-4xl mx-auto px-6 lg:px-14 py-14 lg:py-18" x-data="zeriWeddingPage()">
+
+  <section class="text-center mb-14">
+    <h1 class="text-4xl font-bold mb-4">结婚择日</h1>
+    <p class="text-lg text-base-content/60 max-w-2xl mx-auto">结婚是人生大事。基于八字分析每天的能量状态——建除十二神、干支关系、神煞——找到对你们最有利的婚期。</p>
+  </section>
+
+  <!-- How it works -->
+  <section class="mb-12">
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div class="text-center p-4 bg-base-200 rounded-lg">
+        <div class="text-lg font-bold text-primary">建除十二神</div>
+        <p class="text-xs text-base-content/60 mt-1">建除满平定执破危成收开闭——每天一个主神，决定这天适合什么</p>
+      </div>
+      <div class="text-center p-4 bg-base-200 rounded-lg">
+        <div class="text-lg font-bold text-primary">干支关系</div>
+        <p class="text-xs text-base-content/60 mt-1">日柱与你八字的合冲刑害——个性化匹配，不是对所有人吉</p>
+      </div>
+      <div class="text-center p-4 bg-base-200 rounded-lg">
+        <div class="text-lg font-bold text-primary">神煞标注</div>
+        <p class="text-xs text-base-content/60 mt-1">天德等吉神标注——传统择日的重要参考</p>
+      </div>
+      <div class="text-center p-4 bg-base-200 rounded-lg">
+        <div class="text-lg font-bold text-primary">纳音参考</div>
+        <p class="text-xs text-base-content/60 mt-1">每日纳音五行——为你的择日提供额外维度</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Input -->
+  <div class="card bg-base-200 shadow-lg mb-8">
+    <div class="card-body">
+      <h2 class="card-title mb-4">输入出生信息</h2>
+      {% include "birth-form.njk" %}
+      <div class="form-control mt-4 max-w-xs">
+        <label class="label"><span class="label-text">选择月份</span></label>
+        <input type="month" class="input input-bordered" x-model="yearMonth">
+      </div>
+      <div class="card-actions justify-end mt-4">
+        <button class="btn btn-primary" @click="fetch()" :disabled="loading" x-text="loading ? '分析中...' : '查看日历'">查看日历</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Error -->
+  <template x-if="error">
+    <div class="alert alert-error mb-6"><span x-text="error"></span></div>
+  </template>
+
+  <!-- Result: Calendar -->
+  <template x-if="result && !error">
+    <div>
+      <div class="card bg-base-200 shadow-lg mb-8">
+        <div class="card-body">
+          <h2 class="card-title mb-4" x-text="'择日标注 - ' + result.year_month"></h2>
+          <div class="overflow-x-auto">
+            <table class="table table-sm">
+              <thead>
+                <tr>
+                  <th>日期</th>
+                  <th>干支</th>
+                  <th>建除</th>
+                  <th>日主关系</th>
+                  <th>日支关系</th>
+                  <th>太岁关系</th>
+                  <th>宜忌</th>
+                </tr>
+              </thead>
+              <tbody>
+                <template x-for="day in result.days" :key="day.date">
+                  <tr :class="day.suitable ? '' : 'bg-error/10'">
+                    <td class="whitespace-nowrap" x-text="day.date"></td>
+                    <td x-text="formatPillar(day.day_pillar.stem, day.day_pillar.branch)"></td>
+                    <td>
+                      <span class="badge badge-sm" :class="day.suitable ? 'badge-success' : 'badge-error'" x-text="day.jian_chu"></span>
+                    </td>
+                    <td x-text="day.gan_relation"></td>
+                    <td x-text="day.zhi_relation"></td>
+                    <td x-text="day.tai_sui_relation"></td>
+                    <td>
+                      <div class="flex flex-wrap gap-1">
+                        <template x-for="m in day.marks">
+                          <span class="badge badge-success badge-xs" x-text="m"></span>
+                        </template>
+                        <template x-for="w in day.warnings">
+                          <span class="badge badge-error badge-xs" x-text="w"></span>
+                        </template>
+                      </div>
+                    </td>
+                  </tr>
+                </template>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Legend -->
+      <div class="flex gap-4 mb-8 text-sm">
+        <span class="badge badge-success"></span> = 适宜
+        <span class="badge badge-error"></span> = 不宜
+      </div>
+
+      <!-- CTA -->
+      <div class="text-center" x-show="!$store.auth.id">
+        <div class="card bg-primary text-primary-content shadow-lg">
+          <div class="card-body">
+            <h2 class="card-title justify-center">获取个性化婚期建议</h2>
+            <p>注册后获取针对你的完整择日报告——含日柱详细解读和时辰推荐。</p>
+            <div class="card-actions justify-center mt-4">
+              <a href="/{{ site.locale }}/login" class="btn btn-outline">注册免费查看</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <!-- FAQ -->
+  <section class="mt-12">
+    <h2 class="text-2xl font-bold mb-6 text-center">常见问题</h2>
+    <div class="collapse collapse-arrow bg-base-200 mb-2">
+      <input type="checkbox">
+      <div class="collapse-title font-medium">建除十二神是什么？</div>
+      <div class="collapse-content"><p class="text-sm text-base-content/60">建除十二神是中国传统择日学的核心系统：建、除、满、平、定、执、破、危、成、收、开、闭。每天有一个主神，决定了这一天的宜忌方向。例如"成日"适合嫁娶开业，"破日"万事不宜。</p></div>
+    </div>
+    <div class="collapse collapse-arrow bg-base-200">
+      <input type="checkbox">
+      <div class="collapse-title font-medium">为什么不能只看"黄道吉日"？</div>
+      <div class="collapse-content"><p class="text-sm text-base-content/60">传统的"黄道吉日"对所有人一样。但一个好的婚期必须跟你个人的八字匹配——如果那天冲你的日柱或太岁，即使建除神再好，也不是你的吉日。</p></div>
+    </div>
+  </section>
+</div>
+
+{% block pageScripts %}
+<script src="/js/vendor/lunar.js"></script>
+<script src="/js/mingli.js"></script>
+<script src="/js/dates-zeri.js"></script>
+{% endblock %}

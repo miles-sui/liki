@@ -1,0 +1,90 @@
+---
+layout: base.njk
+permalink: "/{{ site.locale }}/review_landing.html"
+title: Peer Review
+description: Complete a peer review for someone who shared a link with you.
+---
+<div class="max-w-3xl mx-auto px-6 lg:px-14 py-14 lg:py-18" x-data="reviewLanding()" x-init="init()">
+  {% include "loading-spinner.njk" %}
+  <template x-if="!loading && error">
+    <div class="text-center py-20"><h2 class="text-2xl font-bold mb-4" x-text="$store.locale.t('reviewLanding.unavailable')">Link not available</h2><p class="text-base-content/60 mb-4" x-text="error"></p><a href="/{{ site.locale }}/" class="btn btn-primary" x-text="$store.locale.t('reviewLanding.goHome')">Go Home</a></div>
+  </template>
+  <template x-if="!loading && !error && submitted">
+    <div class="text-center py-20"><div class="text-5xl mb-4">&#10003;</div><h2 class="text-2xl font-bold mb-2" x-text="$store.locale.t('reviewLanding.thanks')">Thank You!</h2><p class="text-base-content/60 mb-6" x-text="$store.locale.t('reviewLanding.submitted')">Your review has been submitted.</p><div class="flex flex-col sm:flex-row gap-3 justify-center"><a href="/{{ site.locale }}/assess" class="btn btn-primary" x-text="$store.locale.t('reviewLanding.discover')">Discover Your Own Type</a></div></div>
+  </template>
+  <template x-if="!loading && !error && !submitted && link">
+    <div>
+
+      <!-- Header -->
+      <div class="text-center mb-8">
+        <h1 class="text-3xl font-bold mb-2" x-text="$store.locale.t('reviewLanding.title').replace('{name}', link.subject_name || $store.locale.t('reviewLanding.anonymous'))"></h1>
+        <p class="text-base-content/60" x-text="$store.locale.t('reviewLanding.prompt')">Pick the two most like them for each question.</p>
+      </div>
+
+      <!-- Name card -->
+      <div class="card bg-base-200 shadow-sm mb-6">
+        <div class="card-body p-5">
+          <label class="label px-0 pt-0"><span class="label-text font-semibold" x-text="$store.locale.t('reviewLanding.yourName')">Your Name</span><span class="label-text-alt text-base-content/40" x-text="$store.locale.t('reviewLanding.optional')">(optional)</span></label>
+          <input type="text" x-model="reviewerName" class="input input-bordered w-full" :placeholder="$store.locale.t('reviewLanding.anonymousHint')">
+        </div>
+      </div>
+
+      <!-- Progress -->
+      <p class="text-sm text-base-content/40 text-center mb-6">
+        <span x-text="Object.values(selections).filter(function(s){return s && s.length >= 1}).length"></span>
+        /
+        <span x-text="questions.length"></span>
+        <span x-text="' ' + $store.locale.t('reviewLanding.questionsCompleted')"> questions completed</span>
+      </p>
+
+      <!-- Questions -->
+      <form @submit.prevent="submitReview">
+        <div class="space-y-4">
+          <template x-for="(q, qi) in questions" :key="qi">
+            <div class="card bg-base-200 shadow-sm">
+              <div class="card-body p-5">
+
+                <!-- Question header: number + counter -->
+                <div class="flex items-center justify-between mb-3">
+                  <div class="flex items-center gap-2">
+                    <span class="text-sm font-semibold text-base-content/50" x-text="'Q' + (qi + 1)"></span>
+                    <span class="text-xs text-base-content/30">·</span>
+                    <span class="text-xs text-base-content/40" x-text="$store.locale.t('reviewLanding.pickTwo')">pick 2</span>
+                  </div>
+                  <span class="text-xs font-medium"
+                    :class="(selections[q.qid] && selections[q.qid].length >= 1) ? 'text-success' : 'text-base-content/40'"
+                    x-text="(selections[q.qid] ? selections[q.qid].length : 0) + ($store.locale.current === 'zh-CN' ? ' 项已选' : ' selected')"></span>
+                </div>
+
+                <!-- Question text -->
+                <h3 class="font-semibold mb-3 leading-snug" x-text="q.text"></h3>
+
+                <!-- Options: stacked on mobile, 3-col on sm+ -->
+                <div class="flex flex-col gap-2">
+                  <template x-for="(opt, idx) in q.options" :key="opt.element">
+                    <button type="button" class="btn btn-sm justify-start text-left h-auto min-h-[3rem] py-2 px-3"
+                      :class="isSelected(q.qid, opt.element) ? '' : 'btn-ghost'"
+                      :style="isSelected(q.qid, opt.element) ? { backgroundColor: 'var(--' + opt.element + ')', color: 'var(--base-100)', borderColor: 'var(--' + opt.element + ')' } : {}"
+                      @click="toggleSelect(q.qid, opt.element)">
+                      <span class="inline-block w-2.5 h-2.5 rounded-full mr-2 shrink-0"
+                        :style="isSelected(q.qid, opt.element) ? 'background-color: rgba(255,255,255,0.85)' : 'background-color: var(--' + opt.element + ')'"></span>
+                      <span class="text-sm leading-snug" x-text="opt.text || opt.element"></span>
+                    </button>
+                  </template>
+                </div>
+
+              </div>
+            </div>
+          </template>
+        </div>
+        <div class="mt-6">
+          {% set labelKey = 'reviewLanding.submit' %}{% set disabledVar = 'submitting' %}{% include "submit-button.njk" %}
+        </div>
+      </form>
+
+    </div>
+  </template>
+</div>
+{% block pageScripts %}
+<script src="/js/review-landing.js"></script>
+{% endblock %}

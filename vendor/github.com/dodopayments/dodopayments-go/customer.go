@@ -1,0 +1,500 @@
+// File generated from our OpenAPI spec by Stainless. See CONTRIBUTING.md for details.
+
+package dodopayments
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"net/http"
+	"net/url"
+	"slices"
+	"time"
+
+	"github.com/dodopayments/dodopayments-go/internal/apijson"
+	"github.com/dodopayments/dodopayments-go/internal/apiquery"
+	"github.com/dodopayments/dodopayments-go/internal/param"
+	"github.com/dodopayments/dodopayments-go/internal/requestconfig"
+	"github.com/dodopayments/dodopayments-go/option"
+	"github.com/dodopayments/dodopayments-go/packages/pagination"
+)
+
+// CustomerService contains methods and other services that help with interacting
+// with the Dodo Payments API.
+//
+// Note, unlike clients, this service does not read variables from the environment
+// automatically. You should not instantiate this service directly, and instead use
+// the [NewCustomerService] method instead.
+type CustomerService struct {
+	Options        []option.RequestOption
+	CustomerPortal *CustomerCustomerPortalService
+	Wallets        *CustomerWalletService
+}
+
+// NewCustomerService generates a new service that applies the given options to
+// each request. These options are applied after the parent client's options (if
+// there is one), and before any request-specific options.
+func NewCustomerService(opts ...option.RequestOption) (r *CustomerService) {
+	r = &CustomerService{}
+	r.Options = opts
+	r.CustomerPortal = NewCustomerCustomerPortalService(opts...)
+	r.Wallets = NewCustomerWalletService(opts...)
+	return
+}
+
+func (r *CustomerService) New(ctx context.Context, body CustomerNewParams, opts ...option.RequestOption) (res *Customer, err error) {
+	opts = slices.Concat(r.Options, opts)
+	path := "customers"
+	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, body, &res, opts...)
+	return res, err
+}
+
+func (r *CustomerService) Get(ctx context.Context, customerID string, opts ...option.RequestOption) (res *Customer, err error) {
+	opts = slices.Concat(r.Options, opts)
+	if customerID == "" {
+		err = errors.New("missing required customer_id parameter")
+		return nil, err
+	}
+	path := fmt.Sprintf("customers/%s", customerID)
+	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, nil, &res, opts...)
+	return res, err
+}
+
+func (r *CustomerService) Update(ctx context.Context, customerID string, body CustomerUpdateParams, opts ...option.RequestOption) (res *Customer, err error) {
+	opts = slices.Concat(r.Options, opts)
+	if customerID == "" {
+		err = errors.New("missing required customer_id parameter")
+		return nil, err
+	}
+	path := fmt.Sprintf("customers/%s", customerID)
+	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPatch, path, body, &res, opts...)
+	return res, err
+}
+
+func (r *CustomerService) List(ctx context.Context, query CustomerListParams, opts ...option.RequestOption) (res *pagination.DefaultPageNumberPagination[Customer], err error) {
+	var raw *http.Response
+	opts = slices.Concat(r.Options, opts)
+	opts = append([]option.RequestOption{option.WithResponseInto(&raw)}, opts...)
+	path := "customers"
+	cfg, err := requestconfig.NewRequestConfig(ctx, http.MethodGet, path, query, &res, opts...)
+	if err != nil {
+		return nil, err
+	}
+	err = cfg.Execute()
+	if err != nil {
+		return nil, err
+	}
+	res.SetPageConfig(cfg, raw)
+	return res, nil
+}
+
+func (r *CustomerService) ListAutoPaging(ctx context.Context, query CustomerListParams, opts ...option.RequestOption) *pagination.DefaultPageNumberPaginationAutoPager[Customer] {
+	return pagination.NewDefaultPageNumberPaginationAutoPager(r.List(ctx, query, opts...))
+}
+
+func (r *CustomerService) DeletePaymentMethod(ctx context.Context, customerID string, paymentMethodID string, opts ...option.RequestOption) (err error) {
+	opts = slices.Concat(r.Options, opts)
+	opts = append([]option.RequestOption{option.WithHeader("Accept", "*/*")}, opts...)
+	if customerID == "" {
+		err = errors.New("missing required customer_id parameter")
+		return err
+	}
+	if paymentMethodID == "" {
+		err = errors.New("missing required payment_method_id parameter")
+		return err
+	}
+	path := fmt.Sprintf("customers/%s/payment-methods/%s", customerID, paymentMethodID)
+	err = requestconfig.ExecuteNewRequest(ctx, http.MethodDelete, path, nil, nil, opts...)
+	return err
+}
+
+// List all credit entitlements for a customer with their current balances
+func (r *CustomerService) ListCreditEntitlements(ctx context.Context, customerID string, opts ...option.RequestOption) (res *CustomerListCreditEntitlementsResponse, err error) {
+	opts = slices.Concat(r.Options, opts)
+	if customerID == "" {
+		err = errors.New("missing required customer_id parameter")
+		return nil, err
+	}
+	path := fmt.Sprintf("customers/%s/credit-entitlements", customerID)
+	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, nil, &res, opts...)
+	return res, err
+}
+
+// List all entitlement grants delivered (or in flight) to a customer.
+func (r *CustomerService) ListEntitlements(ctx context.Context, customerID string, opts ...option.RequestOption) (res *CustomerListEntitlementsResponse, err error) {
+	opts = slices.Concat(r.Options, opts)
+	if customerID == "" {
+		err = errors.New("missing required customer_id parameter")
+		return nil, err
+	}
+	path := fmt.Sprintf("customers/%s/entitlements", customerID)
+	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, nil, &res, opts...)
+	return res, err
+}
+
+func (r *CustomerService) GetPaymentMethods(ctx context.Context, customerID string, opts ...option.RequestOption) (res *CustomerGetPaymentMethodsResponse, err error) {
+	opts = slices.Concat(r.Options, opts)
+	if customerID == "" {
+		err = errors.New("missing required customer_id parameter")
+		return nil, err
+	}
+	path := fmt.Sprintf("customers/%s/payment-methods", customerID)
+	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, nil, &res, opts...)
+	return res, err
+}
+
+type Customer struct {
+	BusinessID string    `json:"business_id" api:"required"`
+	CreatedAt  time.Time `json:"created_at" api:"required" format:"date-time"`
+	CustomerID string    `json:"customer_id" api:"required"`
+	Email      string    `json:"email" api:"required"`
+	Name       string    `json:"name" api:"required"`
+	// Additional metadata for the customer
+	Metadata    map[string]string `json:"metadata"`
+	PhoneNumber string            `json:"phone_number" api:"nullable"`
+	JSON        customerJSON      `json:"-"`
+}
+
+// customerJSON contains the JSON metadata for the struct [Customer]
+type customerJSON struct {
+	BusinessID  apijson.Field
+	CreatedAt   apijson.Field
+	CustomerID  apijson.Field
+	Email       apijson.Field
+	Name        apijson.Field
+	Metadata    apijson.Field
+	PhoneNumber apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *Customer) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r customerJSON) RawJSON() string {
+	return r.raw
+}
+
+type CustomerPortalSession struct {
+	Link string                    `json:"link" api:"required"`
+	JSON customerPortalSessionJSON `json:"-"`
+}
+
+// customerPortalSessionJSON contains the JSON metadata for the struct
+// [CustomerPortalSession]
+type customerPortalSessionJSON struct {
+	Link        apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *CustomerPortalSession) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r customerPortalSessionJSON) RawJSON() string {
+	return r.raw
+}
+
+type CustomerListCreditEntitlementsResponse struct {
+	Items []CustomerListCreditEntitlementsResponseItem `json:"items" api:"required"`
+	JSON  customerListCreditEntitlementsResponseJSON   `json:"-"`
+}
+
+// customerListCreditEntitlementsResponseJSON contains the JSON metadata for the
+// struct [CustomerListCreditEntitlementsResponse]
+type customerListCreditEntitlementsResponseJSON struct {
+	Items       apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *CustomerListCreditEntitlementsResponse) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r customerListCreditEntitlementsResponseJSON) RawJSON() string {
+	return r.raw
+}
+
+// A credit entitlement with the customer's current balance
+type CustomerListCreditEntitlementsResponseItem struct {
+	// Customer's current remaining credit balance
+	Balance string `json:"balance" api:"required"`
+	// Credit entitlement ID
+	CreditEntitlementID string `json:"credit_entitlement_id" api:"required"`
+	// Name of the credit entitlement
+	Name string `json:"name" api:"required"`
+	// Customer's current overage balance
+	Overage string `json:"overage" api:"required"`
+	// Unit label (e.g. "API Calls", "Tokens")
+	Unit string `json:"unit" api:"required"`
+	// Description of the credit entitlement
+	Description string                                         `json:"description" api:"nullable"`
+	JSON        customerListCreditEntitlementsResponseItemJSON `json:"-"`
+}
+
+// customerListCreditEntitlementsResponseItemJSON contains the JSON metadata for
+// the struct [CustomerListCreditEntitlementsResponseItem]
+type customerListCreditEntitlementsResponseItemJSON struct {
+	Balance             apijson.Field
+	CreditEntitlementID apijson.Field
+	Name                apijson.Field
+	Overage             apijson.Field
+	Unit                apijson.Field
+	Description         apijson.Field
+	raw                 string
+	ExtraFields         map[string]apijson.Field
+}
+
+func (r *CustomerListCreditEntitlementsResponseItem) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r customerListCreditEntitlementsResponseItemJSON) RawJSON() string {
+	return r.raw
+}
+
+type CustomerListEntitlementsResponse struct {
+	Items []CustomerListEntitlementsResponseItem `json:"items" api:"required"`
+	JSON  customerListEntitlementsResponseJSON   `json:"-"`
+}
+
+// customerListEntitlementsResponseJSON contains the JSON metadata for the struct
+// [CustomerListEntitlementsResponse]
+type customerListEntitlementsResponseJSON struct {
+	Items       apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *CustomerListEntitlementsResponse) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r customerListEntitlementsResponseJSON) RawJSON() string {
+	return r.raw
+}
+
+type CustomerListEntitlementsResponseItem struct {
+	CreatedAt time.Time `json:"created_at" api:"required" format:"date-time"`
+	// The entitlement this grant belongs to.
+	EntitlementID   string `json:"entitlement_id" api:"required"`
+	EntitlementName string `json:"entitlement_name" api:"required"`
+	// Grant id (the per-customer row in `entitlement_grants`).
+	GrantID                string                                      `json:"grant_id" api:"required"`
+	IntegrationType        EntitlementIntegrationType                  `json:"integration_type" api:"required"`
+	Status                 CustomerListEntitlementsResponseItemsStatus `json:"status" api:"required"`
+	UpdatedAt              time.Time                                   `json:"updated_at" api:"required" format:"date-time"`
+	DeliveredAt            time.Time                                   `json:"delivered_at" api:"nullable" format:"date-time"`
+	EntitlementDescription string                                      `json:"entitlement_description" api:"nullable"`
+	RevokedAt              time.Time                                   `json:"revoked_at" api:"nullable" format:"date-time"`
+	JSON                   customerListEntitlementsResponseItemJSON    `json:"-"`
+}
+
+// customerListEntitlementsResponseItemJSON contains the JSON metadata for the
+// struct [CustomerListEntitlementsResponseItem]
+type customerListEntitlementsResponseItemJSON struct {
+	CreatedAt              apijson.Field
+	EntitlementID          apijson.Field
+	EntitlementName        apijson.Field
+	GrantID                apijson.Field
+	IntegrationType        apijson.Field
+	Status                 apijson.Field
+	UpdatedAt              apijson.Field
+	DeliveredAt            apijson.Field
+	EntitlementDescription apijson.Field
+	RevokedAt              apijson.Field
+	raw                    string
+	ExtraFields            map[string]apijson.Field
+}
+
+func (r *CustomerListEntitlementsResponseItem) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r customerListEntitlementsResponseItemJSON) RawJSON() string {
+	return r.raw
+}
+
+type CustomerListEntitlementsResponseItemsStatus string
+
+const (
+	CustomerListEntitlementsResponseItemsStatusPending   CustomerListEntitlementsResponseItemsStatus = "pending"
+	CustomerListEntitlementsResponseItemsStatusDelivered CustomerListEntitlementsResponseItemsStatus = "delivered"
+	CustomerListEntitlementsResponseItemsStatusFailed    CustomerListEntitlementsResponseItemsStatus = "failed"
+	CustomerListEntitlementsResponseItemsStatusRevoked   CustomerListEntitlementsResponseItemsStatus = "revoked"
+)
+
+func (r CustomerListEntitlementsResponseItemsStatus) IsKnown() bool {
+	switch r {
+	case CustomerListEntitlementsResponseItemsStatusPending, CustomerListEntitlementsResponseItemsStatusDelivered, CustomerListEntitlementsResponseItemsStatusFailed, CustomerListEntitlementsResponseItemsStatusRevoked:
+		return true
+	}
+	return false
+}
+
+type CustomerGetPaymentMethodsResponse struct {
+	Items []CustomerGetPaymentMethodsResponseItem `json:"items" api:"required"`
+	JSON  customerGetPaymentMethodsResponseJSON   `json:"-"`
+}
+
+// customerGetPaymentMethodsResponseJSON contains the JSON metadata for the struct
+// [CustomerGetPaymentMethodsResponse]
+type customerGetPaymentMethodsResponseJSON struct {
+	Items       apijson.Field
+	raw         string
+	ExtraFields map[string]apijson.Field
+}
+
+func (r *CustomerGetPaymentMethodsResponse) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r customerGetPaymentMethodsResponseJSON) RawJSON() string {
+	return r.raw
+}
+
+type CustomerGetPaymentMethodsResponseItem struct {
+	PaymentMethod   CustomerGetPaymentMethodsResponseItemsPaymentMethod `json:"payment_method" api:"required"`
+	PaymentMethodID string                                              `json:"payment_method_id" api:"required"`
+	Card            CustomerGetPaymentMethodsResponseItemsCard          `json:"card" api:"nullable"`
+	LastUsedAt      time.Time                                           `json:"last_used_at" api:"nullable" format:"date-time"`
+	// All supported payment method types (from Hyperswitch).
+	//
+	// Used for disabled-payment-methods filtering and validation.
+	PaymentMethodType PaymentMethodTypes                        `json:"payment_method_type" api:"nullable"`
+	RecurringEnabled  bool                                      `json:"recurring_enabled" api:"nullable"`
+	JSON              customerGetPaymentMethodsResponseItemJSON `json:"-"`
+}
+
+// customerGetPaymentMethodsResponseItemJSON contains the JSON metadata for the
+// struct [CustomerGetPaymentMethodsResponseItem]
+type customerGetPaymentMethodsResponseItemJSON struct {
+	PaymentMethod     apijson.Field
+	PaymentMethodID   apijson.Field
+	Card              apijson.Field
+	LastUsedAt        apijson.Field
+	PaymentMethodType apijson.Field
+	RecurringEnabled  apijson.Field
+	raw               string
+	ExtraFields       map[string]apijson.Field
+}
+
+func (r *CustomerGetPaymentMethodsResponseItem) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r customerGetPaymentMethodsResponseItemJSON) RawJSON() string {
+	return r.raw
+}
+
+type CustomerGetPaymentMethodsResponseItemsPaymentMethod string
+
+const (
+	CustomerGetPaymentMethodsResponseItemsPaymentMethodCard            CustomerGetPaymentMethodsResponseItemsPaymentMethod = "card"
+	CustomerGetPaymentMethodsResponseItemsPaymentMethodCardRedirect    CustomerGetPaymentMethodsResponseItemsPaymentMethod = "card_redirect"
+	CustomerGetPaymentMethodsResponseItemsPaymentMethodPayLater        CustomerGetPaymentMethodsResponseItemsPaymentMethod = "pay_later"
+	CustomerGetPaymentMethodsResponseItemsPaymentMethodWallet          CustomerGetPaymentMethodsResponseItemsPaymentMethod = "wallet"
+	CustomerGetPaymentMethodsResponseItemsPaymentMethodBankRedirect    CustomerGetPaymentMethodsResponseItemsPaymentMethod = "bank_redirect"
+	CustomerGetPaymentMethodsResponseItemsPaymentMethodBankTransfer    CustomerGetPaymentMethodsResponseItemsPaymentMethod = "bank_transfer"
+	CustomerGetPaymentMethodsResponseItemsPaymentMethodCrypto          CustomerGetPaymentMethodsResponseItemsPaymentMethod = "crypto"
+	CustomerGetPaymentMethodsResponseItemsPaymentMethodBankDebit       CustomerGetPaymentMethodsResponseItemsPaymentMethod = "bank_debit"
+	CustomerGetPaymentMethodsResponseItemsPaymentMethodReward          CustomerGetPaymentMethodsResponseItemsPaymentMethod = "reward"
+	CustomerGetPaymentMethodsResponseItemsPaymentMethodRealTimePayment CustomerGetPaymentMethodsResponseItemsPaymentMethod = "real_time_payment"
+	CustomerGetPaymentMethodsResponseItemsPaymentMethodUpi             CustomerGetPaymentMethodsResponseItemsPaymentMethod = "upi"
+	CustomerGetPaymentMethodsResponseItemsPaymentMethodVoucher         CustomerGetPaymentMethodsResponseItemsPaymentMethod = "voucher"
+	CustomerGetPaymentMethodsResponseItemsPaymentMethodGiftCard        CustomerGetPaymentMethodsResponseItemsPaymentMethod = "gift_card"
+	CustomerGetPaymentMethodsResponseItemsPaymentMethodOpenBanking     CustomerGetPaymentMethodsResponseItemsPaymentMethod = "open_banking"
+	CustomerGetPaymentMethodsResponseItemsPaymentMethodMobilePayment   CustomerGetPaymentMethodsResponseItemsPaymentMethod = "mobile_payment"
+)
+
+func (r CustomerGetPaymentMethodsResponseItemsPaymentMethod) IsKnown() bool {
+	switch r {
+	case CustomerGetPaymentMethodsResponseItemsPaymentMethodCard, CustomerGetPaymentMethodsResponseItemsPaymentMethodCardRedirect, CustomerGetPaymentMethodsResponseItemsPaymentMethodPayLater, CustomerGetPaymentMethodsResponseItemsPaymentMethodWallet, CustomerGetPaymentMethodsResponseItemsPaymentMethodBankRedirect, CustomerGetPaymentMethodsResponseItemsPaymentMethodBankTransfer, CustomerGetPaymentMethodsResponseItemsPaymentMethodCrypto, CustomerGetPaymentMethodsResponseItemsPaymentMethodBankDebit, CustomerGetPaymentMethodsResponseItemsPaymentMethodReward, CustomerGetPaymentMethodsResponseItemsPaymentMethodRealTimePayment, CustomerGetPaymentMethodsResponseItemsPaymentMethodUpi, CustomerGetPaymentMethodsResponseItemsPaymentMethodVoucher, CustomerGetPaymentMethodsResponseItemsPaymentMethodGiftCard, CustomerGetPaymentMethodsResponseItemsPaymentMethodOpenBanking, CustomerGetPaymentMethodsResponseItemsPaymentMethodMobilePayment:
+		return true
+	}
+	return false
+}
+
+type CustomerGetPaymentMethodsResponseItemsCard struct {
+	CardHolderName string `json:"card_holder_name" api:"nullable"`
+	// ISO country code alpha2 variant
+	CardIssuingCountry CountryCode                                    `json:"card_issuing_country" api:"nullable"`
+	CardNetwork        string                                         `json:"card_network" api:"nullable"`
+	CardType           string                                         `json:"card_type" api:"nullable"`
+	ExpiryMonth        string                                         `json:"expiry_month" api:"nullable"`
+	ExpiryYear         string                                         `json:"expiry_year" api:"nullable"`
+	Last4Digits        string                                         `json:"last4_digits" api:"nullable"`
+	JSON               customerGetPaymentMethodsResponseItemsCardJSON `json:"-"`
+}
+
+// customerGetPaymentMethodsResponseItemsCardJSON contains the JSON metadata for
+// the struct [CustomerGetPaymentMethodsResponseItemsCard]
+type customerGetPaymentMethodsResponseItemsCardJSON struct {
+	CardHolderName     apijson.Field
+	CardIssuingCountry apijson.Field
+	CardNetwork        apijson.Field
+	CardType           apijson.Field
+	ExpiryMonth        apijson.Field
+	ExpiryYear         apijson.Field
+	Last4Digits        apijson.Field
+	raw                string
+	ExtraFields        map[string]apijson.Field
+}
+
+func (r *CustomerGetPaymentMethodsResponseItemsCard) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r customerGetPaymentMethodsResponseItemsCardJSON) RawJSON() string {
+	return r.raw
+}
+
+type CustomerNewParams struct {
+	Email param.Field[string] `json:"email" api:"required"`
+	Name  param.Field[string] `json:"name" api:"required"`
+	// Additional metadata for the customer
+	Metadata    param.Field[map[string]string] `json:"metadata"`
+	PhoneNumber param.Field[string]            `json:"phone_number"`
+}
+
+func (r CustomerNewParams) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
+type CustomerUpdateParams struct {
+	Email param.Field[string] `json:"email"`
+	// Additional metadata for the customer
+	Metadata    param.Field[map[string]string] `json:"metadata"`
+	Name        param.Field[string]            `json:"name"`
+	PhoneNumber param.Field[string]            `json:"phone_number"`
+}
+
+func (r CustomerUpdateParams) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
+type CustomerListParams struct {
+	// Filter customers created on or after this timestamp
+	CreatedAtGte param.Field[time.Time] `query:"created_at_gte" format:"date-time"`
+	// Filter customers created on or before this timestamp
+	CreatedAtLte param.Field[time.Time] `query:"created_at_lte" format:"date-time"`
+	// Filter by customer email
+	Email param.Field[string] `query:"email"`
+	// Filter by customer name (partial match, case-insensitive)
+	Name param.Field[string] `query:"name"`
+	// Page number default is 0
+	PageNumber param.Field[int64] `query:"page_number"`
+	// Page size default is 10 max is 100
+	PageSize param.Field[int64] `query:"page_size"`
+}
+
+// URLQuery serializes [CustomerListParams]'s query parameters as `url.Values`.
+func (r CustomerListParams) URLQuery() (v url.Values) {
+	return apiquery.MarshalWithSettings(r, apiquery.QuerySettings{
+		ArrayFormat:  apiquery.ArrayQueryFormatComma,
+		NestedFormat: apiquery.NestedQueryFormatBrackets,
+	})
+}

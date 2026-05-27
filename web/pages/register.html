@@ -1,0 +1,44 @@
+---
+layout: base.njk
+title: Create Account
+description: Create your free 25 Types account and start exploring.
+---
+<div class="max-w-md mx-auto px-6 py-20" x-data="registerPage()">
+  <h1 class="text-3xl font-bold text-center mb-2" x-text="$store.locale.t('register.title')">Create your account</h1>
+  <p class="text-center text-base-content/60 text-sm mb-8" x-text="$store.locale.t('register.subtitle')">Save your assessment results and discover more.</p>
+
+  {% include "form-start.njk" %}
+      <div class="form-control">
+        <label class="label"><span class="label-text" x-text="$store.locale.t('register.username')">Username</span></label>
+        <input type="text" x-model="name" class="input input-bordered w-full" required minlength="1" autocomplete="username">
+      </div>
+      <div class="form-control">
+        <label class="label"><span class="label-text" x-text="$store.locale.t('register.email')">Email</span></label>
+        <input type="email" x-model="email" class="input input-bordered w-full" required autocomplete="email">
+      </div>
+      <div class="form-control">
+        <label class="label"><span class="label-text" x-text="$store.locale.t('register.password')">Password</span></label>
+        <div class="relative">
+          <input :type="showPw ? 'text' : 'password'" x-model="password" class="input input-bordered w-full pr-10" required minlength="8" autocomplete="new-password">
+          {% include "pw-toggle.njk" %}
+        </div>
+        <div class="flex gap-1 mt-2" x-show="password">
+          <div class="h-1 flex-1 rounded transition-colors" :class="barClass(1)"></div>
+          <div class="h-1 flex-1 rounded transition-colors" :class="barClass(2)"></div>
+          <div class="h-1 flex-1 rounded transition-colors" :class="barClass(3)"></div>
+          <div class="h-1 flex-1 rounded transition-colors" :class="barClass(4)"></div>
+          <div class="h-1 flex-1 rounded transition-colors" :class="barClass(5)"></div>
+        </div>
+        <label class="label"><span class="label-text-alt" x-text="$store.locale.t('register.passwordHint')">At least 8 characters</span></label>
+      </div>
+      {% set labelKey = 'register.submit' %}{% include "submit-button.njk" %}
+{% include "form-end.njk" %}
+
+  <p class="text-center text-base text-base-content/60 mt-6">
+    <span x-text="$store.locale.t('register.hasAccount')">Already have an account?</span> <a href="/{{ site.locale }}/login" class="link link-primary" x-text="$store.locale.t('register.login')">Log in</a>
+  </p>
+</div>
+
+{% block pageScripts %}
+<script src="/js/register.js"></script>
+{% endblock %}

@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="wuxing">
+<head>
+<title>Profile — 25 Types</title>
+<meta name="description" content="Five-element personality profile.">
+<meta property="og:title" content="Profile — 25 Types">
+<meta property="og:description" content="Five-element personality profile.">
+<meta property="og:image" content="/img/og-default.png">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="robots" content="noindex">
+<link rel="canonical" href="https://25types.com/en/profile.html">
+<link rel="alternate" hreflang="en" href="https://25types.com/en/profile.html">
+<link rel="alternate" hreflang="zh-CN" href="https://25types.com/zh-CN/profile.html">
+<!-- _head.html — shared <head> content -->
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="/css/tailwind.min.css">
+<link rel="stylesheet" href="https://fontsapi.zeoseven.com/820/main/result.css"/>
+<link rel="icon" type="image/svg+xml" href="/img/favicon.svg?v=2">
+<script src="/js/vendor/alpine.min.js" defer></script>
+
+
+</head>
+<body class="min-h-screen bg-base-100 text-base-content flex flex-col profile-page" x-data>
+<!-- _navbar.html -->
+
+
+<div x-data="{ dropdown: null }">
+<nav class="navbar bg-base-200/80 backdrop-blur border-b border-base-300 sticky top-0 z-50 px-4 lg:px-14">
+  <div class="navbar-start flex-1">
+    <a href="/en/" class="inline-block px-2 py-1 no-underline">
+      <!-- logo.njk — reusable brand mark: seal + wordmark -->
+<span class="inline-flex items-center gap-1.5">
+  <span class="brand-seal" aria-label="25 Types">
+    <span>真</span><span>五</span>
+    <span>象</span><span>行</span>
+  </span>
+  <span class="flex flex-col leading-none text-xs font-brand uppercase">
+    <span class="wuxing-fire text-base">25</span>
+    <span class="wuxing-wood">Types</span>
+  </span>
+</span>
+
+    </a>
+  </div>
+
+  <!-- Desktop: centered pill menu -->
+  <div class="navbar-center hidden lg:flex flex-1 justify-center">
+    <div class="flex items-center gap-7 lg:gap-10 bg-base-100/95 border border-base-300 rounded-xl px-7 lg:px-10 py-2 shadow-sm">
+      <a href="/en/"
+         class="relative group text-base-content/90 hover:text-base-content transition-colors text-lg lg:text-xl font-medium ">
+        <span x-text="$store.locale.t('nav.home')">Home</span>
+        <span class="absolute left-0 -bottom-0.5 w-0 h-0.5 bg-base-content/60 transition-all duration-200 group-hover:w-full "></span>
+      </a>
+      <a href="/en/types"
+         class="relative group text-base-content/90 hover:text-base-content transition-colors text-lg lg:text-xl font-medium ">
+        <span x-text="$store.locale.t('nav.types')">25 Types</span>
+        <span class="absolute left-0 -bottom-0.5 w-0 h-0.5 bg-base-content/60 transition-all duration-200 group-hover:w-full "></span>
+      </a>
+      <a href="/en/assess"
+         class="relative group text-base-content/90 hover:text-base-content transition-colors text-lg lg:text-xl font-medium ">
+        <span x-text="$store.locale.t('nav.assess')">Assess</span>
+        <span class="absolute left-0 -bottom-0.5 w-0 h-0.5 bg-base-content/60 transition-all duration-200 group-hover:w-full "></span>
+      </a>
+    </div>
+  </div>
+
+  <div class="navbar-end gap-1 flex-1 justify-end">
+    <!-- lang switcher -->
+    <div class="dropdown dropdown-end max-lg:hidden" @click.outside="dropdown = null">
+      <button class="btn btn-ghost btn-sm text-lg" @click="dropdown = dropdown === 'lang' ? null : 'lang'" aria-label="Switch language">🌐</button>
+      <ul x-show="dropdown === 'lang'" class="dropdown-content menu menu-sm bg-base-200 rounded-box shadow mt-2 z-50 w-32">
+        <li><a href="/en/profile.html">English</a></li>
+        <li><a href="/zh-CN/profile.html">中文</a></li>
+      </ul>
+    </div>
+    <!-- theme toggle -->
+    <button class="btn btn-ghost btn-sm text-lg max-lg:hidden"
+            @click="$store.theme.toggle()"
+            aria-label="Toggle theme">
+      <span x-show="!$store.theme.dark">🌙</span>
+      <span x-show="$store.theme.dark">☀️</span>
+    </button>
+    <!-- auth -->
+    <template x-if="!$store.auth || !$store.auth.id">
+      <a href="/en/login" class="btn btn-ghost btn-sm max-lg:hidden" x-text="$store.locale.t('nav.login')">Login</a>
+    </template>
+    <template x-if="$store.auth && $store.auth.id">
+      <a :href="'/' + $store.locale.current + '/' + $store.auth.name" class="btn btn-ghost btn-sm max-lg:hidden" x-text="$store.auth.name"></a>
+    </template>
+    <!-- mobile toggle -- fatetell-style hamburger icon -->
+    <button class="btn btn-ghost btn-sm lg:hidden p-1" @click="$store.ui.mobileOpen = !$store.ui.mobileOpen" aria-label="Toggle menu">
+      <svg width="24" height="16" viewBox="0 0 28 17" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="28" height="3" rx="1.5" fill="currentColor"/>
+        <rect y="7" width="28" height="3" rx="1.5" fill="currentColor"/>
+        <rect y="14" width="28" height="3" rx="1.5" fill="currentColor"/>
+      </svg>
+    </button>
+  </div>
+</nav>
+
+<!-- mobile menu — right-side drawer, fatetell-style -->
+<div x-show="$store.ui.mobileOpen"
+     class="fixed inset-0 top-20 z-40 lg:hidden"
+     x-transition:enter="transition ease-out duration-200"
+     x-transition:enter-start="opacity-0"
+     x-transition:enter-end="opacity-100"
+     x-transition:leave="transition ease-in duration-150"
+     x-transition:leave-start="opacity-100"
+     x-transition:leave-end="opacity-0">
+  <!-- backdrop -->
+  <div class="absolute inset-0 bg-black/30" @click="$store.ui.mobileOpen = false"></div>
+  <!-- drawer panel — right side, 80% width -->
+  <div class="absolute right-0 top-0 bottom-0 w-4/5 max-w-sm bg-base-100 shadow-2xl overflow-y-auto"
+       @click.stop="">
+    <nav class="flex flex-col px-6 pt-8 pb-6 gap-1">
+      <a href="/en/" @click="$store.ui.mobileOpen = false"
+         class="flex items-center h-14 px-4 text-base font-semibold rounded-xl hover:bg-base-200 active:bg-base-300 transition-colors">
+        <span x-text="$store.locale.t('nav.home')">Home</span>
+      </a>
+      <a href="/en/types" @click="$store.ui.mobileOpen = false"
+         class="flex items-center h-14 px-4 text-base font-semibold rounded-xl hover:bg-base-200 active:bg-base-300 transition-colors">
+        <span x-text="$store.locale.t('nav.types')">25 Types</span>
+      </a>
+      <a href="/en/assess" @click="$store.ui.mobileOpen = false"
+         class="flex items-center h-14 px-4 text-base font-semibold rounded-xl hover:bg-base-200 active:bg-base-300 transition-colors">
+        <span x-text="$store.locale.t('nav.assess')">Assess</span>
+      </a>
+
+      <!-- divider -->
+      <div class="border-t border-base-300 my-3"></div>
+
+      <!-- theme toggle -->
+      <button class="flex items-center h-14 px-4 text-base font-semibold rounded-xl hover:bg-base-200 active:bg-base-300 transition-colors w-full"
+              @click="$store.theme.toggle()">
+        <span class="mr-3 text-lg" x-show="!$store.theme.dark">🌙</span>
+        <span class="mr-3 text-lg" x-show="$store.theme.dark">☀️</span>
+        <span x-text="$store.theme.dark ? 'Light Mode' : 'Dark Mode'"></span>
+      </button>
+
+      <!-- language switcher -->
+      <div class="flex gap-2 px-4 py-2">
+        <a href="/en/profile.html" @click="$store.ui.mobileOpen = false"
+           class="btn btn-ghost btn-sm flex-1 btn-active">English</a>
+        <a href="/zh-CN/profile.html" @click="$store.ui.mobileOpen = false"
+           class="btn btn-ghost btn-sm flex-1 ">中文</a>
+      </div>
+
+      <!-- auth -->
+      <template x-if="!$store.auth || !$store.auth.id">
+        <a href="/en/login" @click="$store.ui.mobileOpen = false"
+           class="flex items-center h-14 px-4 text-base font-semibold rounded-xl hover:bg-base-200 active:bg-base-300 transition-colors">
+          <span x-text="$store.locale.t('nav.login')">Login</span>
+        </a>
+      </template>
+      <template x-if="$store.auth && $store.auth.id">
+        <a :href="'/' + $store.locale.current + '/' + $store.auth.name" @click="$store.ui.mobileOpen = false"
+           class="flex items-center h-14 px-4 text-base font-semibold rounded-xl hover:bg-base-200 active:bg-base-300 transition-colors">
+          <span x-text="$store.auth.name"></span>
+        </a>
+      </template>
+    </nav>
+  </div>
+</div>
+
+</div>
+
+<div class="toast-container" x-show="$store.toast.messages.length > 0">
+  <template x-for="m in $store.toast.messages" :key="m.id">
+    <div class="alert toast shadow-lg mb-2" :class="m.type === 'error' ? 'alert-error' : m.type === 'success' ? 'alert-success' : 'alert-info'">
+      <span x-text="m.msg"></span>
+    </div>
+  </template>
+</div>
+
+<main class="flex-1">
+<div class="max-w-5xl mx-auto px-6 lg:px-14 py-10 lg:py-14" x-data="profilePage()" x-init="init()">
+
+  <template x-if="loading">
+  <div class="text-center py-20">
+    <span class="loading loading-spinner loading-lg text-primary"></span>
+  </div>
+</template>
+
+
+  <!-- 404: profile not found / private -->
+  <template x-if="!loading && !profile">
+    <div class="text-center py-20">
+      <h2 class="text-xl font-bold mb-4" x-text="$store.locale.t('profile.notFound')">Profile not found</h2>
+      <a href="/en/" class="btn btn-outline" x-text="$store.locale.t('reviewLanding.goHome')">Go Home</a>
+    </div>
+  </template>
+
+  <!-- No assessment yet (public but no data) -->
+  <template x-if="!loading && profile && !profile.profile">
+    <div class="text-center py-20">
+      <h2 class="text-xl font-bold mb-2" x-text="profile.user.name"></h2>
+      <p class="text-base-content/60 mb-6" x-text="$store.locale.t('profile.noAssessment')">This user hasn't completed an assessment yet.</p>
+      <template x-if="profile.is_owner">
+        <div class="flex flex-col items-center gap-3">
+          <a href="/en/assess" class="btn btn-primary" x-text="$store.locale.t('profile.startAssess')">Start Assessment</a>
+          <div class="flex gap-2">
+            <button class="btn btn-ghost btn-sm" @click="$store.auth.logout()" x-text="$store.locale.t('me.logout')">Logout</button>
+            <button class="btn btn-outline btn-sm" @click="editProfile" x-text="$store.locale.t('profile.editProfile')">Edit Profile</button>
+            <button class="btn btn-outline btn-sm" @click="togglePrivacy" x-text="profile.is_public ? $store.locale.t('profile.makePrivate') : $store.locale.t('profile.makePublic')">Make Private</button>
+          </div>
+        </div>
+      </template>
+    </div>
+  </template>
+
+  <!-- Profile with data -->
+  <template x-if="!loading && profile && profile.profile">
+
+    <!-- === Row 1: Radar + Identity + Flow === -->
+    <div class="grid lg:grid-cols-2 gap-8 mb-10">
+      <!-- Radar chart -->
+      <div class="card bg-base-200 shadow-sm">
+        <div class="card-body">
+          <h3 class="card-title" x-text="$store.locale.t('result.elementProfile')">Element Profile</h3>
+          <div class="chart-container chart-h-320" id="profile-radar" role="img"></div>
+
+        </div>
+      </div>
+
+      <!-- Identity + Flow month -->
+      <div class="flex flex-col gap-6">
+        <!-- Identity card -->
+        <div class="card bg-base-200 shadow-sm flex-1">
+          <div class="card-body text-center">
+            <div class="badge badge-lg mb-3" x-text="identity.category"></div>
+            <h1 class="text-3xl sm:text-4xl font-bold mb-1" x-text="identity.label"></h1>
+            <p class="text-base-content/60 text-sm font-mono mb-4" x-text="identity.id"></p>
+            <!-- Element bars -->
+            <div class="w-full max-w-xs mx-auto space-y-1.5">
+  <template x-for="idx in ELEMENT_HTML_ORDER" :key="idx">
+    <div class="flex items-center gap-2 text-xs">
+      <span class="w-12 text-right" :style="'color:' + elementColor(idx)" x-text="elementName(idx)"></span>
+      <div class="flex-1 h-2 rounded-full bg-base-300">
+        <div class="h-2 rounded-full" :style="{width: (pValues[idx] * 100) + '%', background: elementColor(idx)}"></div>
+      </div>
+      <span class="w-10 text-right" x-text="(pValues[idx] * 100).toFixed(0) + '%'"></span>
+    </div>
+  </template>
+</div>
+
+          </div>
+        </div>
+
+        <!-- Flow month card -->
+        <div class="card bg-base-200 shadow-sm" x-show="flowMonth">
+          <div class="card-body p-4 sm:p-6">
+            <h4 class="text-sm font-semibold text-base-content/60 uppercase tracking-wide text-center mb-1" x-text="$store.locale.t('profile.currentFlow')">Current Flow</h4>
+            <p class="text-lg font-bold text-center" x-text="flowMonth.month_en || flowMonth.month_id"></p>
+            <div class="mt-2 chart-container chart-h-260" id="flow-mini-radar" role="img"></div>
+            <!-- Delta bars -->
+            <div class="mt-3 space-y-1" x-show="flowDeltas.length">
+              <template x-for="item in flowDeltas" :key="item.idx">
+                <div class="flex items-center gap-2 text-xs">
+                  <span class="w-10 text-right" :style="'color:' + elementColor(item.idx)" x-text="elementName(item.idx)"></span>
+                  <span class="w-14 text-right font-mono" :class="item.delta >= 0 ? 'text-success' : 'text-error'" x-text="item.delta >= 0 ? '+' + item.delta.toFixed(2) : item.delta.toFixed(2)"></span>
+                  <div class="flex-1 h-1.5 rounded-full bg-base-300 overflow-hidden">
+                    <div class="h-1.5 rounded-full transition-all duration-500"
+                         :class="item.delta >= 0 ? 'bg-success' : 'bg-error'"
+                         :style="{width: (Math.abs(item.delta) / 0.5 * 100) + '%'}"></div>
+                  </div>
+                </div>
+              </template>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- === Row 2: Peer radar (if any) === -->
+    <template x-if="profile.peers">
+      <div class="card bg-base-200 shadow-sm mb-10">
+        <div class="card-body">
+          <h3 class="card-title">
+            <span x-text="$store.locale.t('profile.peerView')">How Others See You</span>
+            <span class="badge badge-sm ml-2" x-text="profile.peers.count"></span>
+          </h3>
+          <div class="chart-container chart-h-320" id="peers-radar" role="img"></div>
+
+          <p class="text-center text-sm text-base-content/60 mt-2" x-show="peerIdentity" x-text="peerIdentity.label + ' · ' + peerIdentity.id"></p>
+        </div>
+      </div>
+    </template>
+
+    <!-- === Owner-only section === -->
+    <template x-if="profile.is_owner">
+
+      <!-- Assessment History (river chart) -->
+      <div class="card bg-base-200 shadow-sm mb-10" x-show="history.length > 1">
+        <div class="card-body">
+          <h3 class="card-title" x-text="$store.locale.t('profile.history')">Assessment History</h3>
+          <div id="history-chart" role="img" class="chart-container chart-h-300"></div>
+        </div>
+      </div>
+
+      <!-- Bonds -->
+      <div class="card bg-base-200 shadow-sm mb-10" x-show="bonds.length > 0">
+        <div class="card-body">
+          <h3 class="card-title" x-text="$store.locale.t('profile.myBonds')">My Bonds</h3>
+          <div class="overflow-x-auto">
+            <table class="table table-sm">
+              <thead>
+                <tr>
+                  <th x-text="$store.locale.t('profile.bondWith')">With</th>
+                  <th x-text="$store.locale.t('profile.bondDate')">Date</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                <template x-for="b in bonds" :key="b.id">
+                  <tr>
+                    <td class="font-medium" x-text="b.other_name || '—'"></td>
+                    <td class="text-base-content/60 text-sm" x-text="fmtDate(b.created_at)"></td>
+                    <td>
+                      <template x-if="b.other_name">
+                        <a :href="'/' + currentLocale + '/' + b.other_name" class="btn btn-ghost btn-xs" x-text="$store.locale.t('profile.viewProfile')">View Profile</a>
+                      </template>
+                    </td>
+                  </tr>
+                </template>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="card bg-base-200 shadow-sm mb-10">
+        <div class="card-body">
+          <h3 class="card-title" x-text="$store.locale.t('profile.actions')">Actions</h3>
+          <div class="flex flex-wrap gap-2">
+            <button class="btn btn-outline btn-sm" @click="shareProfile" x-text="$store.locale.t('profile.shareProfile')">Share Profile</button>
+            <button class="btn btn-outline btn-sm" @click="editProfile" x-text="$store.locale.t('profile.editProfile')">Edit Profile</button>
+            <button class="btn btn-outline btn-sm" @click="togglePrivacy" x-text="profile.is_public ? $store.locale.t('profile.makePrivate') : $store.locale.t('profile.makePublic')">Make Private</button>
+            <button class="btn btn-outline btn-sm" @click="createReviewLink" x-text="$store.locale.t('profile.createReview')">Create Review Link</button>
+            <button class="btn btn-outline btn-sm" @click="createMatchLink" x-text="$store.locale.t('profile.createMatch')">Create Match Link</button>
+            <a href="/en/assess" class="btn btn-outline btn-sm" x-text="$store.locale.t('profile.reassess')">Re-assess</a>
+            <button class="btn btn-outline btn-sm" @click="exportData" x-text="$store.locale.t('profile.exportData')">Export Data</button>
+            <button class="btn btn-outline btn-sm" @click="deleteAccount" x-text="$store.locale.t('profile.deleteAccount')">Delete Account</button>
+            <button class="btn btn-ghost btn-sm" @click="$store.auth.logout()" x-text="$store.locale.t('me.logout')">Logout</button>
+          </div>
+          <!-- Created links display -->
+          <div class="mt-4 space-y-1" x-show="reviewLinks.length > 0 || matchLinks.length > 0">
+            <template x-for="link in reviewLinks" :key="link.id">
+              <div class="flex items-center gap-2 text-sm bg-base-100 rounded-lg p-2">
+                <span class="text-base-content/60" x-text="$store.locale.t('profile.reviewLink') + ':'"></span>
+                <code class="text-xs" x-text="origin + '/en/r/' + link.token"></code>
+                <button class="btn btn-ghost btn-xs" @click="copyText(origin + '/en/r/' + link.token)" x-text="$store.locale.t('copy')">Copy</button>
+                <button class="btn btn-ghost btn-xs text-error" @click="deleteReviewLink(link.id)" x-text="$store.locale.t('delete')">Delete</button>
+              </div>
+            </template>
+            <template x-for="link in matchLinks" :key="link.id">
+              <div class="flex items-center gap-2 text-sm bg-base-100 rounded-lg p-2">
+                <span class="text-base-content/60" x-text="$store.locale.t('profile.matchLink') + ':'"></span>
+                <code class="text-xs" x-text="origin + '/en/m/' + link.token"></code>
+                <button class="btn btn-ghost btn-xs" @click="copyText(origin + '/en/m/' + link.token)" x-text="$store.locale.t('copy')">Copy</button>
+                <button class="btn btn-ghost btn-xs text-error" @click="deleteMatchLink(link.id)" x-text="$store.locale.t('delete')">Delete</button>
+              </div>
+            </template>
+          </div>
+        </div>
+      </div>
+    </template>
+
+    <!-- === Visitor section === -->
+    <template x-if="!profile.is_owner">
+      <div class="text-center mb-10 flex flex-wrap justify-center gap-3">
+        <template x-if="auth.id && hasMyProfile">
+          <button class="btn btn-primary" @click="compareWithMe" x-text="$store.locale.t('profile.compareWithMe')">Compare with Me</button>
+        </template>
+        <template x-if="!auth.id">
+          <a href="/en/assess" class="btn btn-primary" x-text="$store.locale.t('profile.discoverYourType')">Discover Your Type</a>
+        </template>
+        <template x-if="auth.id && !hasMyProfile">
+          <a href="/en/assess" class="btn btn-outline" x-text="$store.locale.t('profile.discoverYourType')">Discover Your Type</a>
+        </template>
+        <template x-if="auth.id && targetReviewToken">
+          <a :href="'/' + currentLocale + '/r/' + targetReviewToken" class="btn btn-outline" x-text="$store.locale.t('profile.describeThem')">Describe Them</a>
+        </template>
+      </div>
+    </template>
+
+    <!-- Bond popup (instant compare) -->
+    <template x-if="showBond">
+      <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50" @click.self="showBond = false">
+        <div class="bg-base-100 rounded-2xl shadow-2xl p-6 max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto">
+          <h3 class="text-xl font-bold mb-4 text-center" x-text="$store.locale.t('bond.title')">Bond Dynamics</h3>
+          <div id="bond-radar" role="img" class="chart-container chart-h-320"></div>
+          <div class="grid grid-cols-2 gap-4 mt-4">
+            <div>
+              <h4 class="text-sm font-bold text-center mb-1" x-text="$store.locale.t('bond.yourShape')">Your Shape</h4>
+              <template x-for="item in bondDeltaA" :key="item.idx">
+                <div class="flex items-center gap-1 text-xs">
+                  <span class="w-10 text-right" :style="'color:' + elementColor(item.idx)" x-text="elementName(item.idx)"></span>
+                  <span class="w-12 text-right" :class="item.delta >= 0 ? 'text-success' : 'text-error'" x-text="item.delta >= 0 ? '+' + item.delta.toFixed(2) : item.delta.toFixed(2)"></span>
+                </div>
+              </template>
+            </div>
+            <div>
+              <h4 class="text-sm font-bold text-center mb-1" x-text="$store.locale.t('bond.theirShape')">Their Shape</h4>
+              <template x-for="item in bondDeltaB" :key="item.idx">
+                <div class="flex items-center gap-1 text-xs">
+                  <span class="w-10 text-right" :style="'color:' + elementColor(item.idx)" x-text="elementName(item.idx)"></span>
+                  <span class="w-12 text-right" :class="item.delta >= 0 ? 'text-success' : 'text-error'" x-text="item.delta >= 0 ? '+' + item.delta.toFixed(2) : item.delta.toFixed(2)"></span>
+                </div>
+              </template>
+            </div>
+          </div>
+          <button class="btn btn-ghost btn-sm w-full mt-4" @click="showBond = false" x-text="$store.locale.t('cancel')">Close</button>
+        </div>
+      </div>
+    </template>
+
+  </template>
+</div>
+
+
+<script src="/js/profile.js"></script>
+
+
+</main>
+
+<!-- _footer.html -->
+<footer class="footer px-6 lg:px-14 py-14 bg-base-200 text-base-content/60 mt-16 border-t border-base-300">
+  <aside>
+    <p>
+      <!-- logo.njk — reusable brand mark: seal + wordmark -->
+<span class="inline-flex items-center gap-1.5">
+  <span class="brand-seal" aria-label="25 Types">
+    <span>真</span><span>五</span>
+    <span>象</span><span>行</span>
+  </span>
+  <span class="flex flex-col leading-none text-xs font-brand uppercase">
+    <span class="wuxing-fire text-base">25</span>
+    <span class="wuxing-wood">Types</span>
+  </span>
+</span>
+
+    </p>
+    <p class="text-sm" x-text="$store.locale.t('footer.tagline')">Find your true type. A five-element framework.</p>
+    <p class="text-sm mt-2">© 2026</p>
+  </aside>
+  <nav>
+    <h6 class="footer-title text-base-content/60" x-text="$store.locale.t('footer.explore')">Explore</h6>
+    <a href="/en/types" class="link link-hover text-sm" x-text="$store.locale.t('nav.types')">25 Types</a>
+    <a href="/en/assess" class="link link-hover text-sm" x-text="$store.locale.t('nav.assess')">Assess</a>
+  </nav>
+  <nav>
+    <h6 class="footer-title text-base-content/60" x-text="$store.locale.t('footer.about')">About</h6>
+    <a href="/en/about" class="link link-hover text-sm" x-text="$store.locale.t('nav.about')">About</a>
+    <a href="/en/faq" class="link link-hover text-sm" x-text="$store.locale.t('nav.faq')">FAQ</a>
+  </nav>
+  <nav>
+    <h6 class="footer-title text-base-content/60" x-text="$store.locale.t('footer.legal')">Legal</h6>
+    <a href="/en/privacy" class="link link-hover text-sm" x-text="$store.locale.t('footer.privacy')">Privacy</a>
+    <a href="/en/terms" class="link link-hover text-sm" x-text="$store.locale.t('footer.terms')">Terms</a>
+    <a href="/en/cookies" class="link link-hover text-sm" x-text="$store.locale.t('footer.cookies')">Cookies</a>
+  </nav>
+</footer>
+
+<script>
+window.CURRENT_LOCALE = "en";
+window.ELEMENT_CODES = ["W","F","E","M","R"];
+window.ELEMENT_NAMES = {
+
+  "W": "Wood",
+
+  "F": "Fire",
+
+  "E": "Earth",
+
+  "M": "Metal",
+
+  "R": "Water"
+
+};
+window.TRANSLATIONS = {"nav.home":"Home","nav.types":"25 Types","nav.assess":"Assess","nav.login":"Login","nav.register":"Start Free","nav.about":"About","nav.faq":"FAQ","home.hero":"Enter your name.<br>Discover your type.","home.subtitle":"A personality framework grounded in the five elements — not better, not worse, just the shape of who you are.","home.hint":"The name is just a hook — nothing is stored or looked up.","home.placeholder":"Your name","home.start":"Start →","home.examples.title":"See what you'll discover","home.cta":"Start free assessment, discover your precise type →","home.guarantee":"Six rounds. A few minutes. No account required.","home.riverTitle":"Track your changes over time","home.flowTitle":"How seasons shape your elements","home.chordTitle":"How Two Types Interact","home.chordDesc":"Two profiles, their five-element strengths, and the generating and restraining effects when they meet.","home.stats.assessments":"Self assessments","home.welcomeBack":"Welcome back,","home.viewProfile":"View Your Profile →","home.reassess":"Re-assess","loading":"Loading...","error.generic":"Something went wrong.","retry":"Retry","cancel":"Cancel","delete":"Delete","copy":"Copy","copied":"Copied!","footer.tagline":"Find your true type. A five-element framework.","footer.explore":"Explore","footer.about":"About","footer.legal":"Legal","footer.privacy":"Privacy","footer.terms":"Terms","footer.cookies":"Cookies","types.title":"25 Personality Types","types.subtitle":"Pure elements and their composites. Each is a direction, not a box.","types.graph":"Type Relationships","types.filter.all":"All","types.cta.text":"Not sure where to start? Take the assessment to find your type.","types.cta.btn":"Take Assessment","types.exploreSandbox":"Explore Sandbox","types.detail.portrait":"Modern Portrait","types.detail.classical":"Classical Roots","types.detail.figures":"Representative Figures","types.detail.growth":"Growth","types.detail.cta.text":"Want to find your own type? Take the assessment in a few minutes.","assess.progress":"Round","assess.progressOf":"of 6 rounds","assess.loading":"Loading questions...","assess.pickTwo":"Pick the two most like you:","assess.submit":"Submit Round","assess.answered":"answered","assess.roundResult":"result","assess.viewResults":"View Full Results","assess.complete":"Assessment Complete!","assess.completeMsg":"You've completed all 6 rounds.","assess.roundComplete":"Round {n} complete","assess.roundPreview":"Your element profile so far:","assess.continueBtn":"Continue","assess.missingPrefix":"Missing","assess.missingSuffix":"questions","assess.goFill":"Fill them","assess.claimPrompt":"Log in or register to save and claim your result.","assess.claimRegister":"Register to Save","assess.claimLogin":"Log in","assess.startOver":"Start Over","login.title":"Welcome back","login.username":"Username","login.password":"Password","login.forgot":"Forgot password?","login.submit":"Login","login.noAccount":"Don't have an account?","login.createAccount":"Create one","register.title":"Create your account","register.subtitle":"Save your assessment results and discover more.","register.username":"Username","register.password":"Password","register.passwordHint":"At least 8 characters","register.submit":"Create Account","register.hasAccount":"Already have an account?","register.login":"Log in","forgot.title":"Reset Password","forgot.subtitle":"Enter your verified email and we'll send a reset link.","forgot.email":"Email","forgot.submit":"Send Reset Link","forgot.sentMsg":"If that email is registered, you'll receive a reset link shortly.","reset.title":"Set New Password","reset.password":"New password (min 8 chars)","reset.submit":"Reset Password","reset.success":"Password changed!","reset.login":"Login","verify.title":"Email Verification","verify.success":"Email verified successfully.","verify.goProfile":"Go to Profile","verify.invalid":"Invalid or expired token.","me.logout":"Logout","result.elementProfile":"Element Profile","result.exploreTypes":"Explore 25 Types","result.takeAgain":"Take Again","result.noData":"No result data","result.noDataMsg":"Take the assessment to see your results.","result.startAssess":"Start Assessment","result.sharePrefix":"I'm","result.shareSuffix":"on 25 Types","result.copyLink":"Copy Share Link","reviewLanding.unavailable":"Link not available","reviewLanding.goHome":"Go Home","reviewLanding.thanks":"Thank You!","reviewLanding.submitted":"Your review has been submitted.","reviewLanding.discover":"Discover Your Own Type","reviewLanding.prompt":"Pick the two most like them for each question.","reviewLanding.yourName":"Your Name","reviewLanding.submit":"Submit Review","bond.title":"Bond Analysis","bond.yourShape":"Your Shape","bond.theirShape":"Their Shape","bond.chordTitle":"Element Interaction Web","peers.self":"Self","peers.peerReviews":"Peer reviews","error.sessionExpired":"Session expired. Please log in again.","error.occurred":"An error occurred","error.unauthorized":"Unauthorized","error.loginFailed":"Login failed","error.registerFailed":"Registration failed","error.failed":"Failed","error.invalidLink":"Invalid link.","error.linkExpired":"This link has expired.","error.linkInvalid":"This link is no longer valid.","error.linkNotFound":"Link not found.","toast.settingsUpdated":"Settings updated","toast.dataExported":"Data exported","toast.linkCopied":"Link copied!","toast.copyFailed":"Failed to copy","toast.accountDeactivated":"Account deactivated. Log in within 7 days to reactivate.","confirm.deleteAccount":"Are you sure? Your account will be deactivated for 7 days before permanent deletion. During this time, you can log in to reactivate.","confirm.deleteLink":"Delete this link?","profile.notFound":"Profile not found","profile.noAssessment":"This user hasn't completed an assessment yet.","profile.startAssess":"Start Assessment","profile.currentFlow":"Current Flow","profile.peerView":"How Others See You","profile.myBonds":"My Bonds","profile.bondWith":"With","profile.bondDate":"Date","profile.viewProfile":"View Profile","profile.actions":"Actions","profile.makePrivate":"Make Private","profile.makePublic":"Make Public","profile.madePrivate":"Profile is now private","profile.madePublic":"Profile is now public","profile.createReview":"Create Review Link","profile.createMatch":"Create Match Link","profile.reassess":"Re-assess","profile.reviewLink":"Review","profile.matchLink":"Match","profile.linkCreated":"Link created!","profile.compareWithMe":"Compare with Me","profile.discoverYourType":"Discover Your Type","profile.shareProfile":"Share Profile","profile.editProfile":"Edit Profile","profile.exportData":"Export Data","profile.deleteAccount":"Delete Account","profile.history":"Assessment History","profile.describeThem":"Describe Them","profile.profileShared":"Profile link copied!","result.elementRiver":"Element River","result.claimProfile":"Claim Your Profile","reviewLanding.register":"Register to Save","match.claimProfile":"Create an account to save your result.","match.goProfile":"Go to My Profile"};
+window.PAGE_CONTENT = {"about":"<h1>About 25 Types</h1>\n<p>Not better, not worse — just the shape of who you are.</p>\n<h2>What Is 25 Types</h2>\n<p>25 Types is built on the Five Elements — Wood, Fire, Earth, Metal, Water. But unlike most personality systems, it doesn't put you in a box. It maps you into a continuous space where your personality is a shape, not a label. Every position in that space means something.</p>\n<p>The framework maps you to one of 25 archetypes: 5 pure types dominated by a single element, and 20 composite types where two elements shape each other. Your type is a direction, not a boundary. It describes tendencies, not limitations.</p>\n<h2>The Five Elements</h2>\n<p>The Five Elements have been around for over 2,000 years. They've lasted because they describe something real — how energy moves, grows, and balances itself. Wood (growth, initiative), Fire (warmth, expression), Earth (stability, connection), Metal (structure, refinement), Water (depth, reserve). These are not literal substances. They are dynamic tendencies — patterns in how people engage with the world.</p>\n<p>Two fundamental cycles connect them:</p>\n<ul>\n<li><strong>Sheng</strong> (nourishing cycle): Wood fuels Fire, Fire enriches Earth, Earth forms Metal, Metal carries Water, Water feeds Wood. Each element brings forth the next.</li>\n<li><strong>Ke</strong> (restraining cycle): Wood penetrates Earth, Earth absorbs Water, Water quenches Fire, Fire melts Metal, Metal cuts Wood. Each element keeps another in check.</li>\n</ul>\n<p>These cycles are not &quot;good&quot; or &quot;bad.&quot; They are forces — directional, contextual, natural. Throughout the site, we use words like <em>nourish</em>, <em>restrain</em>, and <em>facilitate</em> to describe these dynamics. They are chosen deliberately to convey direction without value.</p>\n<p>When we compute the Bond between two people, we quantify these forces. When someone's Wood feeds your Fire, that is not a compatibility score — it is a description of what happens when your shapes meet.</p>\n<h2>Your Shape, not Your Score</h2>\n<p>Most personality assessments give you a label and stop. 25 Types gives you a <strong>deviation vector</strong> — a five-dimensional quantity called d. Each of its five components represents how much you deviate from the average on that element, positive or negative. The components sum to zero, which means your shape is about internal balance, not absolute level.</p>\n<p>Think of it as a silhouette. A person who leads with Wood and has quieter Water has a distinct outline. Another person, with elevated Fire and less prominent Metal, has an entirely different one. Both are complete. Neither is &quot;higher&quot; than the other.</p>\n<p>There is also a <strong>proportion vector</strong> p, used for display. All five components are positive and sum to 1. It shows the relative prominence of each element in you, like a pie chart of your tendencies. But the real work happens with d — the shape that describes your internal dynamics.</p>\n<h2>The 25 Archetypes</h2>\n<p>The 25 archetypes emerge naturally from the geometry of the five-element space:</p>\n<ul>\n<li><strong>5 pure types</strong>: one element clearly dominates. The Pioneer (Wood), the Luminary (Fire), the Steward (Earth), the Refiner (Metal), the Reservoir (Water).</li>\n<li><strong>10 Sheng-pair composites</strong>: two elements that nourish each other, in either order. Wood-Fire is different from Fire-Wood — the leading element matters.</li>\n<li><strong>10 Ke-pair composites</strong>: two elements that restrain each other. Wood-Earth is different from Earth-Wood. The dynamics are distinct.</li>\n</ul>\n<p>The boundary between types sits at a 42-degree angle on the unit sphere — a mathematical choice that distributes the archetypes approximately evenly. Most people are composites. That is expected, not exceptional.</p>\n<h2>Why It Is Different</h2>\n<p>Five things set 25 Types apart from other personality frameworks:</p>\n<p><strong>Zero parameters.</strong> The entire model — the 25 prototype positions, the Bond computation, the Flow projection — contains no tunable coefficients. No weights to adjust. No thresholds to tweak. Every number you see is a direct consequence of your measured deviation vector d and the known S and C matrices that encode the nourishing and restraining cycles.</p>\n<p><strong>Linear algebra, not statistics.</strong> The framework rests on permutation matrices and vector geometry, not on statistical curve-fitting to population samples. The S and C matrices are fixed — they are the same today as they will be in ten years. Your result depends on your choices, not on a training dataset.</p>\n<p><strong>Native interaction arithmetic.</strong> Because every profile is a vector in the same five-element space, you can compute the dynamic between any two people directly. Bond is not a bolted-on compatibility meter — it is the natural operation of the S and C matrices on two deviation vectors. This is uncommon in personality models.</p>\n<p><strong>Flow — a seasonal dimension.</strong> Your effective shape shifts across the twelve solar months. The solar terms (Jieqi) are an astronomical calendar based on the sun's position, not a lunar or astrological system. Flow shows when your elements strengthen and when they recede — a personalized energy cycle grounded in the same mathematics.</p>\n<p><strong>Evaluation without judgment.</strong> The framework describes; it does not rank. No type is &quot;better.&quot; No Bond outcome is &quot;recommended&quot; or &quot;avoid.&quot; The words we use — nourish, restrain, facilitate — are chosen deliberately to convey direction without value. Your shape is not a score. It is the shape of who you are.</p>\n<h2>Who It Is For</h2>\n<p><strong>For yourself.</strong> If you want to understand your own tendencies — not to fix them, but to see them clearly.</p>\n<p><strong>For your relationships.</strong> If you want to understand the dynamics between you and someone else. Bond shows the forces at play, not a verdict.</p>\n<p><strong>For teams.</strong> If you want to see how different people's strengths interact. Who brings structure when things are chaotic? Who brings warmth when things are rigid?</p>\n<p><strong>For the curious.</strong> If the idea that ancient wisdom can be expressed in modern mathematics interests you — 25 Types is a working example of that.</p>\n<p>It is not for people who want &quot;the answer.&quot; It is for people who want a map.</p>\n<p>See for yourself. The assessment takes a few minutes and requires no account.</p>\n<p><em>A map is not the territory. But a good map helps you navigate it.</em></p>\n","privacy":"<h1>Privacy Policy</h1>\n<p>This policy describes how 25 Types collects, uses, stores, and protects your personal data. We take a minimal-data approach: we collect only what is necessary to provide the service, and we do not sell or monetize your data.</p>\n<h2>Data We Collect</h2>\n<p><strong>Account data</strong>: username (required), email (optional, for password recovery and receipts), and a password hash (your password is never stored in plaintext).</p>\n<p><strong>Assessment data</strong>: your responses to 30 forced-choice questions across 6 rounds, the computed deviation vector d, and your identity label (one of 25 types).</p>\n<p><strong>Peer review data</strong>: when someone reviews you, their responses are aggregated into a peer profile. Individual reviewer answers are never exposed to you or to other reviewers.</p>\n<p><strong>Session data</strong>: a JWT (JSON Web Token) stored in a browser cookie for authenticated sessions. No other client-side data is stored.</p>\n<p><strong>Payment data</strong>: subscription status and passport expiry timestamp. We do not store credit card numbers or payment instrument details — these are handled entirely by our payment provider.</p>\n<h2>How We Use Your Data</h2>\n<ul>\n<li><strong>Personality computation</strong>: mapping your responses to a deviation vector and identity label.</li>\n<li><strong>Bond analysis</strong>: computing interaction dynamics between two consenting profiles.</li>\n<li><strong>Flow projection</strong>: projecting your effective shape across the twelve solar months.</li>\n<li><strong>Peer aggregation</strong>: pooling peer responses into an aggregate profile for comparison with your self-assessment.</li>\n<li><strong>Account management</strong>: authentication, password recovery, and email verification.</li>\n<li><strong>Aggregate statistics</strong>: anonymized data may be used for model validation and improvement.</li>\n</ul>\n<p>We do not use your data for automated profiling with legal effect, for sale to third parties, or for advertising.</p>\n<h2>Data Storage</h2>\n<p>Your data is stored in a SQLite database running on our own server. We do not use shared cloud database services for personal data. The database operates in WAL (Write-Ahead Logging) mode for reliability.</p>\n<h2>Cookies and Sessions</h2>\n<p>We set a single essential cookie: a JWT for authentication. This cookie is required for logged-in functionality (saving results, managing peer reviews, accessing Bond and Flow). No tracking cookies, no analytics cookies, no advertising cookies. Full details in our Cookie Policy.</p>\n<h2>Third-Party Services</h2>\n<p><strong>Email delivery</strong>: transactional emails (verification, password reset, welcome) are sent through Resend. Your email address and the template parameters are transmitted for sending only; no behavioral data is shared.</p>\n<p><strong>Payment processing</strong>: payments are handled by a third-party provider. We receive only your subscription status and expiry timestamp — never your payment instrument details. The provider may set its own session cookies on its domain during checkout.</p>\n<p>We do not embed third-party trackers, social media widgets, or external analytics scripts.</p>\n<h2>Your Rights</h2>\n<p>We extend the following rights to all users regardless of location:</p>\n<ul>\n<li><strong>Access</strong>: export your assessment data as structured JSON at any time, free of charge.</li>\n<li><strong>Rectification</strong>: update your username and email in your account settings.</li>\n<li><strong>Deletion</strong>: deactivate your account. A 7-day grace period allows recovery; after that, your data undergoes full anonymization (username replaced, email and password hash cleared, assessments detached).</li>\n<li><strong>Portability</strong>: your assessment records are available in structured JSON.</li>\n<li><strong>Objection</strong>: you may object to processing by deleting your account.</li>\n</ul>\n<p>If your jurisdiction provides additional rights (for example, under GDPR in the EU/EEA, UK GDPR, PIPL in China, CCPA/CPRA in California, PIPEDA in Canada, PDPA in Singapore, or the Australian Privacy Act), those rights apply to you as well. For requests specific to your jurisdiction, contact us.</p>\n<h2>Data Retention</h2>\n<ul>\n<li><strong>Active accounts</strong>: data is retained while your account is active.</li>\n<li><strong>Deactivated accounts</strong>: 7-day grace period with full data intact, followed by anonymization. Deactivated accounts older than 7 days are anonymized: username becomes a generic label, email and password hash are cleared, and assessments are detached from your identity.</li>\n<li><strong>Anonymous peer assessments</strong>: assessments with no associated user are deleted after 90 days.</li>\n<li><strong>Orphaned assessments</strong>: anonymized assessments from deleted accounts are cleaned up after 2 years.</li>\n<li><strong>Payment records</strong>: retained as required for financial compliance.</li>\n</ul>\n<h2>Security Measures</h2>\n<ul>\n<li><strong>Password hashing</strong>: argon2id with memory 47104 KiB, 1 iteration, 4 parallelism — using Go's <code>golang.org/x/crypto</code> implementation.</li>\n<li><strong>Authentication</strong>: JWT (HMAC-SHA256, 30-day validity) with server-side <code>token_version</code> — changing your password or logging out instantly invalidates all sessions across all devices.</li>\n<li><strong>Token generation</strong>: <code>crypto/rand</code> (Go standard library CSPRNG) for all random tokens.</li>\n<li><strong>Transport</strong>: HTTPS enforced via Caddy reverse proxy.</li>\n<li><strong>Rate limiting</strong>: authentication endpoints are rate-limited at the proxy layer.</li>\n<li><strong>Database</strong>: SQLite in single-writer WAL mode, preventing write contention and race conditions.</li>\n<li><strong>Code</strong>: no plaintext secrets in the codebase. All credentials are supplied via environment variables.</li>\n</ul>\n<h2>Age Restrictions</h2>\n<p>25 Types is not directed at children under 13, or under the relevant digital age of consent in your jurisdiction (e.g., 16 in parts of the EU). We do not knowingly collect data from children. If you believe a child has provided us with personal data, contact us for immediate removal.</p>\n<h2>International Data Transfers</h2>\n<p>Our server may be located in a jurisdiction different from yours. By using the service, you acknowledge that your data may be transferred to and processed in the server's location. We apply the same privacy protections regardless of where data is processed, and we rely on applicable legal mechanisms (such as standard contractual clauses where required) for cross-border transfers.</p>\n<h2>Changes to This Policy</h2>\n<p>Material changes will be announced via a notice on the website. Continued use after changes constitutes acceptance. The date of the last update is shown below.</p>\n<h2>Contact</h2>\n<p>For privacy-related inquiries, data access requests, or deletion requests, please contact us. We aim to respond within 30 days, as required by GDPR and similar regulations.</p>\n<p><em>Last updated: 2026-05-09</em></p>\n","terms":"<h1>Terms of Service</h1>\n<p>These terms govern your use of the 25 Types website and services. By accessing or using 25 Types, you agree to these terms. If you do not agree, please do not use the service.</p>\n<h2>Service Description</h2>\n<p>25 Types provides a personality assessment and analysis platform grounded in the Five Elements (Wu Xing) framework. We offer tools for self-assessment, peer reviews, relationship dynamics (Bond), and seasonal projections (Flow).</p>\n<p><strong>Important notice</strong>: 25 Types provides descriptive personality insights. It is not a psychological assessment tool, a medical diagnostic instrument, or professional advice of any kind. The results reflect tendencies based on your responses at a given moment — they are a snapshot, not a destiny. Do not use 25 Types as a basis for clinical, legal, employment, or relationship decisions.</p>\n<h2>User Accounts</h2>\n<p>You are responsible for maintaining the confidentiality of your login credentials. You must provide accurate information during registration. One account per person — you may not use another person's account or share your credentials. You must be at least 13 years old, or the relevant digital age of consent in your jurisdiction, whichever is higher.</p>\n<h2>User Obligations</h2>\n<p>You agree not to:</p>\n<ul>\n<li>Reverse engineer, decompile, or attempt to extract the source code of any part of the service.</li>\n<li>Scrape, crawl, or systematically extract data from the service without permission.</li>\n<li>Attempt to access other users' private data or accounts.</li>\n<li>Submit unlawful, harassing, defamatory, or abusive content through peer reviews, public profiles, or any interactive feature.</li>\n<li>Attempt to circumvent payment or subscription controls.</li>\n<li>Use the service to distribute spam, malware, or unauthorized commercial content.</li>\n</ul>\n<p>Violation of these obligations may result in account suspension or termination.</p>\n<h2>Intellectual Property</h2>\n<p>The 25 Types framework — including the deviation vector model (d), proportion vector (p), the 25 archetype prototypes at 42-degree boundaries, the Bond computation method, the Flow calendar algorithm, and the questionnaire design — is the original work of 25 Types. The underlying mathematical foundations (Wu Xing generating and restraining cycles, linear algebra operations, vector geometry) are in the public domain.</p>\n<p>Content you generate through the service (assessment results, peer reviews, Bond analyses, Flow projections) belongs to you. By setting your profile to public, you grant us a limited, non-exclusive license to display it on the platform. You may revoke this at any time by setting your profile back to private.</p>\n<h2>Payment and Subscriptions</h2>\n<p>Paid features (&quot;Passport&quot;) are available via subscription (monthly at $4.50/month or annual at $29/year) or activation code. Subscription fees are charged in advance and are <strong>non-refundable for the current period</strong>. You may cancel future renewals at any time — cancellation prevents the next charge but does not refund the current period. See our Refund Policy for full details, including exceptions for technical unavailability and EU withdrawal rights.</p>\n<p>Activation codes are subject to their specific terms (duration and usage limits as specified when created). A code may only be redeemed once per account.</p>\n<p>We reserve the right to change pricing with advance notice. Existing subscriptions are honored at their current rate until the next renewal date.</p>\n<h2>Termination</h2>\n<p>You may stop using the service and delete your account at any time. Account deletion includes a 7-day grace period during which you may recover your account. After this period, your data is anonymized as described in our Privacy Policy.</p>\n<p>We may suspend or terminate accounts for violation of these terms. Upon termination, your data is handled in accordance with our Privacy Policy.</p>\n<h2>Limitation of Liability</h2>\n<p>25 Types is provided &quot;as is&quot; and &quot;as available&quot; without warranties of any kind, express or implied. We do not warrant that the service will be uninterrupted, error-free, or available at all times.</p>\n<p>To the fullest extent permitted by law, we are not liable for any indirect, incidental, consequential, or special damages arising from your use of the service — including but not limited to emotional distress, relationship difficulties, or decisions made based on assessment results, Bond analyses, or Flow projections.</p>\n<p>Our total liability to you for any claim is limited to the amount you paid us in the 12 months preceding the claim, or 50 USD if you paid nothing.</p>\n<p>Nothing in these terms excludes or limits liability that cannot be excluded or limited by applicable mandatory law. Some jurisdictions do not allow certain limitations of liability — in those jurisdictions, our liability is limited to the maximum extent permitted.</p>\n<h2>Dispute Resolution</h2>\n<p>We prefer to resolve disputes informally. If you have a concern, please contact us first — most issues can be resolved quickly this way.</p>\n<p>If informal resolution fails, disputes shall be resolved through binding arbitration or through a small claims court in your jurisdiction, at your election. You retain the right to bring claims in your local courts where mandatory consumer protection laws so provide (including in the EU/EEA, United Kingdom, and Australia).</p>\n<h2>Governing Law</h2>\n<p>These terms are governed by the laws applicable to our server's jurisdiction, without regard to conflict-of-law principles. However, if you are a consumer in a jurisdiction with mandatory consumer protection laws, those laws continue to apply and are not overridden by this clause.</p>\n<h2>Severability</h2>\n<p>If any provision of these terms is found to be unenforceable in your jurisdiction, that provision shall be limited or severed to the minimum extent necessary, and the remaining provisions shall remain in full effect.</p>\n<h2>Changes to These Terms</h2>\n<p>We may update these terms. Material changes will be announced via a notice on the website or, for registered users, via email. Continued use after changes take effect constitutes acceptance. The date of the last update is shown below.</p>\n<h2>Contact</h2>\n<p>For questions about these terms, please contact us.</p>\n<p><em>Last updated: 2026-05-09</em></p>\n","faq":"<h1>Frequently Asked Questions</h1>\n<h2>How does the assessment work?</h2>\n<p>The assessment has 6 rounds. Each round shows three short statements about behavior, preference, or attitude. You pick the two that are most like you and rank them first and second. The unchosen statement is treated as least applicable.</p>\n<p>There are no right or wrong answers. The questions are designed so that every possible response pattern maps to a valid position in the Five Elements space. It takes a few minutes.</p>\n<p>Your result is computed instantly after the final round. If you are logged in, your assessment is saved. If not, you see your result immediately and can register to keep it.</p>\n<h2>How accurate is my result?</h2>\n<p>Your result reflects the choices you made at this moment. It captures tendencies — not permanent traits. Think of it as a snapshot, not a destiny.</p>\n<p>If you retake the assessment weeks or months later, your result may shift slightly. That is normal and informative — it shows how your self-perception evolves. If your result shifts dramatically, it likely reflects a genuine change in how you see yourself or a different mindset when answering.</p>\n<p>This is not a measurement of a fixed quantity. It is a reflection of your own expressed preferences. The tool reflects what you tell it — if you answer honestly, the result faithfully captures your self-perception at that moment.</p>\n<h2>Do I need to provide my birth date?</h2>\n<p>No. The assessment is based entirely on your own choices — the ranked-choice questions. Birth date, time, or location are not required and are not collected.</p>\n<p>The Flow calendar uses solar terms — 24 astronomical markers based on the sun's position — as a seasonal overlay for your profile. This is an astronomical calendar, not an astrological one, and it does not require any birth data. It answers &quot;how does your shape interact with the time of year,&quot; not &quot;what were you born under.&quot;</p>\n<h2>Can other people see my result?</h2>\n<p>Not by default. Your profile is private. Only you see your full assessment result.</p>\n<p>You can optionally set your profile to public, which makes your identity label and element profile visible to other logged-in users. You can switch back to private at any time.</p>\n<p>Peer reviewers see only the questions they are answering and their own summary — never your self-assessment result.</p>\n<h2>What is the difference between pure types and composite types?</h2>\n<p>A pure type means one element is clearly dominant over the others — for example, Wood (Pioneer) or Water (Reservoir). There are 5 pure types.</p>\n<p>A composite type means two elements are significantly elevated, with one leading. The boundary is defined by a 42-degree angle on the unit sphere — a mathematical choice that distributes the types approximately evenly across the five-element space. There are 20 composite types: 10 Sheng-pair (elements that nourish each other) and 10 Ke-pair (elements that restrain each other).</p>\n<p>Most people are composites. That is expected. Being a pure type is not &quot;purer&quot; or &quot;better&quot; — it simply means your responses showed one element clearly ahead of the rest.</p>\n<h2>What does Bond tell me?</h2>\n<p>Bond computes the directional forces between two personality profiles using the Sheng (nourishing) and Ke (restraining) matrices. The result is a two-way force map:</p>\n<ul>\n<li>What your dominant elements do to theirs (facilitation or restraint)</li>\n<li>What their dominant elements do to yours</li>\n<li>Whether the exchange is roughly symmetrical or strongly directional</li>\n</ul>\n<p>Bond does not give you a percentage or a verdict. It describes the dynamic — who brings what to the interaction. The language is deliberately neutral: &quot;facilitates,&quot; &quot;restrains,&quot; &quot;resonates with.&quot; No &quot;good match&quot; or &quot;bad match.&quot;</p>\n<p>One full Bond is free for your first match. Passport subscribers get unlimited Bonds.</p>\n<h2>How do peer reviews work?</h2>\n<p>You create a review link from your assessment result page (or account settings) and share it with friends. Each friend follows the link and answers the same type of five-element questions — but about you, not themselves.</p>\n<p>When at least 3 people have submitted reviews, you can view a peer profile: an aggregated picture of how others see you, displayed next to your self-assessment for comparison.</p>\n<p>Individual reviewer answers are never visible to you or to other reviewers. The aggregation threshold of 3 is a privacy minimum — with fewer reviewers, individual answers might be inferable.</p>\n<p>Review links expire after 30 days. You can create new ones at any time.</p>\n<h2>How do I cancel my subscription?</h2>\n<p>You can cancel through your account settings or by contacting us. Cancellation stops future renewal charges. Your Passport features remain active until the end of the current billing period.</p>\n<p>There is no long-term commitment. You can subscribe one month, cancel, and come back whenever you want — your data stays intact.</p>\n<p>See our Refund Policy for details on whether the current period is refundable (generally, it is not — this is standard for digital services delivered immediately).</p>\n<h2>What happens if I delete my account?</h2>\n<p>Account deletion has two stages:</p>\n<p><strong>Immediate</strong> — all your active sessions are invalidated. You are logged out everywhere. A 7-day grace period begins.</p>\n<p><strong>Within 7 days</strong> — if you log back in, your account is fully restored. Everything is as it was.</p>\n<p><strong>After 7 days</strong> — your account is anonymized. Your username is replaced with a generic label, your email and password hash are cleared, and your assessments are detached from your identity. Peer reviews, match requests, and subscriptions are cleaned up per our data retention policy.</p>\n<p>Some anonymized assessment data may be retained for aggregate model statistics. You will not be identifiable from this data.</p>\n<h2>Is my data secure?</h2>\n<p>We take a security-minimal approach: the less data we hold, the less there is to protect.</p>\n<ul>\n<li><strong>Passwords</strong>: hashed with argon2id (47104 KiB memory, 1 iteration, 4 parallelism). Even if our database were compromised, your password would not be exposed.</li>\n<li><strong>Authentication</strong>: JWT with server-side <code>token_version</code>. Changing your password or logging out instantly invalidates all sessions on all devices.</li>\n<li><strong>Encryption in transit</strong>: all traffic is HTTPS via Caddy.</li>\n<li><strong>Rate limiting</strong>: authentication endpoints are rate-limited to prevent brute-force attempts.</li>\n<li><strong>No third-party trackers</strong>: no analytics scripts, no social media integrations that could leak data.</li>\n<li><strong>Minimal data</strong>: we collect only what is necessary to provide the service.</li>\n</ul>\n<p>Full details in our Privacy Policy and Cookie Policy.</p>\n","cookies":"<h1>Cookie Policy</h1>\n<p>This policy explains how 25 Types uses cookies and similar technologies. Unlike most websites, we keep it short — because we use almost none.</p>\n<h2>What Are Cookies</h2>\n<p>A cookie is a small text file that a website stores in your browser. Cookies serve many purposes: keeping you logged in, remembering your preferences, or — on many sites — tracking your activity across the web.</p>\n<h2>Cookies We Use</h2>\n<p>We set a single cookie: a <strong>JWT (JSON Web Token)</strong> for authentication. This is an <code>httpOnly</code> cookie that identifies your logged-in session. It is set when you log in and cleared when you log out. No other cookies are set by our domain.</p>\n<h2>What We Do Not Use</h2>\n<p>We do not use any of the following:</p>\n<ul>\n<li>Advertising cookies</li>\n<li>Third-party analytics cookies (no Google Analytics, no tracking pixels)</li>\n<li>Social media cookies or widgets</li>\n<li>Browser fingerprinting</li>\n<li>Cross-site tracking of any kind</li>\n<li>Session replay or heatmap scripts</li>\n</ul>\n<p>This means you will never see a &quot;25 Types cookie consent banner&quot; demanding you configure dozens of tracking categories — because there is nothing to consent to for tracking. The one cookie we set is strictly necessary for the service to function.</p>\n<h2>Third-Party Cookies</h2>\n<p>Our payment provider may set session cookies on its own domain during checkout. These are subject to the payment provider's cookie policy, not ours. Our email delivery provider does not set cookies on our domain. No other third-party cookies are present.</p>\n<h2>Cookie Duration</h2>\n<p>Our JWT cookie expires after 30 days (matching the token's validity period). If you log out, the cookie is removed client-side and the token is invalidated server-side. If your session is inactive beyond the token's lifetime, you will need to log in again.</p>\n<h2>Managing Cookies</h2>\n<p>You can disable cookies in your browser settings. However, disabling our authentication cookie means you cannot log in or use account-related features. The free assessment, type exploration, and all public content remain available without cookies.</p>\n<p>Most browsers allow you to clear cookies for specific sites without affecting others. Instructions vary by browser — check your browser's help section for details.</p>\n<h2>Legal Basis</h2>\n<p>Under the GDPR, ePrivacy Directive, UK GDPR, and similar regulations worldwide, our authentication cookie qualifies as a &quot;strictly necessary&quot; cookie. It is exempt from consent requirements because the logged-in service cannot function without it. If you choose not to log in, no cookie is set at all.</p>\n<h2>Changes to This Policy</h2>\n<p>Updates will be posted on this page. The date of the last update is shown below.</p>\n<p><em>Last updated: 2026-05-09</em></p>\n","refund":"<h1>Refund Policy</h1>\n<p>This policy explains our approach to refunds and cancellations for 25 Types Passport subscriptions and activation codes.</p>\n<h2>Core Rule: No Refunds for the Current Period</h2>\n<p>Subscriptions are charged in advance. <strong>The current period's fee is non-refundable.</strong> This is standard for digital SaaS products, where the service is delivered immediately upon payment and you gain instant access to all paid features.</p>\n<p>We disclose this clearly before purchase, and by completing payment you acknowledge and accept that the current period is non-refundable.</p>\n<h2>Cancelling Future Renewals</h2>\n<p>You may cancel future renewals at any time — through your account settings or by contacting us. Cancellation stops the next scheduled charge. Your Passport features remain active until the end of the current period. Nothing is lost, and your data stays intact.</p>\n<h2>European Union Users: Right of Withdrawal</h2>\n<p>Under the EU Consumer Rights Directive (and similar laws in the UK, Switzerland, and other jurisdictions), you have a statutory 14-day right of withdrawal from distance contracts.</p>\n<p>However, this right <strong>does not apply</strong> when you explicitly agree that the service will begin immediately and acknowledge that you will lose your right of withdrawal upon full performance. Digital content delivered instantly with your consent is exempt from the withdrawal right.</p>\n<p>During the purchase flow, you will be asked to:</p>\n<ol>\n<li>Confirm that you want the service to begin immediately.</li>\n<li>Acknowledge that by doing so, you waive the 14-day withdrawal right for this transaction.</li>\n</ol>\n<p>This is a legal requirement for us to deliver the service right away. Without this confirmation, we would need to delay access for 14 days — which no one wants.</p>\n<p>If you have not yet started using paid features (for example, you purchased but encountered a technical issue that prevented login), the withdrawal right remains available. Contact us within 14 days and we will issue a full refund.</p>\n<h2>Technical Unavailability Exception</h2>\n<p>Regardless of any other provision in this policy: if the service is unavailable for more than 48 consecutive hours due to a fault on our side, and this prevents you from using core paid features (Bond analysis, Flow forecast, or peer deep analysis), you are entitled to a full refund for the current period upon request. This reflects the fact that we have not delivered the service you paid for, and no policy language overrides that obligation.</p>\n<h2>Activation Codes</h2>\n<p>Activation codes obtained through partners, events, or promotions are non-refundable — they are often distributed free of charge. Commercially purchased activation codes follow the same rules as subscriptions: non-refundable for the redeemed period, with the same technical unavailability exception.</p>\n<h2>After Cancellation</h2>\n<p>When your Passport expires (whether through cancellation or end of period):</p>\n<ul>\n<li>Bond history, Flow records, and assessment history remain viewable.</li>\n<li>New Bond calculations revert to preview mode (one-sentence summary).</li>\n<li>Full-year Flow forecast locks to the current month only.</li>\n<li>Peer deep analysis becomes unavailable.</li>\n<li>Re-subscribing at any time restores full access — no data is lost.</li>\n</ul>\n<h2>Chargebacks</h2>\n<p>If you believe a charge was made in error or without authorization, please contact us before initiating a chargeback with your bank. We can typically resolve the issue faster than the formal chargeback process. Chargebacks may result in temporary account suspension while the dispute is investigated.</p>\n<h2>How to Request a Refund or Cancel</h2>\n<p>Contact us with your account username and the email associated with your payment. Include the approximate date of purchase and the reason for your request. We aim to respond within 2 business days.</p>\n<p>For eligible refunds (technical unavailability, unused EU withdrawal, or exceptional circumstances), approved refunds are processed within 5 business days. The time for funds to appear in your account depends on your payment method and financial institution.</p>\n<p><em>Last updated: 2026-05-09</em></p>\n"};
+
+</script>
+<script src="/js/common.js"></script>
+
+</body>
+</html>

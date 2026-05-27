@@ -1,0 +1,331 @@
+# Fivefold Types Questionnaire — English
+# 25types — standard self-assessment form.
+# Triad free-choice: 3 options per question, pick any number that fits (0–3).
+# 6 rounds × 5 questions = 30 questions. Round-level element balancing:
+# each element appears 3 times per round. Global: each element-pair co-appears 9 times.
+# Question IDs (Q01-Q30) are canonical keys shared across all locales.
+# Scoring: each selection = 1pt, equal weight.
+
+meta:
+  version: "4.0"
+  language: en
+  response_mode: free-choice
+  description: >
+    Fivefold Types assesses personality as a 5D shape vector d (Σd=0) derived from
+    triad free-choice responses. Results are classified by peak pattern into 25
+    identity categories. 30 questions across 6 rounds of 5. Each question has 3
+    behavioral options — pick any number that fits (0–3). Each
+    option maps to a Five Element code.
+
+rounds:
+  # ===================================================================
+  # Round 1: Daily Life & Routines
+  # Triads: {W,F,E} {W,M,R} {F,E,M} {W,F,R} {E,M,R}
+  # ===================================================================
+  - id: R01
+    questions:
+      - id: Q01
+        text: >
+          Imagine a completely free weekend — no plans, no obligations,
+          the time entirely yours. What do you actually do?
+        options:
+          - { text: "Get out and do something — explore, move, try an activity", element: W }
+          - { text: "Connect with people — meet friends, join a gathering, share time together", element: F }
+          - { text: "Tend to my space and routine — care for home, people, the everyday", element: E }
+
+      - id: Q02
+        text: >
+          You decide to learn something new — a language, an instrument, a craft.
+          What does the first week actually look like?
+        options:
+          - { text: "Jump straight in and try it hands-on, learn by doing", element: W }
+          - { text: "Quickly evaluate what's reliable and what isn't — filter out the noise, find the best resources, build an efficient path forward", element: M }
+          - { text: "Let the big picture emerge organically — absorb widely at first, let the pieces connect on their own before narrowing down", element: R }
+
+      - id: Q03
+        text: >
+          A new person joins your established team, class, or social circle.
+          Over the first few weeks, what role do you naturally fall into?
+        options:
+          - { text: "Radiate warmth — your presence alone makes the space around you feel safe, and they warm up without being singled out", element: F }
+          - { text: "Be a steady, approachable presence they can gravitate toward", element: E }
+          - { text: "Help them understand how things work here — the rules, the norms, the unwritten patterns", element: M }
+
+      - id: Q04
+        text: >
+          You're at a gathering where you know about half the people — a dinner, a party,
+          a colleague mixer. You're not the host. How do you tend to show up?
+        options:
+          - { text: "Get things moving — suggest an activity, launch a new topic, shift the energy of the room", element: W }
+          - { text: "The room shifts around where you stand — you don't chase, people gravitate into your orbit because the air is warmer there", element: F }
+          - { text: "Seek out deeper conversations with a few people — more substance, less noise", element: R }
+
+      - id: Q05
+        text: >
+          Think about your physical environment — your desk, your room, your living space.
+          Which description is closest to the truth, not the aspiration?
+        options:
+          - { text: "Generally orderly and grounded — not spotless but feels solid and comfortable", element: E }
+          - { text: "A clear system — everything has its place, organized and structured", element: M }
+          - { text: "Spare and quiet — only what matters, no excess accumulation", element: R }
+
+  # ===================================================================
+  # Round 2: Work & Decisions
+  # Triads: {W,F,M} {W,E,R} {F,E,R} {W,E,M} {F,M,R}
+  # ===================================================================
+  - id: R02
+    questions:
+      - id: Q06
+        text: >
+          Think about how you start a typical workday or study session —
+          the first half hour, before emails, meetings, or interruptions.
+          What do you actually do in that window?
+        options:
+          - { text: "Jump straight into the most important task, get moving immediately", element: W }
+          - { text: "Take in the room's energy first — feel the atmosphere, let it settle into you before you engage", element: F }
+          - { text: "Quickly list today's priorities and sort them before starting", element: M }
+
+      - id: Q07
+        text: >
+          You're pushing forward something important when an unexpected obstacle lands —
+          the original plan won't work. In those first few minutes after realizing it,
+          what happens inside you?
+        options:
+          - { text: "Immediately search for alternatives and pivot, keep moving forward", element: W }
+          - { text: "Steady the things I can still control — catch what's still working and keep it from unraveling further", element: E }
+          - { text: "Step back and re-read the situation — figure out what really happened and what the decisive next move is", element: R }
+
+      - id: Q08
+        text: >
+          A genuine disagreement arises in a group you care about — not a fight,
+          but real differing views on something important. What's your instinctive
+          first response?
+        options:
+          - { text: "Attend to everyone's feelings, repair connection before tackling the problem", element: F }
+          - { text: "Anchor the group back to the shared goal — keep the conversation from falling apart, make sure we stay connected", element: E }
+          - { text: "Step back and surface the unspoken assumptions behind each side — let everyone see what the real disagreement is about", element: R }
+
+      - id: Q09
+        text: >
+          You need to buy a moderately priced item — a piece of furniture, a device,
+          something that'll be part of your daily life for a while. How do you make the decision?
+        options:
+          - { text: "Decide quickly by feel and move on — not worth spending too much time on it", element: W }
+          - { text: "Take your time, no rush — wait for the right moment and the right item", element: E }
+          - { text: "Systematically research specs and comparisons, make sure I get the optimal choice", element: M }
+
+      - id: Q10
+        text: >
+          A colleague or teammate you work closely with is clearly struggling —
+          missing deadlines, quieter than usual. You're not their manager.
+          What's your first instinct?
+        options:
+          - { text: "Be fully present — not advice, not distance, just the grounded warmth of being seen without judgment", element: F }
+          - { text: "Offer specific actionable suggestions to improve, help them get clarity", element: M }
+          - { text: "Give them space while letting them know you're available to listen when they're ready", element: R }
+
+  # ===================================================================
+  # Round 3: Social Dynamics & Pressure
+  # Triads: {W,E,R} {F,E,M} {W,F,R} {W,F,M} {E,M,R}
+  # ===================================================================
+  - id: R03
+    questions:
+      - id: Q11
+        text: >
+          You notice a persistent physical discomfort — nothing alarming, but it's been there
+          for a while and isn't going away on its own. What's your first real response?
+        options:
+          - { text: "Take immediate action — change something in my routine, try a remedy, do something about it now", element: W }
+          - { text: "Give it steady attention — adjust gently, trust my body's rhythm to find balance over time", element: E }
+          - { text: "Step back and trace the pattern — figure out what it's connected to before deciding what to do", element: R }
+
+      - id: Q12
+        text: >
+          You're showing someone how to do something you're good at — teaching a skill
+          you know well to a beginner. What's your natural teaching style?
+        options:
+          - { text: "Encourage and energize — focus on making them feel capable and excited to learn", element: F }
+          - { text: "Be patient and steady — let them learn at their own pace without pressure", element: E }
+          - { text: "Break it down systematically — clear steps, correct errors early, build solid foundations", element: M }
+
+      - id: Q13
+        text: >
+          You come back from time away to find a backlog — dozens of unread messages,
+          emails, or notifications. How do you handle it?
+        options:
+          - { text: "Dive in and clear items rapidly, knock out the backlog fast", element: W }
+          - { text: "Find the people who need a reply first, handle the relational priorities", element: F }
+          - { text: "Step back and figure out what truly needs my attention before engaging", element: R }
+
+      - id: Q14
+        text: >
+          Your team or group just achieved something significant — a milestone hit,
+          recognition earned. How do you naturally take part in the moment?
+        options:
+          - { text: "You're the one who gets everyone together to mark the occasion", element: W }
+          - { text: "You express genuine warmth and appreciation for each person's contribution", element: F }
+          - { text: "You point out specifically what went well and what key factors made the difference", element: M }
+
+      - id: Q15
+        text: >
+          You're in an extended period of ambiguity — waiting on an outcome you can't control,
+          no clear timeline. During this limbo, which tendency surfaces most?
+        options:
+          - { text: "Keep living fully — maintain routines and hands-on engagement, let steadiness grow from action", element: E }
+          - { text: "Contingency planning — mapping out scenarios and preparing for each", element: M }
+          - { text: "Go inward — turn the uncertainty over in my mind until I find an understanding I can settle into", element: R }
+
+  # ===================================================================
+  # Round 4: Creation & Challenge
+  # Triads: {W,M,R} {F,E,M} {W,F,E} {F,M,R} {W,E,R}
+  # ===================================================================
+  - id: R04
+    questions:
+      - id: Q16
+        text: >
+          You have a free afternoon to work on a personal creative project — writing,
+          making, designing, building something of your own. How do you approach it?
+        options:
+          - { text: "Start making immediately, let the work itself show me where to go", element: W }
+          - { text: "Set the bar first — know what good looks like, execute to it. If the bar's in the wrong place, you move it", element: M }
+          - { text: "Let the idea gestate — approach it from different angles, let inspiration coalesce naturally before settling on a direction", element: R }
+
+      - id: Q17
+        text: >
+          Think about recent teams you've been part of — work projects, volunteer groups,
+          study circles. After a few meetings, what role do others start implicitly
+          expecting you to fill?
+        options:
+          - { text: "Connector — care about how everyone feels, bring warmth and cohesion", element: F }
+          - { text: "Stabilizer — provide reliable support, make people feel grounded and secure", element: E }
+          - { text: "Quality gate — ensure standards, spot issues early, maintain rigor", element: M }
+
+      - id: Q18
+        text: >
+          You've just moved into a new neighborhood or community. It's your first month.
+          How do you approach settling in?
+        options:
+          - { text: "Explore actively — find the best spots, walk every street, map the territory", element: W }
+          - { text: "Be out and about — let my presence become familiar naturally, let connections form on their own rhythm", element: F }
+          - { text: "Establish routines and make the space feel like home — get comfortable at my own pace", element: E }
+
+      - id: Q19
+        text: >
+          Someone gives you sharp critical feedback in front of others. It stings,
+          and it's at least partly unfair. Before you've had time to think,
+          what's your gut reaction?
+        options:
+          - { text: "Address the dynamic directly — name what just happened, clear the air, get the relationship back on track", element: F }
+          - { text: "Ask clarifying questions to understand exactly what they're saying and why", element: M }
+          - { text: "Take it in fully — respond later with depth and perspective, not heat", element: R }
+
+      - id: Q20
+        text: >
+          You face a high-stakes decision — no obviously right answer, consequences
+          playing out over months. How do you actually arrive at the decision?
+        options:
+          - { text: "Quickly rank the options by gut feel, pick one, and execute", element: W }
+          - { text: "Test each option against reality — gather concrete feedback, run small experiments, let real data guide me", element: E }
+          - { text: "Withdraw from the noise and sit alone — let my deepest intuition tell me which path is right", element: R }
+
+  # ===================================================================
+  # Round 5: Rhythms & Responses
+  # Triads: {W,E,M} {F,E,R} {W,F,M} {E,M,R} {W,F,R}
+  # ===================================================================
+  - id: R05
+    questions:
+      - id: Q21
+        text: >
+          Think about your typical morning — the first hour from waking until
+          you head out or sit down to begin. What does that hour actually look like?
+        options:
+          - { text: "Get up and start moving immediately, quick into gear, no dawdling", element: W }
+          - { text: "Move through a familiar unhurried rhythm, steady and calm", element: E }
+          - { text: "Mentally organize the day ahead, start with structure and intention", element: M }
+
+      - id: Q22
+        text: >
+          After a long intense week, you finally have an evening with no demands on you.
+          You need to recharge. What do you do?
+        options:
+          - { text: "Share space with someone close — not necessarily talking, just being together, letting presence do the recharging", element: F }
+          - { text: "Restore order in my immediate world — tidy up, catch up on life maintenance", element: E }
+          - { text: "Sink into quiet solitude — read, reflect, let my mind go where it wants", element: R }
+
+      - id: Q23
+        text: >
+          You're asked to organize a gathering or event — nothing huge, but people
+          are counting on you and there's no existing template. How do you approach it?
+        options:
+          - { text: "Get things in motion fast, make decisions and adapt as I go", element: W }
+          - { text: "Put the guest experience first — think through how everyone will feel and connect", element: F }
+          - { text: "Plan the logistics carefully — timeline, resources, who does what by when", element: M }
+
+      - id: Q24
+        text: >
+          You're moving to a new home or workspace. How do you approach the transition?
+        options:
+          - { text: "Work through it steadily with my hands — unpack, arrange, turn the new space into home through steady effort", element: E }
+          - { text: "Systematize the move — label, categorize, set up the new space with clear order", element: M }
+          - { text: "Hold off on arranging — spend time feeling the rhythm and light of the new space, let things find their own place", element: R }
+
+      - id: Q25
+        text: >
+          You have a rare day completely to yourself in an unfamiliar place —
+          a city you don't know well, a free day on a trip. What do you do?
+        options:
+          - { text: "Head out and explore actively — walk, wander, see what I discover", element: W }
+          - { text: "Sit at the heart of things and absorb — let the city's rhythm flow around you, let interactions find you", element: F }
+          - { text: "Find a quiet spot and take it all in — observe, absorb, reflect on the place", element: R }
+
+  # ===================================================================
+  # Round 6: Depth & Integration
+  # Triads: {W,F,E} {W,E,M} {W,M,R} {F,E,R} {F,M,R}
+  # ===================================================================
+  - id: R06
+    questions:
+      - id: Q26
+        text: >
+          You're cooking a meal for a few people you care about — not a formal dinner,
+          just a regular shared meal. What's your style in the kitchen?
+        options:
+          - { text: "Cook intuitively — improvise, adapt, recipes are just suggestions, let the food take shape as you go", element: W }
+          - { text: "Make it about being together — chat while cooking, the connection matters as much as the food", element: F }
+          - { text: "Follow a familiar steady rhythm — enjoy the process itself, let the meal come together naturally", element: E }
+
+      - id: Q27
+        text: >
+          You're about to start a complex project that will take several months —
+          something you care about but have never done before. How do you begin?
+        options:
+          - { text: "Dive into the most exciting part immediately, build momentum from action", element: W }
+          - { text: "Start slowly and steadily, build a sustainable rhythm from day one", element: E }
+          - { text: "Map out the full plan, milestones, and dependencies before the first action", element: M }
+
+      - id: Q28
+        text: >
+          You're reading something challenging — a dense article, a technical document,
+          a philosophical argument that matters for your work or thinking. What's your
+          reading style?
+        options:
+          - { text: "Scan for the key points I can act on, extract what's useful and move on", element: W }
+          - { text: "Read with a sharp eye — locate the key claims fast, judge which are solid and which have holes", element: M }
+          - { text: "Read slowly and let each idea sink — allow it to connect naturally with everything else I know", element: R }
+
+      - id: Q29
+        text: >
+          A close friend is going through a difficult time and reaches out to you.
+          They don't need solutions — they need presence. How do you naturally respond?
+        options:
+          - { text: "Offer warmth and emotional presence — let them feel truly heard and held", element: F }
+          - { text: "Show up with concrete presence — cook a meal, sit together, do ordinary things — let them feel life keeps turning", element: E }
+          - { text: "Listen with full attention — help them untangle the mess, ask the questions that let them see their own way out", element: R }
+
+      - id: Q30
+        text: >
+          You're in a meeting where an important decision is being made that you have
+          strong feelings about. The discussion is going in circles. What do you do?
+        options:
+          - { text: "Address the interpersonal dynamics that are blocking progress, get people aligned", element: F }
+          - { text: "Cut through with clear criteria and structure, refocus the group on what matters", element: M }
+          - { text: "Step back and reframe the deeper question everyone's been avoiding", element: R }

@@ -1,0 +1,12 @@
+# 25types — Caddy Configuration (Production)
+# TLS via Cloudflare DNS challenge. Rate limits active.
+# Routes are imported from ./routes (shared with dev).
+
+{
+    acme_dns cloudflare {env.CF_API_TOKEN}
+    order rate_limit before basicauth
+}
+
+25types.com {
+    import routes
+}

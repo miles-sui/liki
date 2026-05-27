@@ -1,0 +1,56 @@
+---
+layout: base.njk
+title: 25 Personality Types
+description: Browse all 25 five-element personality types — pure and composite.
+---
+<div class="max-w-6xl mx-auto px-6 lg:px-14 py-14 lg:py-18" x-data="typesPage({{ types | dump }})">
+  <div class="text-center mb-12">
+    <h1 class="text-4xl font-bold mb-3" x-text="$store.locale.t('types.title')">25 Personality Types</h1>
+    <p class="text-base-content/60 max-w-xl mx-auto" x-text="$store.locale.t('types.subtitle')">Pure elements and their composites. Each is a direction, not a box.</p>
+  </div>
+
+  <div class="card bg-base-200 shadow-sm mb-10">
+    <div class="card-body">
+      <h3 class="card-title text-lg mb-2" x-text="$store.locale.t('types.graph')">Type Relationships</h3>
+      <p class="text-xs text-base-content/50 mb-3" x-text="$store.locale.t('types.graphDesc')">Primary element (rows) × Secondary element (columns). Pure types on the diagonal.</p>
+      <div id="types-matrix" class="overflow-x-auto"></div>
+    </div>
+  </div>
+
+  <div class="flex flex-wrap gap-2 justify-center mb-10">
+    <button class="btn btn-sm" :class="filter === 'all' ? 'btn-primary' : 'btn-ghost'" @click="filter = 'all'" x-text="$store.locale.t('types.filter.all')">All</button>
+    <template x-for="el in window.ELEMENT_CODES" :key="el">
+      <button class="btn btn-sm" :class="filter === el ? 'btn-primary' : 'btn-ghost'" @click="filter = el" :style="filter !== el ? {color: Alpine.store('theme').colors[el]} : {}" x-text="window.ELEMENT_NAMES[el]"></button>
+    </template>
+  </div>
+
+  <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <template x-for="t in filteredTypes" :key="t.id">
+      <a :href="'/{{ site.locale }}/types/' + t.id" class="card bg-base-200 shadow-sm hover:shadow-md transition-shadow cursor-pointer">
+        <div class="card-body p-5">
+          <div class="flex justify-between items-start mb-2">
+            <span class="badge badge-sm" :style="{background: elementColor(t.id[0]) + '18', color: elementColor(t.id[0]), borderColor: elementColor(t.id[0]) + '40'}" x-text="window.ELEMENT_NAMES[t.id[0]]"></span>
+            <span class="text-xs text-base-content/40 font-mono" x-text="t.id"></span>
+          </div>
+          <h3 class="card-title text-lg" x-text="t.label || t.id"></h3>
+          <p class="text-base text-base-content/60 line-clamp-2" x-text="t.tagline"></p>
+          <div class="flex gap-1 mt-2">
+            <span class="text-xs px-1.5 py-0.5 rounded" :style="{background: elementColor(t.id[0]) + '20', color: elementColor(t.id[0])}" x-text="t.id[0]"></span>
+            <template x-if="t.id[1]">
+              <span class="text-xs px-1.5 py-0.5 rounded" :style="{background: elementColor(t.id[1]) + '20', color: elementColor(t.id[1])}" x-text="t.id[1]"></span>
+            </template>
+          </div>
+        </div>
+      </a>
+    </template>
+  </div>
+
+  <div class="text-center mt-12">
+    <p class="text-base-content/60 text-sm mb-4" x-text="$store.locale.t('types.cta.text')">Not sure where to start? Take the assessment to find your type.</p>
+    <a href="/{{ site.locale }}/assess" class="btn btn-primary btn-lg" x-text="$store.locale.t('types.cta.btn')">Take Assessment</a>
+  </div>
+</div>
+
+{% block pageScripts %}
+<script src="/js/types.js"></script>
+{% endblock %}

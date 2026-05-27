@@ -1,0 +1,298 @@
+// File generated from our OpenAPI spec by Stainless. See CONTRIBUTING.md for details.
+
+package dodopayments
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"net/http"
+	"net/url"
+	"slices"
+	"time"
+
+	"github.com/dodopayments/dodopayments-go/internal/apijson"
+	"github.com/dodopayments/dodopayments-go/internal/apiquery"
+	"github.com/dodopayments/dodopayments-go/internal/param"
+	"github.com/dodopayments/dodopayments-go/internal/requestconfig"
+	"github.com/dodopayments/dodopayments-go/option"
+	"github.com/dodopayments/dodopayments-go/packages/pagination"
+)
+
+// DiscountService contains methods and other services that help with interacting
+// with the Dodo Payments API.
+//
+// Note, unlike clients, this service does not read variables from the environment
+// automatically. You should not instantiate this service directly, and instead use
+// the [NewDiscountService] method instead.
+type DiscountService struct {
+	Options []option.RequestOption
+}
+
+// NewDiscountService generates a new service that applies the given options to
+// each request. These options are applied after the parent client's options (if
+// there is one), and before any request-specific options.
+func NewDiscountService(opts ...option.RequestOption) (r *DiscountService) {
+	r = &DiscountService{}
+	r.Options = opts
+	return
+}
+
+// POST /discounts If `code` is omitted or empty, a random 16-char uppercase code
+// is generated.
+func (r *DiscountService) New(ctx context.Context, body DiscountNewParams, opts ...option.RequestOption) (res *Discount, err error) {
+	opts = slices.Concat(r.Options, opts)
+	path := "discounts"
+	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, body, &res, opts...)
+	return res, err
+}
+
+// GET /discounts/{discount_id}
+func (r *DiscountService) Get(ctx context.Context, discountID string, opts ...option.RequestOption) (res *Discount, err error) {
+	opts = slices.Concat(r.Options, opts)
+	if discountID == "" {
+		err = errors.New("missing required discount_id parameter")
+		return nil, err
+	}
+	path := fmt.Sprintf("discounts/%s", discountID)
+	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, nil, &res, opts...)
+	return res, err
+}
+
+// PATCH /discounts/{discount_id}
+func (r *DiscountService) Update(ctx context.Context, discountID string, body DiscountUpdateParams, opts ...option.RequestOption) (res *Discount, err error) {
+	opts = slices.Concat(r.Options, opts)
+	if discountID == "" {
+		err = errors.New("missing required discount_id parameter")
+		return nil, err
+	}
+	path := fmt.Sprintf("discounts/%s", discountID)
+	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPatch, path, body, &res, opts...)
+	return res, err
+}
+
+// GET /discounts
+func (r *DiscountService) List(ctx context.Context, query DiscountListParams, opts ...option.RequestOption) (res *pagination.DefaultPageNumberPagination[Discount], err error) {
+	var raw *http.Response
+	opts = slices.Concat(r.Options, opts)
+	opts = append([]option.RequestOption{option.WithResponseInto(&raw)}, opts...)
+	path := "discounts"
+	cfg, err := requestconfig.NewRequestConfig(ctx, http.MethodGet, path, query, &res, opts...)
+	if err != nil {
+		return nil, err
+	}
+	err = cfg.Execute()
+	if err != nil {
+		return nil, err
+	}
+	res.SetPageConfig(cfg, raw)
+	return res, nil
+}
+
+// GET /discounts
+func (r *DiscountService) ListAutoPaging(ctx context.Context, query DiscountListParams, opts ...option.RequestOption) *pagination.DefaultPageNumberPaginationAutoPager[Discount] {
+	return pagination.NewDefaultPageNumberPaginationAutoPager(r.List(ctx, query, opts...))
+}
+
+// DELETE /discounts/{discount_id}
+func (r *DiscountService) Delete(ctx context.Context, discountID string, opts ...option.RequestOption) (err error) {
+	opts = slices.Concat(r.Options, opts)
+	opts = append([]option.RequestOption{option.WithHeader("Accept", "*/*")}, opts...)
+	if discountID == "" {
+		err = errors.New("missing required discount_id parameter")
+		return err
+	}
+	path := fmt.Sprintf("discounts/%s", discountID)
+	err = requestconfig.ExecuteNewRequest(ctx, http.MethodDelete, path, nil, nil, opts...)
+	return err
+}
+
+// Validate and fetch a discount by its code name (e.g., "SAVE20"). This allows
+// real-time validation directly against the API using the human-readable discount
+// code instead of requiring the internal discount_id.
+func (r *DiscountService) GetByCode(ctx context.Context, code string, opts ...option.RequestOption) (res *Discount, err error) {
+	opts = slices.Concat(r.Options, opts)
+	if code == "" {
+		err = errors.New("missing required code parameter")
+		return nil, err
+	}
+	path := fmt.Sprintf("discounts/code/%s", code)
+	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, nil, &res, opts...)
+	return res, err
+}
+
+type Discount struct {
+	// The discount amount.
+	//
+	//   - If `discount_type` is `percentage`, this is in **basis points** (e.g., 540 =>
+	//     5.4%).
+	//   - Otherwise, this is **USD cents** (e.g., 100 => `$1.00`).
+	Amount int64 `json:"amount" api:"required"`
+	// The business this discount belongs to.
+	BusinessID string `json:"business_id" api:"required"`
+	// The discount code (up to 16 chars).
+	Code string `json:"code" api:"required"`
+	// Timestamp when the discount is created
+	CreatedAt time.Time `json:"created_at" api:"required" format:"date-time"`
+	// The unique discount ID
+	DiscountID string            `json:"discount_id" api:"required"`
+	Metadata   map[string]string `json:"metadata" api:"required"`
+	// Whether this discount should be preserved when a subscription changes plans.
+	// Default: false (discount is removed on plan change)
+	PreserveOnPlanChange bool `json:"preserve_on_plan_change" api:"required"`
+	// List of product IDs to which this discount is restricted.
+	RestrictedTo []string `json:"restricted_to" api:"required"`
+	// How many times this discount has been used.
+	TimesUsed int64 `json:"times_used" api:"required"`
+	// The type of discount, e.g. `percentage`, `flat`, or `flat_per_unit`.
+	Type DiscountType `json:"type" api:"required"`
+	// Optional date/time after which discount is expired.
+	ExpiresAt time.Time `json:"expires_at" api:"nullable" format:"date-time"`
+	// Name for the Discount
+	Name string `json:"name" api:"nullable"`
+	// Number of subscription billing cycles this discount is valid for. If not
+	// provided, the discount will be applied indefinitely to all recurring payments
+	// related to the subscription.
+	SubscriptionCycles int64 `json:"subscription_cycles" api:"nullable"`
+	// Usage limit for this discount, if any.
+	UsageLimit int64        `json:"usage_limit" api:"nullable"`
+	JSON       discountJSON `json:"-"`
+}
+
+// discountJSON contains the JSON metadata for the struct [Discount]
+type discountJSON struct {
+	Amount               apijson.Field
+	BusinessID           apijson.Field
+	Code                 apijson.Field
+	CreatedAt            apijson.Field
+	DiscountID           apijson.Field
+	Metadata             apijson.Field
+	PreserveOnPlanChange apijson.Field
+	RestrictedTo         apijson.Field
+	TimesUsed            apijson.Field
+	Type                 apijson.Field
+	ExpiresAt            apijson.Field
+	Name                 apijson.Field
+	SubscriptionCycles   apijson.Field
+	UsageLimit           apijson.Field
+	raw                  string
+	ExtraFields          map[string]apijson.Field
+}
+
+func (r *Discount) UnmarshalJSON(data []byte) (err error) {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func (r discountJSON) RawJSON() string {
+	return r.raw
+}
+
+type DiscountType string
+
+const (
+	DiscountTypePercentage DiscountType = "percentage"
+)
+
+func (r DiscountType) IsKnown() bool {
+	switch r {
+	case DiscountTypePercentage:
+		return true
+	}
+	return false
+}
+
+type DiscountNewParams struct {
+	// The discount amount.
+	//
+	//   - If `discount_type` is **not** `percentage`, `amount` is in **USD cents**. For
+	//     example, `100` means `$1.00`. Only USD is allowed.
+	//   - If `discount_type` **is** `percentage`, `amount` is in **basis points**. For
+	//     example, `540` means `5.4%`.
+	//
+	// Must be at least 1.
+	Amount param.Field[int64] `json:"amount" api:"required"`
+	// The discount type (e.g. `percentage`, `flat`, or `flat_per_unit`).
+	Type param.Field[DiscountType] `json:"type" api:"required"`
+	// Optionally supply a code (will be uppercased).
+	//
+	// - Must be at least 3 characters if provided.
+	// - If omitted, a random 16-character code is generated.
+	Code param.Field[string] `json:"code"`
+	// When the discount expires, if ever.
+	ExpiresAt param.Field[time.Time] `json:"expires_at" format:"date-time"`
+	// Additional metadata for the discount
+	Metadata param.Field[map[string]string] `json:"metadata"`
+	Name     param.Field[string]            `json:"name"`
+	// Whether this discount should be preserved when a subscription changes plans.
+	// Default: false (discount is removed on plan change)
+	PreserveOnPlanChange param.Field[bool] `json:"preserve_on_plan_change"`
+	// List of product IDs to restrict usage (if any).
+	RestrictedTo param.Field[[]string] `json:"restricted_to"`
+	// Number of subscription billing cycles this discount is valid for. If not
+	// provided, the discount will be applied indefinitely to all recurring payments
+	// related to the subscription.
+	SubscriptionCycles param.Field[int64] `json:"subscription_cycles"`
+	// How many times this discount can be used (if any). Must be >= 1 if provided.
+	UsageLimit param.Field[int64] `json:"usage_limit"`
+}
+
+func (r DiscountNewParams) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
+type DiscountUpdateParams struct {
+	// If present, update the discount amount:
+	//
+	//   - If `discount_type` is `percentage`, this represents **basis points** (e.g.,
+	//     `540` = `5.4%`).
+	//   - Otherwise, this represents **USD cents** (e.g., `100` = `$1.00`).
+	//
+	// Must be at least 1 if provided.
+	Amount param.Field[int64] `json:"amount"`
+	// If present, update the discount code (uppercase).
+	Code      param.Field[string]    `json:"code"`
+	ExpiresAt param.Field[time.Time] `json:"expires_at" format:"date-time"`
+	// Additional metadata for the discount
+	Metadata param.Field[map[string]string] `json:"metadata"`
+	Name     param.Field[string]            `json:"name"`
+	// Whether this discount should be preserved when a subscription changes plans. If
+	// not provided, the existing value is kept.
+	PreserveOnPlanChange param.Field[bool] `json:"preserve_on_plan_change"`
+	// If present, replaces all restricted product IDs with this new set. To remove all
+	// restrictions, send empty array
+	RestrictedTo param.Field[[]string] `json:"restricted_to"`
+	// Number of subscription billing cycles this discount is valid for. If not
+	// provided, the discount will be applied indefinitely to all recurring payments
+	// related to the subscription.
+	SubscriptionCycles param.Field[int64] `json:"subscription_cycles"`
+	// If present, update the discount type.
+	Type       param.Field[DiscountType] `json:"type"`
+	UsageLimit param.Field[int64]        `json:"usage_limit"`
+}
+
+func (r DiscountUpdateParams) MarshalJSON() (data []byte, err error) {
+	return apijson.MarshalRoot(r)
+}
+
+type DiscountListParams struct {
+	// Filter by active status (true = not expired, false = expired)
+	Active param.Field[bool] `query:"active"`
+	// Filter by discount code (partial match, case-insensitive)
+	Code param.Field[string] `query:"code"`
+	// Filter by discount type (percentage)
+	DiscountType param.Field[DiscountType] `query:"discount_type"`
+	// Page number (default = 0).
+	PageNumber param.Field[int64] `query:"page_number"`
+	// Page size (default = 10, max = 100).
+	PageSize param.Field[int64] `query:"page_size"`
+	// Filter by product restriction (only discounts that apply to this product)
+	ProductID param.Field[string] `query:"product_id"`
+}
+
+// URLQuery serializes [DiscountListParams]'s query parameters as `url.Values`.
+func (r DiscountListParams) URLQuery() (v url.Values) {
+	return apiquery.MarshalWithSettings(r, apiquery.QuerySettings{
+		ArrayFormat:  apiquery.ArrayQueryFormatComma,
+		NestedFormat: apiquery.NestedQueryFormatBrackets,
+	})
+}

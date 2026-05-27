@@ -1,0 +1,32 @@
+# Node
+web/node_modules/
+web/dist/
+
+# Go binaries
+cmd/app-server/server
+cmd/mingli-server/server
+/server
+/bin/
+*.exe
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# SQLite
+*.db
+*.db-shm
+*.db-wal
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Env
+.env
+.env.local

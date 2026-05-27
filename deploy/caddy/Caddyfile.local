@@ -1,0 +1,12 @@
+# 25types — Local Development (no Docker)
+# Caddy :8080 reverse-proxy + static files, Go API :8081
+
+:8080 {
+	root * web/dist
+	encode gzip
+
+	# API reverse proxy → Go server
+	reverse_proxy /api/* localhost:8081
+
+	import static_routes
+}

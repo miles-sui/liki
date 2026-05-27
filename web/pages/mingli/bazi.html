@@ -1,0 +1,48 @@
+---
+layout: base.njk
+title: Mingli Four Pillars Chart
+description: Calculate your Mingli (命理) four pillars, hidden stems, Ten Gods, Na Yin, life stages, and big fortune from your birth date and time.
+permalink: "/{{ site.locale }}/mingli/bazi/index.html"
+---
+<div class="max-w-4xl mx-auto px-6 lg:px-14 py-14 lg:py-18" x-data="mingliPage()">
+  <h1 class="text-3xl font-bold mb-2" x-text="$store.locale.t('mingli.bazi.title')">Mingli Four Pillars</h1>
+  <p class="text-base-content/60 mb-10" x-text="$store.locale.t('mingli.bazi.subtitle')">Enter your birth information to calculate your eight characters (八字).</p>
+
+  <!-- Birth info form -->
+  <div class="card bg-base-200 shadow-lg mb-8">
+    <div class="card-body">
+      {% include "birth-form.njk" %}
+      <div class="card-actions justify-end mt-4">
+        <button class="btn btn-primary" @click="compute()" :disabled="loading" x-text="loading ? '...' : $store.locale.t('mingli.bazi.compute')">Calculate Chart</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Error -->
+  <template x-if="error">
+    <div class="alert alert-error mb-6"><span x-text="error"></span></div>
+  </template>
+
+  <!-- Chart result -->
+  <template x-if="chart && !error">
+    <div>
+      {% include "mingli-chart-card.njk" %}
+
+      <!-- Logged in: auto-saved on compute, show profile link -->
+      <div class="text-center mt-6" x-show="$store.auth.id">
+        <p class="text-sm text-base-content/50 mb-3" x-text="$store.locale.t('mingli.bazi.savedToProfile')">Chart saved to your profile.</p>
+        <a :href="'/' + ($store.locale.current || 'en') + '/profile/' + $store.auth.name" class="btn btn-outline btn-sm" x-text="$store.locale.t('mingli.bazi.viewProfile')">View Profile</a>
+      </div>
+      <!-- Anonymous: prompt to login -->
+      <div class="text-center mt-6" x-show="!$store.auth.id">
+        <p class="text-sm text-base-content/50 mb-2" x-text="$store.locale.t('match.claimProfile')">Create an account to save your result.</p>
+        <a href="/{{ site.locale }}/login" class="btn btn-primary btn-sm" x-text="$store.locale.t('nav.login')">Login</a>
+      </div>
+    </div>
+  </template>
+</div>
+
+{% block pageScripts %}
+<script src="/js/vendor/lunar.js"></script>
+<script src="/js/mingli.js"></script>
+{% endblock %}

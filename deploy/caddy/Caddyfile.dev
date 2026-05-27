@@ -1,0 +1,10 @@
+# 25types — Caddy Configuration (Development)
+# No TLS, no rate limits in practice. SAME routing as production (imports routes).
+
+{
+    order rate_limit before basicauth
+}
+
+:80 {
+    import routes
+}

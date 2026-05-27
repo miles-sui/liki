@@ -1,0 +1,4 @@
+<button type="submit" class="btn btn-primary w-full" :disabled="{{ disabledVar | default('loading') }}">
+  <span x-show="!{{ disabledVar | default('loading') }}" x-text="$store.locale.t('{{ labelKey }}')"></span>
+  <span x-show="{{ disabledVar | default('loading') }}" class="loading loading-spinner loading-xs"></span>
+</button>

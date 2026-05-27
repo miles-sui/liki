@@ -1,0 +1,102 @@
+---
+layout: base.njk
+permalink: "/{{ site.locale }}/mingli/bazi-match-landing.html"
+pageClass: mingli-match-landing-page
+title: Mingli Match
+description: Discover how your Mingli chart harmonizes with theirs.
+---
+<div class="max-w-4xl mx-auto px-6 lg:px-14 py-14 lg:py-18" x-data="mingliMatchLandingPage()" x-init="init()">
+
+  {% set messageKey = 'loading' %}{% include "loading-spinner.njk" %}
+
+  <!-- Error -->
+  <template x-if="!loading && error">
+    <div class="text-center py-20">
+      <p class="text-error mb-4" x-text="error"></p>
+      <a href="/{{ site.locale }}/" class="btn btn-outline" x-text="$store.locale.t('reviewLanding.goHome')">Go Home</a>
+    </div>
+  </template>
+
+  <!-- Creator info + match CTA / birth form -->
+  <template x-if="!loading && !error && !result">
+    <div>
+      {% set title = "$store.locale.t('mingli.bazi.matchWith') + ' ' + (linkInfo.creator_name || '...')" %}{% include "section-header.njk" %}
+
+      <!-- Creator chart summary -->
+      <div class="max-w-sm mx-auto mb-8" x-show="linkInfo.chart_a">
+        <div class="bg-base-100 rounded-lg p-4 text-sm space-y-1">
+          <div class="font-semibold mb-2" x-text="linkInfo.creator_name"></div>
+          <div>
+            <span class="text-base-content/60" x-text="$store.locale.t('mingli.bazi.dayMaster') + ': '">Day Master: </span>
+            <span class="font-bold" x-text="formatStem(linkInfo.chart_a.day_master)"></span>
+          </div>
+          <div>
+            <span class="text-base-content/60" x-text="$store.locale.t('mingli.bazi.yearPillar') + ': '">Year: </span>
+            <span x-text="formatPillar(linkInfo.chart_a.year_pillar.stem, linkInfo.chart_a.year_pillar.branch)"></span>
+          </div>
+          <div>
+            <span class="text-base-content/60" x-text="$store.locale.t('mingli.bazi.monthPillar') + ': '">Month: </span>
+            <span x-text="formatPillar(linkInfo.chart_a.month_pillar.stem, linkInfo.chart_a.month_pillar.branch)"></span>
+          </div>
+          <div>
+            <span class="text-base-content/60" x-text="$store.locale.t('mingli.bazi.dayPillar') + ': '">Day: </span>
+            <span x-text="formatPillar(linkInfo.chart_a.day_pillar.stem, linkInfo.chart_a.day_pillar.branch)"></span>
+          </div>
+          <div>
+            <span class="text-base-content/60" x-text="$store.locale.t('mingli.bazi.hourPillar') + ': '">Hour: </span>
+            <span x-text="formatPillar(linkInfo.chart_a.hour_pillar.stem, linkInfo.chart_a.hour_pillar.branch)"></span>
+          </div>
+          <div class="text-base-content/60 text-xs mt-1" x-text="fmtElems(linkInfo.chart_a.element_count)"></div>
+        </div>
+      </div>
+
+      <!-- Match Now button (logged in with birth info) -->
+      <div class="text-center py-6" x-show="auth.id && hasOwnBirthInfo">
+        <p class="text-base-content/60 mb-4" x-text="$store.locale.t('mingli.bazi.match.savedBaZi')">You have your BaZi chart saved.</p>
+        <button class="btn btn-primary btn-lg" @click="matchExisting" :disabled="submitting" x-text="submitting ? $store.locale.t('loading') : $store.locale.t('mingli.bazi.match.computeMatch')">Compute Match</button>
+        <p class="text-sm text-base-content/40 mt-3">
+          <a href="#" @click.prevent="hasOwnBirthInfo = false" x-text="$store.locale.t('mingli.bazi.match.orEnterNew')">Or enter a different birth info instead</a>
+        </p>
+      </div>
+
+      <!-- Birth form for User B -->
+      <div class="max-w-md mx-auto" x-show="!auth.id || !hasOwnBirthInfo">
+        <p class="text-base-content/60 mb-4 text-center" x-text="$store.locale.t('mingli.bazi.match.enterYourBirth')">Enter your birth information to compute the match.</p>
+        <div class="bg-base-100 rounded-lg p-6 mb-4">
+          {% include "birth-form.njk" %}
+        </div>
+        <div class="text-center">
+          <button class="btn btn-primary btn-lg" @click="submitWithBirth" :disabled="submitting" x-text="submitting ? $store.locale.t('loading') : $store.locale.t('mingli.bazi.match.computeMatch')">Compute Match</button>
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <!-- Match result -->
+  <template x-if="!loading && !error && result">
+    <div>
+      {% set title = "$store.locale.t('mingli.bazi.matchResult')" %}{% include "section-header.njk" %}
+
+      {% include "mingli-match-card.njk" %}
+
+      <!-- CTA -->
+      <div class="text-center mb-8">
+        <template x-if="!auth.id">
+          <div class="space-y-2">
+            <p class="text-base-content/60 text-sm" x-text="$store.locale.t('match.claimProfile')">Create an account to save your result.</p>
+            <a href="/{{ site.locale }}/register" class="btn btn-primary" x-text="$store.locale.t('nav.register')">Start Free</a>
+          </div>
+        </template>
+        <template x-if="auth.id">
+          <a :href="'/' + currentLocale + '/profile/' + auth.name" class="btn btn-outline" x-text="$store.locale.t('match.goProfile')">Go to My Profile</a>
+        </template>
+      </div>
+    </div>
+  </template>
+</div>
+
+{% block pageScripts %}
+<script src="/js/vendor/lunar.js"></script>
+<script src="/js/mingli.js"></script>
+<script src="/js/mingli-match-landing.js"></script>
+{% endblock %}

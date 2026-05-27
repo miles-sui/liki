@@ -1,0 +1,82 @@
+---
+layout: base.njk
+permalink: "/{{ site.locale }}/result.html"
+title: Your Assessment Result
+description: Your five-element personality profile, identity type, and recommendations.
+---
+<div class="max-w-6xl mx-auto px-6 lg:px-14 py-14 lg:py-18 border-x border-base-300/50" x-data="resultPage()" x-init="init()">
+  <template x-if="loading">
+    <div class="text-center py-20">
+      <span class="loading loading-spinner loading-lg text-primary"></span>
+    </div>
+  </template>
+
+  <template x-if="!loading && identity">
+    <!-- Profile card -->
+    <div class="max-w-sm mx-auto mb-8">
+      {% set radarId = 'result-radar' %}{% set badge = 'identity.category' %}{% set label = 'identity.label' %}{% set idText = 'identity.id' %}{% set desc = "typeDesc(identity.id)" %}{% include "profile-card.njk" %}
+    </div>
+
+    <!-- Identity reveal -->
+    <div x-show="revealed" x-transition:enter="transition ease-out duration-700" x-transition:enter-start="opacity-0 translate-y-6" x-transition:enter-end="opacity-100 translate-y-0">
+      <!-- Stage 2: Type description -->
+      <div class="max-w-lg mx-auto mb-10 text-center" x-show="typeDescription">
+        <h3 class="text-lg font-bold mb-3" x-text="$store.locale.t('result.yourType')">Your Type</h3>
+        <p class="text-base-content/70 leading-relaxed" x-text="typeDescription"></p>
+      </div>
+
+      <!-- Stage 2: Distance panel — closest types -->
+      <div class="max-w-lg mx-auto mb-10" x-show="closestTypes.length > 0">
+        <h3 class="text-lg font-bold text-center mb-1" x-text="$store.locale.t('result.distanceTitle')">Where You Fit</h3>
+        <p class="text-sm text-base-content/50 text-center mb-5" x-text="$store.locale.t('result.distanceDesc')">Your position among the 25 types.</p>
+        <p class="text-xs text-base-content/40 text-center mb-3" x-text="$store.locale.t('result.closestTypes')">Closest Matches</p>
+        <div class="grid grid-cols-3 gap-2">
+          <template x-for="t in closestTypes" :key="t.id">
+            <a :href="'/' + $store.locale.current + '/types/' + t.id" class="card bg-base-200 hover:shadow-md transition-shadow cursor-pointer">
+              <div class="card-body p-3 text-center">
+                <span class="text-xs font-mono text-base-content/40" x-text="t.id"></span>
+                <span class="text-sm font-semibold line-clamp-1" x-text="t.label || t.id"></span>
+                <span class="text-xs text-base-content/40" x-text="Math.round(t.score * 100) + '%'"></span>
+              </div>
+            </a>
+          </template>
+        </div>
+      </div>
+
+      <!-- Stage 3: Action ladder -->
+      <div class="max-w-md mx-auto mb-10">
+        <h3 class="text-lg font-bold text-center mb-5" x-text="$store.locale.t('result.nextSteps')">What's Next</h3>
+        <div class="flex flex-col gap-3">
+          <template x-if="!$store.auth.id">
+            <a href="/{{ site.locale }}/register" class="btn btn-primary btn-lg" x-text="$store.locale.t('result.nextProfile')">View Your Full Profile →</a>
+          </template>
+          <template x-if="$store.auth.id">
+            <a :href="'/' + $store.locale.current + '/profile/' + $store.auth.name" class="btn btn-primary btn-lg" x-text="$store.locale.t('result.nextProfile')">View Your Full Profile →</a>
+          </template>
+          <template x-if="!$store.auth.id">
+            <button class="btn btn-outline" @click="copyShareLink" x-text="$store.locale.t('result.nextBond')">Compare With a Friend →</button>
+          </template>
+          <template x-if="$store.auth.id">
+            <a href="/{{ site.locale }}/bonds" class="btn btn-outline" x-text="$store.locale.t('result.nextBond')">Compare With a Friend →</a>
+          </template>
+          <a href="/{{ site.locale }}/types" class="btn btn-ghost" x-text="$store.locale.t('result.nextTypes')">Explore All 25 Types</a>
+        </div>
+      </div>
+
+      <!-- Share -->
+      <div class="text-center">
+        <p class="text-sm text-base-content/40 mb-2"><span x-text="$store.locale.t('result.sharePrefix')">I'm</span> <strong x-text="identity.label"></strong> <span x-text="$store.locale.t('result.shareSuffix')">on 25 Types</span></p>
+        <button class="btn btn-sm btn-ghost" @click="generateShareCard" x-text="$store.locale.t('result.shareCard')">Share Card</button>
+      </div>
+    </div>
+  </template>
+
+  <template x-if="!loading && !identity">
+    {% set title = "$store.locale.t('result.noData')" %}{% set desc = "$store.locale.t('result.noDataMsg')" %}{% set ctaText = "$store.locale.t('result.startAssess')" %}{% set ctaLink = "/" + site.locale + "/assess" %}{% include "empty-state.njk" %}
+  </template>
+</div>
+
+{% block pageScripts %}
+<script src="/js/charts.js"></script>
+<script src="/js/result.js"></script>
+{% endblock %}

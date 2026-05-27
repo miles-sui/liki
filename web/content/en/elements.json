@@ -1,0 +1,7 @@
+[
+  {"code": "W", "name": "Wood",  "color": "#1A7A6F", "darkColor": "#5CCEC1", "desc": "You've already started while others are still deciding. Your mind works best in motion."},
+  {"code": "F", "name": "Fire",  "color": "#CB3B2D", "darkColor": "#FF6B5B", "desc": "You walk in, and the room shifts. You don't need to aim your light — it fills the space. What people remember isn't what you said. It's that you were there."},
+  {"code": "E", "name": "Earth", "color": "#9A7410", "darkColor": "#FFC847", "desc": "Not the flashiest, but the one who shows up every day. You turn raw pieces into something that works."},
+  {"code": "M", "name": "Metal", "color": "#8E8880", "darkColor": "#DADADA", "desc": "You have a built-in filter. You know instantly if it's good or not. When you approve, people trust it."},
+  {"code": "R", "name": "Water", "color": "#1C2238", "darkColor": "#C4D5ED", "desc": "You go deep. Where others skim, you sink in. When you finally speak, you say what everyone else missed."}
+]

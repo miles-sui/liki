@@ -1,0 +1,18 @@
+<div class="text-xs text-base-content/40 {{ peerDeltaCls | default('') }} flex justify-end gap-8">
+  <span x-text="$store.locale.t('peers.self')"></span>
+  <span x-text="$store.locale.t('peers.peerReviews')"></span>
+</div>
+<template x-for="idx in ELEMENT_HTML_ORDER" :key="idx">
+  <div class="flex items-center gap-2 text-xs mb-1.5">
+    <span class="w-10 text-right flex-shrink-0" :style="'color:' + elementColor(idx)" x-text="elementName(idx)"></span>
+    <div class="flex-1 flex gap-0.5 h-2 rounded-full overflow-hidden bg-base-300">
+      <div class="h-full rounded-l-full" :style="{width: ({{ selfP }}[idx] * 100) + '%', background: elementColor(idx), opacity: 0.7}"></div>
+      <div class="h-full rounded-r-full" :style="{width: ({{ peerP }}[idx] * 100) + '%', background: elementColor(idx), opacity: 0.35}"></div>
+    </div>
+    <span class="w-8 text-right text-base-content/60" x-text="({{ selfP }}[idx] * 100).toFixed(0) + '%'"></span>
+    <span class="w-8 text-right text-base-content/60" x-text="({{ peerP }}[idx] * 100).toFixed(0) + '%'"></span>
+    <span class="w-10 text-right font-mono flex-shrink-0"
+          :class="({{ peerP }}[idx] - {{ selfP }}[idx]) >= 0 ? 'text-success' : 'text-error'"
+          x-text="({{ peerP }}[idx] - {{ selfP }}[idx]) >= 0 ? '+' + (({{ peerP }}[idx] - {{ selfP }}[idx]) * 100).toFixed(0) + '%' : (({{ peerP }}[idx] - {{ selfP }}[idx]) * 100).toFixed(0) + '%'"></span>
+  </div>
+</template>

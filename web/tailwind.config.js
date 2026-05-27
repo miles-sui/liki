@@ -1,0 +1,68 @@
+module.exports = {
+  // NOTE: sync --wood/--fire/--earth/--metal/--water colors with common.js theme store
+  content: ['./pages/**/*.html', './pages/**/*.njk', './_layouts/**/*.njk', './_includes/**/*.njk', './components/**/*.njk'],
+  theme: {
+    extend: {
+      fontFamily: {
+        serif: ['"Noto Serif"', '"Noto Serif SC"', '"Songti SC"', '"SimSun"', 'serif'],
+      },
+    },
+  },
+  plugins: [require('daisyui'), require('@tailwindcss/typography')],
+  daisyui: {
+    themes: [
+      {
+        wuxing: {
+          'primary':   '#1A7A6F',
+          'secondary': '#CB3B2D',
+          'accent':    '#9A7410',
+          'neutral':   '#D0CBC5',
+          'info':      '#1C2238',
+          'success':   '#1A7A6F',
+          'warning':   '#C4920C',
+          'error':     '#CB3B2D',
+          'base-100':  '#FDF8F0',
+          'base-200':  '#F2EFE8',
+          'base-300':  '#E4E0D8',
+          'base-content': '#3D3226',
+          'primary-content':   '#FDF8F0',
+          'secondary-content': '#FDF8F0',
+          'accent-content':    '#FDF8F0',
+          'neutral-content':   '#3D3226',
+          'info-content':      '#FDF8F0',
+          'success-content':   '#FDF8F0',
+          'warning-content':   '#3D3226',
+          'error-content':     '#FDF8F0',
+          '--rounded-box': '0.5rem',
+          '--animation-btn': '0.15s',
+        },
+      },
+      {
+        'wuxing-dark': {
+          'primary':   '#5CCEC1',
+          'secondary': '#FF6B5B',
+          'accent':    '#FFC847',
+          'neutral':   '#DADADA',
+          'info':      '#A8BCD4',
+          'success':   '#5CCEC1',
+          'warning':   '#FFC847',
+          'error':     '#FF6B5B',
+          'base-100':  '#1a1a2e',
+          'base-200':  '#16213e',
+          'base-300':  '#0f3460',
+          'base-content': '#E0E0E0',
+          'primary-content':   '#1a1a2e',
+          'secondary-content': '#1a1a2e',
+          'accent-content':    '#1a1a2e',
+          'neutral-content':   '#1a1a2e',
+          'info-content':      '#1a1a2e',
+          'success-content':   '#1a1a2e',
+          'warning-content':   '#1a1a2e',
+          'error-content':     '#1a1a2e',
+          '--rounded-box': '0.5rem',
+          '--animation-btn': '0.15s',
+        },
+      },
+    ],
+  },
+};

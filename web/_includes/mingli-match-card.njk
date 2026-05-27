@@ -1,0 +1,98 @@
+<!-- BaZi Match Result -->
+<div class="card bg-base-200 shadow-lg mb-8">
+  <div class="card-body">
+    <h2 class="card-title text-xl mb-2" x-text="$store.locale.t('mingli.bazi.matchResult')">Match Result</h2>
+
+    <!-- Total score & level -->
+    <div class="text-center py-4">
+      <div class="text-5xl font-bold mb-1" x-text="matchResult.total"></div>
+      <div class="text-sm text-base-content/60 mb-2" x-text="$store.locale.t('mingli.bazi.matchScore')">Compatibility Score</div>
+      <div class="badge badge-lg"
+           :class="{
+             'badge-success': matchResult.total >= 80,
+             'badge-warning': matchResult.total >= 60 && matchResult.total < 80,
+             'badge-info': matchResult.total >= 40 && matchResult.total < 60,
+             'badge-error': matchResult.total < 40,
+           }"
+           x-text="window.MINGLI_TEMPLATES?.match_levels?.[matchResult.level]?.label || matchResult.level"></div>
+    </div>
+
+    <!-- Match level description -->
+    <p class="text-sm text-base-content/70 leading-relaxed mt-3 max-w-lg mx-auto"
+       x-text="window.MINGLI_TEMPLATES?.match_levels?.[matchResult.level]?.desc || ''"></p>
+
+    <!-- Score bars -->
+    <h3 class="text-lg font-bold mt-4 mb-3" x-text="$store.locale.t('mingli.bazi.matchDimensions')">Dimensions</h3>
+    <div class="space-y-2">
+      <template x-for="d in matchResult.details" :key="d.dimension">
+        <div>
+          <div class="flex justify-between text-sm mb-0.5">
+            <span x-text="d.dimension"></span>
+            <span class="text-base-content/60" x-text="d.score + ' × ' + d.weight + '%'"></span>
+          </div>
+          <progress class="progress progress-primary w-full" :value="d.score" max="100"></progress>
+        </div>
+      </template>
+    </div>
+
+    <!-- Chart summaries -->
+    <h3 class="text-lg font-bold mt-6 mb-3" x-text="$store.locale.t('mingli.bazi.chartSummaries')">Chart Summaries</h3>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <!-- Person A -->
+      <div class="bg-base-100 rounded-lg p-4">
+        <div class="font-semibold mb-2" x-text="$store.locale.t('mingli.bazi.personA')">Person A</div>
+        <div class="text-sm space-y-1">
+          <div>
+            <span class="text-base-content/60" x-text="$store.locale.t('mingli.bazi.dayMaster') + ': '">Day Master: </span>
+            <span class="font-bold" x-text="formatStem(matchResult.chartA.day_master)"></span>
+          </div>
+          <div>
+            <span class="text-base-content/60" x-text="$store.locale.t('mingli.bazi.yearPillar') + ': '">Year: </span>
+            <span x-text="formatPillar(matchResult.chartA.year_pillar.stem, matchResult.chartA.year_pillar.branch)"></span>
+          </div>
+          <div>
+            <span class="text-base-content/60" x-text="$store.locale.t('mingli.bazi.monthPillar') + ': '">Month: </span>
+            <span x-text="formatPillar(matchResult.chartA.month_pillar.stem, matchResult.chartA.month_pillar.branch)"></span>
+          </div>
+          <div>
+            <span class="text-base-content/60" x-text="$store.locale.t('mingli.bazi.dayPillar') + ': '">Day: </span>
+            <span x-text="formatPillar(matchResult.chartA.day_pillar.stem, matchResult.chartA.day_pillar.branch)"></span>
+          </div>
+          <div>
+            <span class="text-base-content/60" x-text="$store.locale.t('mingli.bazi.hourPillar') + ': '">Hour: </span>
+            <span x-text="formatPillar(matchResult.chartA.hour_pillar.stem, matchResult.chartA.hour_pillar.branch)"></span>
+          </div>
+          <div class="text-base-content/60 text-xs mt-1" x-text="fmtElems(matchResult.chartA.element_count)"></div>
+        </div>
+      </div>
+
+      <!-- Person B -->
+      <div class="bg-base-100 rounded-lg p-4">
+        <div class="font-semibold mb-2" x-text="$store.locale.t('mingli.bazi.personB')">Person B</div>
+        <div class="text-sm space-y-1">
+          <div>
+            <span class="text-base-content/60" x-text="$store.locale.t('mingli.bazi.dayMaster') + ': '">Day Master: </span>
+            <span class="font-bold" x-text="formatStem(matchResult.chartB.day_master)"></span>
+          </div>
+          <div>
+            <span class="text-base-content/60" x-text="$store.locale.t('mingli.bazi.yearPillar') + ': '">Year: </span>
+            <span x-text="formatPillar(matchResult.chartB.year_pillar.stem, matchResult.chartB.year_pillar.branch)"></span>
+          </div>
+          <div>
+            <span class="text-base-content/60" x-text="$store.locale.t('mingli.bazi.monthPillar') + ': '">Month: </span>
+            <span x-text="formatPillar(matchResult.chartB.month_pillar.stem, matchResult.chartB.month_pillar.branch)"></span>
+          </div>
+          <div>
+            <span class="text-base-content/60" x-text="$store.locale.t('mingli.bazi.dayPillar') + ': '">Day: </span>
+            <span x-text="formatPillar(matchResult.chartB.day_pillar.stem, matchResult.chartB.day_pillar.branch)"></span>
+          </div>
+          <div>
+            <span class="text-base-content/60" x-text="$store.locale.t('mingli.bazi.hourPillar') + ': '">Hour: </span>
+            <span x-text="formatPillar(matchResult.chartB.hour_pillar.stem, matchResult.chartB.hour_pillar.branch)"></span>
+          </div>
+          <div class="text-base-content/60 text-xs mt-1" x-text="fmtElems(matchResult.chartB.element_count)"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

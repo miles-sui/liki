@@ -1,0 +1,103 @@
+# 25types — Shared Static Routes (imported by routes and Caddyfile.local)
+# This file contains security headers, SPA rewrites, locale redirects,
+# profile page matchers, try_files, and error pages.
+# It does NOT set root, encode, rate_limit, or reverse_proxy.
+
+# Security headers
+header Strict-Transport-Security "max-age=31536000; includeSubDomains"
+header X-Content-Type-Options "nosniff"
+header X-Frame-Options "DENY"
+header / Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net https://fontsapi.zeoseven.com; font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net; img-src 'self' data: blob:; connect-src 'self'"
+
+# Frontend health check
+handle /healthz {
+    respond "ok" 200
+}
+
+# Home page — Accept-Language sniffing
+@zhHome {
+    path /
+    header Accept-Language zh*
+}
+redir @zhHome /zh-CN/ 302
+redir / /en/ 302
+
+# Redirect old standalone pages to SPA views / new SSG pages
+@oldBonds path_regexp ^/(en|zh-CN)/bonds.html$
+@oldProfile path_regexp ^/(en|zh-CN)/profile.html$
+@oldSettings path_regexp ^/(en|zh-CN)/settings.html$
+@oldBaziMatch path_regexp ^/(en|zh-CN)/bazi-match.html$
+redir @oldBonds /app#bonds 301
+redir @oldProfile /app#overview 301
+redir @oldSettings /app#settings 301
+redir @oldBaziMatch /hehun 301
+
+# Dynamic SPA routes — locale-prefixed
+@reviewLandingEn path_regexp ^/en/r/
+@reviewLandingZh path_regexp ^/zh-CN/r/
+@matchLandingEn path_regexp ^/en/m/
+@matchLandingZh path_regexp ^/zh-CN/m/
+@baziMatchLandingEn path_regexp ^/en/b/
+@baziMatchLandingZh path_regexp ^/zh-CN/b/
+
+rewrite @reviewLandingEn /en/review_landing.html
+rewrite @reviewLandingZh /zh-CN/review_landing.html
+rewrite @matchLandingEn /en/match_landing.html
+rewrite @matchLandingZh /zh-CN/match_landing.html
+rewrite @baziMatchLandingEn /en/bazi-match-landing.html
+rewrite @baziMatchLandingZh /zh-CN/bazi-match-landing.html
+
+# Dynamic SPA routes — non-prefixed (default to /en/)
+@reviewLanding path_regexp ^/r/
+@matchLanding path_regexp ^/m/
+@baziMatchLanding path_regexp ^/b/
+rewrite @reviewLanding /en/review_landing.html
+rewrite @matchLanding /en/match_landing.html
+rewrite @baziMatchLanding /en/bazi-match-landing.html
+
+# Profile name pages — /profile/{name} serves profile.html (must be before try_files)
+@profileZh {
+    path_regexp ^/zh-CN/profile/[^/]+$
+    not file
+}
+@profileEn {
+    path_regexp ^/en/profile/[^/]+$
+    not file
+}
+@profileRaw {
+    path_regexp ^/profile/[^/]+$
+    not file
+}
+rewrite @profileZh /zh-CN/profile.html
+rewrite @profileEn /en/profile.html
+rewrite @profileRaw /en/profile.html
+
+# SPA — /app serves the Vue 3 SPA (hash routing, no locale prefix)
+@appPath path_regexp ^/app
+@appPathFile file /app/index.html
+@appStatic path_regexp ^/app/
+handle @appStatic {
+    file_server
+}
+handle @appPath {
+    rewrite * /app/index.html
+    file_server
+}
+
+# Clean URLs -> .html files, with /en/ default for non-prefixed paths
+try_files {path} {path}.html {path}/index.html /en{path} /en{path}.html /en{path}/index.html
+file_server
+
+# Error pages
+handle_errors {
+    @404 expression {http.error.status_code} == 404
+    handle @404 {
+        rewrite * /en/error_404.html
+        file_server
+    }
+    @5xx expression {http.error.status_code} >= 500
+    handle @5xx {
+        rewrite * /en/error_500.html
+        file_server
+    }
+}

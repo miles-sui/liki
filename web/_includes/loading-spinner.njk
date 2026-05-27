@@ -1,0 +1,8 @@
+<template x-if="loading">
+  <div class="text-center py-20">
+    <span class="loading loading-spinner loading-lg text-primary"></span>
+    {%- if messageKey %}
+    <p class="mt-4 text-base-content/60" x-text="$store.locale.t('{{ messageKey }}')"></p>
+    {%- endif %}
+  </div>
+</template>

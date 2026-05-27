@@ -1,0 +1,10 @@
+{% if badge %}<div class="badge badge-outline badge-sm mb-1" x-text="{{ badge }}"></div>{% endif %}
+{% if label %}<h4 class="text-lg font-bold" x-text="{{ label }}"></h4>{% endif %}
+{% if idText %}<p class="text-xs text-base-content/50 font-mono mb-3" x-text="{{ idText }}"></p>{% endif %}
+{% set _outerCls = chartCls %}{% set chartCls = 'chart-h-300' %}{% set id = chartId %}{% include "chart-container.njk" %}{% set chartCls = _outerCls %}
+{% if selfP and peerP %}
+<div class="w-full mt-4 space-y-1">
+  {% set peerDeltaCls = 'mb-2' %}{% include "peer-delta-bars.njk" %}
+</div>
+{% endif %}
+{% if peerIdentity %}<p class="text-center text-sm text-base-content/60 mt-2" x-text="{{ peerIdentity }}"></p>{% endif %}

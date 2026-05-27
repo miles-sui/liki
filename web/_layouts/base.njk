@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="{{ site.locale }}" data-theme="wuxing">
+<head>
+<title>{{ title }} — {{ site.siteName }}</title>
+<meta name="description" content="{{ description }}">
+<meta property="og:title" content="{{ title }} — {{ site.siteName }}">
+<meta property="og:description" content="{{ description }}">
+<meta property="og:image" content="{{ ogImage or '/img/og-default.png' }}">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<meta property="og:url" content="https://25types.com{{ page.url }}">
+<meta property="og:site_name" content="{{ site.siteName }}">
+<meta property="og:locale" content="{{ site.locale | replace('zh-CN', 'zh_CN') }}">
+{% if noindex %}<meta name="robots" content="noindex">{% endif %}
+<link rel="canonical" href="https://25types.com{{ page.url }}">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "25types",
+  "url": "https://25types.com{{ page.url }}",
+  "description": "{{ description | replace('"', '\\"') }}",
+  "applicationCategory": "Lifestyle",
+  "operatingSystem": "Web",
+  "inLanguage": "{{ site.locale | replace('zh-CN', 'zh') }}"
+}
+</script>
+<link rel="alternate" hreflang="{{ site.locale }}" href="https://25types.com{{ page.url }}">
+<link rel="alternate" hreflang="{{ site.alternateLocale }}" href="https://25types.com{{ page.url | replace('/' + site.locale + '/', '/' + site.alternateLocale + '/') }}">
+{% include "head.njk" %}
+</head>
+<body class="min-h-screen bg-base-100 text-base-content flex flex-col {{ pageClass }}" x-data>
+{% include "navbar.njk" %}
+<div class="toast-container" x-show="$store.toast.messages.length > 0">
+  <template x-for="m in $store.toast.messages" :key="m.id">
+    <div class="alert toast shadow-lg mb-2" :class="m.type === 'error' ? 'alert-error' : m.type === 'success' ? 'alert-success' : 'alert-info'">
+      <span x-text="m.msg"></span>
+    </div>
+  </template>
+</div>
+
+<template x-if="$store.auth.showVerifyBanner">
+  <div class="alert alert-info rounded-none justify-center gap-2">
+    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+    <span x-text="$store.locale.t('verify.checkInbox')">Please verify your email — check your inbox for the verification link.</span>
+    <button class="btn btn-ghost btn-xs" @click="$store.auth.showVerifyBanner = false" aria-label="Dismiss">✕</button>
+  </div>
+</template>
+
+<main class="flex-1">
+{{ content | safe }}
+</main>
+
+{% set footerCls = 'mt-16' %}{% include "footer.njk" %}
+<script>
+window.CURRENT_LOCALE = "{{ site.locale }}";
+window.ELEMENT_CODES = [{% for el in elements %}"{{ el.code }}"{{ "," if not loop.last }}{% endfor %}];
+window.ELEMENT_NAMES = {
+{% for el in elements %}
+  "{{ el.code }}": "{{ el.name }}"{{ "," if not loop.last }}
+{% endfor %}
+};
+window.TRANSLATIONS = {{ translations | dump | safe }};
+{% if site.mingliApiHost %}window.API_MINGLI = '{{ site.mingliApiHost }}';
+{% endif %}window.MINGLI_TEMPLATES = {{ mingliTemplates | dump | safe }};
+window.PAGE_CONTENT = {{ pageContent.json | safe }};
+window.TYPE_DESCS = {
+{% for t in types %}"{{ t.id }}": {{ t.tagline | dump | safe }}{% if not loop.last %},{% endif %}
+{% endfor %}};
+window.TYPE_LABELS = {
+{% for t in types %}"{{ t.id }}": {{ t.label | dump | safe }}{% if not loop.last %},{% endif %}
+{% endfor %}};
+</script>
+<script src="/js/common.js"></script>
+{% block pageScripts %}{% endblock %}
+</body>
+</html>

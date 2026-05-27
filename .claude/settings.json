@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(go *)",
+      "Bash(npm *)",
+      "Bash(git *)",
+      "Bash(scripts/*)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.file_path // .tool_response.filePath' | { read -r f; case \"$f\" in *.go) cd /home/sq/wsp/25types && go build ./... 2>&1 ;; esac; }"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,84 @@
+---
+layout: base.njk
+title: 开业择日 — 免费八字开业吉日查询
+description: 开业择日在线工具。输入出生信息和候选日期，结合行业五行和每日能量，找到最适合你的开业日期。
+permalink: "/{{ site.locale }}/zeri/kaiye.html"
+---
+<div class="max-w-4xl mx-auto px-6 lg:px-14 py-14 lg:py-18">
+
+  <section class="text-center mb-14">
+    <h1 class="text-4xl font-bold mb-4">开业择日</h1>
+    <p class="text-lg text-base-content/60 max-w-2xl mx-auto">行业五行 + 个人八字 + 每日能量——三个维度交叉匹配，找到对业务最有利的开业日期。</p>
+  </section>
+
+  <!-- Industry = event five element -->
+  <section class="mb-12">
+    <h2 class="text-2xl font-bold mb-6 text-center">选择你的行业五行</h2>
+    <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
+      <button class="card bg-base-200 hover:shadow-lg transition-shadow p-4 text-center" style="border-left:4px solid var(--wood)">
+        <div class="font-bold">木</div>
+        <p class="text-xs text-base-content/60">教育、出版、医疗</p>
+      </button>
+      <button class="card bg-base-200 hover:shadow-lg transition-shadow p-4 text-center" style="border-left:4px solid var(--fire)">
+        <div class="font-bold">火</div>
+        <p class="text-xs text-base-content/60">互联网、餐饮、媒体</p>
+      </button>
+      <button class="card bg-base-200 hover:shadow-lg transition-shadow p-4 text-center" style="border-left:4px solid var(--earth)">
+        <div class="font-bold">土</div>
+        <p class="text-xs text-base-content/60">房地产、咨询、农业</p>
+      </button>
+      <button class="card bg-base-200 hover:shadow-lg transition-shadow p-4 text-center" style="border-left:4px solid var(--metal)">
+        <div class="font-bold">金</div>
+        <p class="text-xs text-base-content/60">金融、SaaS、精密制造</p>
+      </button>
+      <button class="card bg-base-200 hover:shadow-lg transition-shadow p-4 text-center" style="border-left:4px solid var(--water)">
+        <div class="font-bold">水</div>
+        <p class="text-xs text-base-content/60">物流、贸易、旅游</p>
+      </button>
+    </div>
+  </section>
+
+  <!-- How it works -->
+  <section class="card bg-base-200 shadow-lg mb-8">
+    <div class="card-body">
+      <h2 class="card-title mb-4">开业择日的三个维度</h2>
+      <div class="space-y-4">
+        <div>
+          <h3 class="font-bold">1. 建除十二神</h3>
+          <p class="text-sm text-base-content/60">开业最适合"成日"（建除满平定执破危成收开闭中的"成"——诸事可成）。避免"破日"（诸事不宜）。</p>
+        </div>
+        <div>
+          <h3 class="font-bold">2. 行业五行匹配</h3>
+          <p class="text-sm text-base-content/60">你的行业属火 → 选木旺或火旺的日子（木生火）。行业属金 → 选土旺或金旺的日子（土生金）。</p>
+        </div>
+        <div>
+          <h3 class="font-bold">3. 个人八字匹配</h3>
+          <p class="text-sm text-base-content/60">日期不能冲你的日柱。日期最好生你的日主——把你的能量和能力拉满。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <div class="text-center">
+    <div class="card bg-primary text-primary-content shadow-lg">
+      <div class="card-body">
+        <h2 class="card-title justify-center">选择你的开业日期</h2>
+        <p>前往个人面板，输入出生信息和候选开业月份，查看每天的能量标注和建议。</p>
+        <div class="card-actions justify-center mt-4">
+          <a href="/app#ask" class="btn btn-outline">开始择日</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FAQ -->
+  <section class="mt-12">
+    <h2 class="text-2xl font-bold mb-6 text-center">常见问题</h2>
+    <div class="collapse collapse-arrow bg-base-200 mb-2">
+      <input type="checkbox">
+      <div class="collapse-title font-medium">开业必须选"成日"吗？</div>
+      <div class="collapse-content"><p class="text-sm text-base-content/60">成日是首选，但还有其他好日子——开日（新的开始）、满日（充盈）也适合开业。关键是建除十二神 + 五行匹配 + 八字匹配的综合结果。</p></div>
+    </div>
+  </section>
+</div>

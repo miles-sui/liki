@@ -1,0 +1,9 @@
+<div class="{{ mt | default('') }}"{% if showCond %} x-show="{{ showCond }}"{% endif %}>
+{% include "section-header.njk" %}
+  <div class="card bg-base-200 shadow-sm">
+    <div class="card-body">
+      {% set _outerCls = chartCls %}{% set chartCls = 'chart-h-300' %}{% set id = chartId %}{% include "chart-container.njk" %}{% set chartCls = _outerCls %}
+      {% if badges %}<div class="flex justify-between mt-3 pl-[8%] pr-[5%]">{{ badges | safe }}</div>{% endif %}
+    </div>
+  </div>
+</div>

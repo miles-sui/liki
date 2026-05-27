@@ -1,0 +1,111 @@
+---
+layout: base.njk
+title: Free Personality Assessment
+description: Six rounds of choices to discover your five-element type instantly.
+---
+<div class="max-w-4xl mx-auto px-6 lg:px-14 py-14 lg:py-18" x-data="assessPage()">
+  <!-- Onboarding overlay — first visit only -->
+  <template x-if="showOnboarding">
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-base-100/90 backdrop-blur-sm" @click.self="startAssessment()">
+      <div class="card bg-base-200 shadow-2xl max-w-md mx-4">
+        <div class="card-body text-center p-8">
+          <div class="text-5xl mb-4">
+            <svg class="w-16 h-16 mx-auto" viewBox="0 0 100 80" fill="none">
+              <polygon points="50,5 85,28 72,72 28,72 15,28" fill="none" stroke="var(--metal)" stroke-width="2" opacity="0.3"/>
+              <circle cx="50" cy="5" r="8" fill="var(--wood)" opacity="0.5"/>
+              <circle cx="85" cy="28" r="8" fill="var(--fire)" opacity="0.5"/>
+              <circle cx="72" cy="72" r="8" fill="var(--earth)" opacity="0.5"/>
+              <circle cx="28" cy="72" r="8" fill="var(--metal)" opacity="0.5"/>
+              <circle cx="15" cy="28" r="8" fill="var(--water)" opacity="0.5"/>
+            </svg>
+          </div>
+          <h2 class="text-2xl font-bold mb-4" x-text="$store.locale.t('assess.onboarding.title')">How It Works</h2>
+          <ul class="text-left space-y-3 mb-6 text-base-content/70">
+            <li class="flex items-start gap-2">
+              <span class="text-primary font-bold">1.</span>
+              <span x-text="$store.locale.t('assess.onboarding.rounds')">6 rounds, 5 questions each</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="text-primary font-bold">2.</span>
+              <span x-text="$store.locale.t('assess.onboarding.pick')">Pick the 2 options most like you from each set of 3</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="text-primary font-bold">3.</span>
+              <span x-text="$store.locale.t('assess.onboarding.interstitial')">After each round, see your element profile take shape</span>
+            </li>
+          </ul>
+          <button class="btn btn-primary btn-lg" @click="startAssessment()" x-text="$store.locale.t('assess.onboarding.start')">Start Assessment</button>
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <!-- Progress -->
+  <template x-if="!loading && !error && currentQuestion">
+  <div class="mb-8">
+    <div class="flex justify-between text-base text-base-content/60 mb-2">
+      <span><span x-text="$store.locale.t('assess.progress')">Round</span> <span x-text="round"></span> <span x-text="$store.locale.t('assess.progressOf')">/ 6</span></span>
+      <span><span x-text="$store.locale.t('assess.selected')"></span> <span x-text="answersInRound() + ' / 2'"></span></span>
+    </div>
+    <progress class="progress progress-primary w-full" value="0" max="100" :value="currentQIndex + 1" :max="totalQuestions"></progress>
+  </div>
+  </template>
+
+  {% set messageKey = 'assess.loading' %}{% include "loading-spinner.njk" %}
+
+  <!-- Error -->
+  <template x-if="!loading && error">
+    <div class="text-center py-20">
+      <p class="text-error mb-4" x-text="error"></p>
+      <button class="btn btn-outline btn-sm" @click="init()" x-text="$store.locale.t('retry')">Retry</button>
+    </div>
+  </template>
+
+  {% include "assess-card.njk" %}
+
+  <!-- Round completion interstitial -->
+  <template x-if="!loading && !error && showInterstitial && lastResult">
+    <div class="text-center py-12">
+      <div class="text-4xl mb-4">&#9711;</div>
+      <h3 class="text-2xl font-bold mb-2" x-text="$store.locale.t('assess.roundComplete').replace('{n}', completedRound)">Round 1 complete</h3>
+      <p class="text-base-content/60 mb-4" x-text="$store.locale.t('assess.roundPreview')">Your element profile so far:</p>
+      <div class="max-w-sm mx-auto mb-4">
+        {% set pExpr = 'lastResult.profile.p' %}{% include "element-bars.njk" %}
+      </div>
+      <p class="text-sm text-base-content/70 mb-6 max-w-xs mx-auto">
+        <span x-text="$store.locale.t('assess.interstitial.topElement')"></span>
+        <strong class="text-primary" x-text="topElementLabel"></strong>.
+        <span x-text="$store.locale.t('assess.interstitial.next')"></span>
+      </p>
+      <button class="btn btn-primary" @click="continueAssessment()" x-text="$store.locale.t('assess.continueBtn')">Continue</button>
+    </div>
+  </template>
+
+  <!-- Completed — anonymous user -->
+  <template x-if="!loading && !error && !showInterstitial && !currentQuestion && lastResult && (!$store.auth || !$store.auth.id)">
+    <div class="text-center py-20">
+      <div class="text-5xl mb-4">&#10003;</div>
+      <h3 class="text-2xl font-bold mb-2" x-text="$store.locale.t('assess.complete')">Assessment Complete!</h3>
+      <p class="text-base-content/60 mb-8" x-text="$store.locale.t('assess.claimPrompt')">Log in or register to save and claim your result.</p>
+      <div class="flex flex-col sm:flex-row gap-3 justify-center items-center">
+        <a :href="localePath('/register')" class="btn btn-primary" x-text="$store.locale.t('assess.claimRegister')">Register to Save</a>
+        <a :href="localePath('/login')" class="btn btn-outline" x-text="$store.locale.t('assess.claimLogin')">Log in</a>
+        <button class="btn btn-ghost btn-sm" @click="startOver()" x-text="$store.locale.t('assess.startOver')">Start Over</button>
+      </div>
+    </div>
+  </template>
+
+  <!-- Completed — logged-in user -->
+  <template x-if="!loading && !error && !showInterstitial && !currentQuestion && lastResult && $store.auth && $store.auth.id">
+    <div class="text-center py-20">
+      <div class="text-5xl mb-4">&#10003;</div>
+      <h3 class="text-2xl font-bold mb-2" x-text="$store.locale.t('assess.complete')">Assessment Complete!</h3>
+      <p class="text-base-content/60 mb-6" x-text="$store.locale.t('assess.completeMsg')">You've completed all 6 rounds.</p>
+      <a :href="localePath('/result')" class="btn btn-primary" x-text="$store.locale.t('assess.viewResults')">View Results</a>
+    </div>
+  </template>
+</div>
+
+{% block pageScripts %}
+<script src="/js/assess.js"></script>
+{% endblock %}
