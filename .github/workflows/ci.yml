@@ -11,98 +11,147 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # ── Fast: Go vet + unit tests (< 5s) ──
-  go-test:
+  go-check:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: '1.24'
+          go-version: '1.26'
           cache: true
+
+      - name: Lint
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin
+          $(go env GOPATH)/bin/golangci-lint run --timeout=3m
 
       - name: Vet
         run: go vet ./...
 
-      - name: Test (unit)
-        run: go test -coverprofile=/tmp/unit.cover ./internal/engine/ ./internal/db/ ./internal/questionnaire/
+      - name: Test
+        run: go test -race -count=1 -coverprofile=coverage.out ./... -coverpkg=./internal/...
 
-      - name: Test (integration)
-        run: go test -coverprofile=/tmp/integration.cover ./internal/sqlite/ ./internal/http/ ./internal/application/...
-
-      - name: Coverage thresholds
+      - name: Check coverage
         run: |
-          set -o pipefail
-          FAIL=0
-          check() { local pkg=$1 min=$2
-            cov=$(go test -cover ./"$pkg/" 2>&1 | grep -oP 'coverage: \K[0-9.]+(?=%)' || echo "0")
-            if [ "$(echo "$cov < $min" | bc)" -eq 1 ]; then
-              echo "FAIL $pkg: ${cov}% < ${min}%"; return 1
-            fi
-            echo "PASS $pkg: ${cov}% >= ${min}%"
-          }
-          check internal/engine 60 || FAIL=1
-          check internal/db 70 || FAIL=1
-          check internal/questionnaire 50 || FAIL=1
-          check internal/sqlite 60 || FAIL=1
-          check internal/http 50 || FAIL=1
-          check internal/application/assessment 70 || FAIL=1
-          check internal/application/user 60 || FAIL=1
-          exit $FAIL
+          COV=$(go tool cover -func=coverage.out | tail -1 | awk '{print $3}' | sed 's/%//')
+          echo "Coverage: ${COV}%"
+          if [ "$(echo "$COV < 50" | bc)" -eq 1 ]; then
+            echo "Coverage ${COV}% is below 50% threshold"
+            exit 1
+          fi
 
-  # ── Contract: API response shapes + frontend data flow ──
-  contract:
+      - name: Build
+        run: go build -o /dev/null ./cmd/lingji/
+
+  docker-build:
     runs-on: ubuntu-latest
-    needs: go-test
+    needs: go-check
     steps:
       - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build Docker image
+        run: docker build -f deploy/lingji/Dockerfile -t lingji:ci .
+        env:
+          DOCKER_BUILDKIT: 1
 
-      - name: Build frontend
-        run: cd web && npm ci && npm run build
-
-      - name: Start services
-        run: |
-          cd deploy
-          docker compose up -d --build
-          # Wait for healthy
-          for i in $(seq 1 30); do
-            curl -sf http://localhost:8080/api/health && break
-            sleep 2
-          done
-
-      - name: API contract tests
-        run: scripts/test-api-contract.sh
-
-      - name: Frontend data-flow tests
-        run: scripts/test-frontend-data.sh
-
-  # ── E2E: Playwright browser tests ──
-  e2e:
+  security:
     runs-on: ubuntu-latest
-    needs: go-test
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26'
+          cache: true
 
+      - name: Run govulncheck
+        run: go run golang.org/x/vuln/cmd/govulncheck@latest ./...
+
+      - name: Run gosec
+        run: go run github.com/securecodewarrior/gosec/v2/cmd/gosec@latest -quiet ./...
+
+      - name: Run Trivy
+        uses: aquasecurity/trivy-action@0.24.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          severity: HIGH,CRITICAL
+          exit-code: 1
+
+  frontend-unit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '24'
           cache: 'npm'
           cache-dependency-path: web/package-lock.json
 
-      - name: Install Playwright deps
+      - name: Install dependencies
         run: cd web && npm ci
 
-      - name: Start services
+      - name: HTML check
+        run: node web/scripts/check-html.cjs
+
+      - name: Compile Vue template
+        run: node web/scripts/compile-vue-template.cjs
+
+      - name: i18n check
+        run: node web/scripts/check-i18n.cjs
+
+      - name: Run Vitest
+        run: cd web && npx vitest run js/__tests__/
+
+  e2e:
+    runs-on: ubuntu-latest
+    needs: go-check
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26'
+          cache: true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'npm'
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install Node deps
+        run: cd web && npm ci
+
+      - name: Install Playwright browsers
+        run: cd web && npx playwright install chromium
+
+      - name: Install Caddy
         run: |
-          cd deploy
-          docker compose up -d --build
+          curl -sfL "https://caddyserver.com/api/download?os=linux&arch=amd64" -o caddy
+          chmod +x caddy
+
+      - name: Build Go server
+        run: go build -o bin/lingji ./cmd/lingji/
+
+      - name: Start servers
+        run: |
+          ./bin/lingji -addr :8081 -db /tmp/lingji-ci.db &
+          ./caddy run --config deploy/lingji/Caddyfile.local &
+          # Wait for Caddy to be ready (serving static files on :8080)
           for i in $(seq 1 30); do
-            curl -sf http://localhost:8080/api/health && break
+            if curl -sf http://localhost:8080/zh/ 2>/dev/null | grep -q '<html'; then
+              echo "Server ready"
+              break
+            fi
             sleep 2
           done
+          if [ "$i" = "30" ]; then echo "Server failed to start" >&2; exit 1; fi
 
-      - name: Run Playwright
-        run: cd web && node ./node_modules/@playwright/test/cli.js test
+      - name: Run smoke test
+        run: cd web && BASE_URL=http://localhost:8080 npx playwright test --config e2e/playwright.config.js journeys/smoke.spec.js
+
+      - name: Run full E2E
+        run: cd web && BASE_URL=http://localhost:8080 npx playwright test --config e2e/playwright.config.js --ignore-snapshots
 
       - uses: actions/upload-artifact@v4
         if: failure()

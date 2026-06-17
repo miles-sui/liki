@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="zh" data-i18n-title="demo.title.bond">
+<head>
+<meta charset="UTF-8">
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<meta name="description" content="合盘示例 | 查看完整八字配对 Compatibility 分析报告样例，含双方日主、天干地支关系、纳音配合与缘分解读。灵机（Liki）AI命理助手。">
+<meta property="og:title" content="合盘示例 | 灵机 Liki">
+<meta property="og:description" content="查看完整八字配对分析报告样例，含双方日主、天干地支关系、纳音配合与缘分解读。">
+<meta property="og:url" content="https://liki.hk/compatibility.html">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="合盘示例 | 灵机 Liki">
+<meta name="twitter:description" content="查看完整八字配对分析报告样例，含双方日主、天干地支关系、纳音配合与缘分解读。">
+	<meta property="og:image" content="https://liki.hk/img/og-image.png">
+	<meta property="og:image:width" content="1200">
+	<meta property="og:image:height" content="630">
+	<meta name="twitter:image" content="https://liki.hk/img/og-image.png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>合盘示例 | 灵机 Liki</title>
+<script src="/js/i18next.min.js"></script>
+<script src="/js/i18nextHttpBackend.min.js"></script>
+<script src="/js/i18nextBrowserLanguageDetector.min.js"></script>
+<script src="/js/i18n.js"></script>
+<script src="/js/components.js"></script>
+<script defer src="/js/api.js"></script>
+<script defer src="/js/demo-utils.js"></script>
+<link rel="stylesheet" href="/css/app.css">
+</head>
+<body class="bg-stone-50 min-h-screen">
+
+<a href="#main" class="skip-link">跳到主要内容</a>
+
+<liki-header title-key="report.title.bond" title="合盘报告"></liki-header>
+
+<sample-banner></sample-banner>
+
+<main id="main" class="max-w-4xl mx-auto px-4 py-8">
+  <article>
+
+  <print-cover product="合盤命理報告"></print-cover>
+    <div class="pc-date" id="print-date"></div>
+  </div>
+
+  <print-brand></print-brand>
+
+  <!-- Day masters -->
+  <div class="section-card">
+    <h2 data-i18n="bond.dayMasters">双方日主</h2>
+    <div class="summary-grid">
+      <div class="summary-card">
+        <div class="label" data-i18n="bond.dayMasterA">甲方日主</div>
+        <div class="value">戊土（身旺）</div>
+      </div>
+      <div class="summary-card">
+        <div class="label" data-i18n="bond.dayMasterB">乙方日主</div>
+        <div class="value">癸水（身弱）</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Gan relations -->
+  <div class="section-card">
+    <h2 data-i18n="bond.ganRelation">天干关系</h2>
+    <div class="rel-row">
+      <span class="text-sm">甲 (甲方年干) → 乙 (乙方月干)</span>
+      <div>
+        <span class="tag tag-amber">相合</span>
+        <span class="text-xs text-stone-500 ml-2">甲己合 |天地德合</span>
+      </div>
+    </div>
+    <div class="rel-row">
+      <span class="text-sm">戊 (甲方日干) → 癸 (乙方日干)</span>
+      <div>
+        <span class="tag tag-amber">相合</span>
+        <span class="text-xs text-stone-500 ml-2">戊癸合 |无情之合，暗藏情缘</span>
+      </div>
+    </div>
+    <div class="rel-row">
+      <span class="text-sm">丙 (甲方月干) → 辛 (乙方年干)</span>
+      <div>
+        <span class="tag tag-green">相生</span>
+        <span class="text-xs text-stone-500 ml-2">丙辛合 |日月之合，相互吸引</span>
+      </div>
+    </div>
+    <div class="rel-row">
+      <span class="text-sm">丁 (甲方时干) → 壬 (乙方时干)</span>
+      <div>
+        <span class="tag tag-green">相合</span>
+        <span class="text-xs text-stone-500 ml-2">丁壬合 |木之合，情投意合</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Zhi relations -->
+  <div class="section-card">
+    <h2 data-i18n="bond.zhiRelation">地支关系</h2>
+    <div class="rel-row">
+      <span class="text-sm">子 (甲方年支) → 丑 (乙方日支)</span>
+      <span class="tag tag-green">六合</span>
+    </div>
+    <div class="rel-row">
+      <span class="text-sm">寅 (甲方月支) → 亥 (乙方月支)</span>
+      <span class="tag tag-green">六合</span>
+    </div>
+    <div class="rel-row">
+      <span class="text-sm">辰 (甲方日支) → 酉 (乙方年支)</span>
+      <span class="tag tag-amber">六合</span>
+    </div>
+  </div>
+
+  <!-- Key hints -->
+  <div class="bg-amber-50 border border-amber-100 rounded-xl p-6 mb-3">
+    <h2 class="text-lg font-semibold mb-3 text-amber-800" data-i18n="bond.keyHints">关键提示</h2>
+    <div class="flex items-start gap-2 mb-1">
+      <span class="text-amber-500 mt-1">•</span>
+      <span class="text-sm text-amber-800">戊癸合为"无情之合"：中年男女易生情愫，但需注意现实基础，不可仅凭感性冲动。</span>
+    </div>
+    <div class="flex items-start gap-2 mb-1">
+      <span class="text-amber-500 mt-1">•</span>
+      <span class="text-sm text-amber-800">双方地支三组合，子丑合、寅亥合、辰酉合：地格配合度高，生活习性、家庭观念契合。</span>
+    </div>
+    <div class="flex items-start gap-2 mb-1">
+      <span class="text-amber-500 mt-1">•</span>
+      <span class="text-sm text-amber-800">甲方戊土身旺喜水木，乙方癸水身弱喜金水：五行互补性强，能互相成就。</span>
+    </div>
+  </div>
+
+  <!-- LLM Analysis -->
+  <div class="section-card">
+    <h2 data-i18n="bond.interpretation">合盘解读</h2>
+    <div class="report-content">
+      <h3>一、综合缘分评定</h3>
+      <p>甲方日主戊土，生于寅月，身旺印旺；乙方日主癸水，生于酉月，身弱喜金水。两人日干<strong>戊癸相合</strong>，为天地之合，缘分天然深厚。戊土为高山之土，癸水为雨露之水：水润土而生万物，<strong>五行互补性极强</strong>。</p>
+
+      <h3>二、天干关系</h3>
+      <p>双方天干多处相合：甲己合（年与月）、戊癸合（日与日）、丙辛合（月与年）、丁壬合（时与时）。四组天干皆成合象，<strong>气场合拍度极高</strong>。此种多重合相在合盘中较为难得，说明两人在多层面（家庭背景、性格核心、生活方式、未来愿景）均有高度共鸣。</p>
+
+      <h3>三、地支配合</h3>
+      <p>地支三组六合（子丑、寅亥、辰酉），涵盖了年、月、日三个层次。年柱合：家庭根基契合；月柱合：青年时期生活节奏配合；日柱合：夫妻宫匹配，婚姻质量上乘。尤其是<strong>辰酉合</strong>，辰为水库、酉为金印，金生水而利乙方，土生金而泄甲方旺气，互惠互利。</p>
+
+      <h3>四、五行互补</h3>
+      <p>甲方八字火土偏旺（身旺），以水木为用；乙方八字金水偏旺（身弱），以金水为用。两人命局<strong>金水共通</strong>：金生水有利于双方，水旺对甲方为用神、对乙方为帮身。甲方给予乙方足够的土之稳重（安全感），乙方给予甲方水之灵动（滋养与变化），<strong>取长补短，相辅相成</strong>。</p>
+
+      <h3>五、注意事项</h3>
+      <p>戊癸合虽美，但"无情之合"提示关系需建立在现实基础上。甲方身旺有时过于固执，乙方身弱有时缺乏主见：建议在重大决策时充分沟通，甲方多倾听，乙方多表达。总体来看，此配对缘分深厚、五行互补、地格契合，<strong>为一等良配</strong>。</p>
+    </div>
+  </div>
+
+  <print-bar></print-bar>
+
+  <!-- Security -->
+  <security-section></security-section>
+
+  <!-- CTA -->
+  <cta-section product="bond"></cta-section>
+
+  </article>
+</main>
+
+<liki-footer></liki-footer>
+
+<script defer src="/js/analytics.js"></script>
+</body>
+</html>

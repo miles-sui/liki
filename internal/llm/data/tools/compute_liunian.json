@@ -1,0 +1,19 @@
+{
+  "name": "compute_liunian",
+  "description": "计算指定年份的流年运势分析。需要先通过 compute_chart 获取命盘数据。chart 参数传入 compute_chart 返回的 data.chart 对象，dayun 参数传入 data.dayun 对象。返回：流年干支、十神、五行生克、与命局的互动关系、神煞、伏吟反吟。当用户询问某年运势时调用。",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "year": {"type": "integer", "description": "要分析的流年年份，如 2026"},
+      "chart": {
+        "type": "object",
+        "description": "八字命盘数据，直接传入 compute_chart 返回结果中的 data.chart 对象。含 chart_id 和 chart（四柱、十神、藏干等）"
+      },
+      "dayun": {
+        "type": "object",
+        "description": "大运数据，直接传入 compute_chart 返回结果中的 data.dayun 对象。可选，提供后可获得大运层面的交互分析。"
+      }
+    },
+    "required": ["year", "chart"]
+  }
+}

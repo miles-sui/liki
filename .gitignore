@@ -1,18 +1,9 @@
-# Node
-web/node_modules/
-web/dist/
-
 # Go binaries
-cmd/app-server/server
-cmd/mingli-server/server
 /server
 /bin/
+/lingji
 *.exe
-
-# Python
-__pycache__/
-*.pyc
-.venv/
+*.test
 
 # SQLite
 *.db
@@ -30,3 +21,8 @@ Thumbs.db
 # Env
 .env
 .env.local
+CLAUDE.local.md
+
+# Generated
+data/pdfs/
+node_modules/

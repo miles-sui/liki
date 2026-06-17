@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="zh" data-i18n-title="chat.title" data-i18n-title-suffix="site.name">
+<head>
+<meta charset="UTF-8">
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<script src="/js/i18next.min.js"></script>
+<script src="/js/i18nextHttpBackend.min.js"></script>
+<script src="/js/i18nextBrowserLanguageDetector.min.js"></script>
+<script src="/js/i18n.js"></script>
+<script src="/js/components.js"></script>
+<meta name="description" data-i18n-content="chat.metaDesc" content="灵机（Liki）是一款 AI命理助手，用自然语言描述需求即可排盘、合盘、起名。">
+<meta property="og:title" content="灵机对话 · 灵机 Liki">
+<meta property="og:description" content="灵机（Liki）是一款 AI命理助手，用自然语言描述需求即可排盘、合盘、起名。">
+<meta property="og:url" content="https://liki.hk/chat.html">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="灵机对话 · 灵机 Liki">
+<meta name="twitter:description" content="灵机（Liki）是一款 AI命理助手，用自然语言描述需求即可排盘、合盘、起名。">
+	<meta property="og:image" content="https://liki.hk/img/og-image.png">
+	<meta property="og:image:width" content="1200">
+	<meta property="og:image:height" content="630">
+	<meta name="twitter:image" content="https://liki.hk/img/og-image.png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>灵机对话 · 灵机 Liki</title>
+<script defer src="/js/vue.runtime.global.prod.js"></script>
+<script defer src="/js/chat-template.js"></script>
+<script defer src="/js/marked.min.js"></script>
+<script defer src="/js/purify.min.js"></script>
+<script defer src="/js/api.js"></script>
+<script defer src="/js/chat.js"></script>
+<link rel="stylesheet" href="/css/app.css">
+<link rel="stylesheet" href="/css/chat.css">
+</head>
+<body class="bg-stone-50">
+<div id="app" v-cloak>
+<a href="#main" class="skip-link">跳到主要内容</a>
+<div class="chat-shell">
+
+  <!-- Header -->
+  <header class="chat-header">
+    <a :href="'/' + lang + '/'" class="back-link">
+      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="flex-shrink-0"><polyline points="15 18 9 12 15 6"/></svg>
+      {{ t('chat.back') }}</a>
+    <span class="brand">{{ t('chat.title') }}</span>
+    <div class="flex items-center gap-2">
+      <button class="text-xs btn-newchat transition-colors" @click="newChat()">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" class="flex-shrink-0"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        {{ t('chat.newChat') }}</button>
+      <lang-switcher></lang-switcher>
+    </div>
+  </header>
+
+  <!-- Messages area -->
+  <div ref="chatMessagesEl" class="chat-messages" role="log" aria-live="polite">
+    <template v-for="(m, i) in messages" :key="i">
+      <div>
+        <!-- User bubble -->
+        <div v-show="m.role === 'user'" class="msg msg-user" v-text="m.content"></div>
+        <div v-show="m.role === 'user' && m.time" class="msg-time msg-time-user" v-text="formatTime(m.time)"></div>
+        <!-- Assistant bubble -->
+        <div v-show="m.role === 'assistant' && m.html" class="msg msg-asst" v-html="m.html"></div>
+        <div v-show="m.role === 'assistant' && m.html && m.time" class="msg-time msg-time-asst" v-text="formatTime(m.time)"></div>
+        <!-- Loading dots in assistant bubble -->
+        <div v-show="m.role === 'assistant' && !m.html && ui.substate === 'loading'" class="msg msg-asst">
+          <div v-show="phaseStatus" class="phase-status" v-text="phaseStatus"></div>
+          <div class="typing-dots"><span></span><span></span><span></span></div>
+        </div>
+        <!-- Buy card -->
+        <div v-show="m.role === 'buy' && !m._dismissed" class="buy-card">
+          <button class="bc-dismiss" @click="dismissBuy(m)" aria-label="关闭">&times;</button>
+          <div class="bc-price"><span v-text="m.currency"></span>{{ (m.displayAmount / 100).toFixed(2) }} <small>{{ t('chat.unlockLabel') }}</small></div>
+          <button class="btn-buy" @click="goPayment()" :disabled="buyLoading">
+            <span v-show="!buyLoading">{{ t('chat.viewReport') }}</span>
+            <span v-show="buyLoading">{{ t('chat.creatingPayment') }}</span>
+          </button>
+        </div>
+      </div>
+    </template>
+    <!-- Chips below greeting -->
+    <div class="chip-row" v-show="showChips">
+      <template v-for="chip in welcomeChips" :key="chip.label">
+        <button class="chip" @click="sendMessage(chip.msg)" :disabled="chipsDisabled" v-text="chip.label"></button>
+      </template>
+    </div>
+  </div>
+
+  <!-- Error toast -->
+  <div v-show="ui.error" class="error-toast">
+    <span v-text="ui.error"></span>
+    <button class="text-xs text-red-400 hover:text-red-600 ml-2" @click="ui.error=''">&times;</button>
+  </div>
+
+  <!-- Input hint -->
+  <div class="input-hint" v-show="showInput && !messages.some(m => m.role === 'user')" v-text="t('chat.inputHint')"></div>
+
+  <!-- Input bar -->
+  <div class="chat-input-bar" v-show="showInput">
+    <label for="chat-input" class="sr-only" v-text="inputPlaceholder"></label>
+    <input
+      id="chat-input"
+      ref="chatInputEl"
+      type="text"
+      v-model="input"
+      :placeholder="inputPlaceholder"
+      @keydown.enter="sendMessage()"
+      @compositionstart="onCompositionStart()"
+      @compositionend="onCompositionEnd()"
+      :disabled="ui.substate === 'loading'"
+      autocomplete="off"
+    >
+    <button
+      v-show="ui.phase !== 'streaming' && ui.substate !== 'loading'"
+      class="btn-send"
+      @click="sendMessage()"
+      :disabled="!input.trim() || ui.substate === 'loading'"
+      :aria-label="t('chat.send')"
+    >&uarr;</button>
+    <button
+      v-show="ui.substate === 'loading' || ui.phase === 'streaming'"
+      class="btn-stop"
+      @click="stopStream()"
+    >{{ t('chat.stop') }}</button>
+  </div>
+
+  <liki-footer hide-mobile></liki-footer>
+
+</div>
+</div>
+<script defer src="/js/analytics.js"></script>
+</body>
+</html>

@@ -1,0 +1,18 @@
+{
+  "name": "compute_chart",
+  "description": "根据出生参数计算完整八字命盘。你自己不会排八字、定格局、推用神——必须通过此工具获取所有计算数据。返回：四柱（天干地支）、十神、藏干、纳音、神煞、五行分布、用神（扶抑+调候）、格局、大运。",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "year": {"type": "integer", "description": "出生年份，如 1990"},
+      "month": {"type": "integer", "description": "出生月份 1-12"},
+      "day": {"type": "integer", "description": "出生日期 1-31"},
+      "hour": {"type": "integer", "description": "出生小时 0-23"},
+      "minute": {"type": "integer", "description": "出生分钟 0-59"},
+      "longitude": {"type": "number", "description": "出生地经度，如 116.4"},
+      "timezone": {"type": "number", "description": "时区偏移，如 8 表示 UTC+8"},
+      "gender": {"type": "string", "enum": ["male", "female"]}
+    },
+    "required": ["year", "month", "day", "hour", "minute", "longitude", "timezone", "gender"]
+  }
+}

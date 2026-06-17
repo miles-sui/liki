@@ -1,0 +1,26 @@
+{
+  "name": "compute_bond",
+  "description": "计算两人的八字合盘配对分析。你自己不会排盘、分析八字关系——必须通过此工具获取所有计算数据。返回：双方日主、天干关系（合/生/克）、地支关系（六合/三合/六冲）、纳音配合、关键提示。",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "year_a": {"type": "integer", "description": "甲方出生年份"},
+      "month_a": {"type": "integer", "description": "甲方出生月份"},
+      "day_a": {"type": "integer", "description": "甲方出生日期"},
+      "hour_a": {"type": "integer", "description": "甲方出生小时"},
+      "minute_a": {"type": "integer", "description": "甲方出生分钟"},
+      "longitude_a": {"type": "number", "description": "甲方出生地经度"},
+      "timezone_a": {"type": "number", "description": "甲方时区偏移"},
+      "gender_a": {"type": "string", "enum": ["male", "female"]},
+      "year_b": {"type": "integer", "description": "乙方出生年份"},
+      "month_b": {"type": "integer", "description": "乙方出生月份"},
+      "day_b": {"type": "integer", "description": "乙方出生日期"},
+      "hour_b": {"type": "integer", "description": "乙方出生小时"},
+      "minute_b": {"type": "integer", "description": "乙方出生分钟"},
+      "longitude_b": {"type": "number", "description": "乙方出生地经度"},
+      "timezone_b": {"type": "number", "description": "乙方时区偏移"},
+      "gender_b": {"type": "string", "enum": ["male", "female"]}
+    },
+    "required": ["year_a","month_a","day_a","hour_a","minute_a","longitude_a","timezone_a","gender_a","year_b","month_b","day_b","hour_b","minute_b","longitude_b","timezone_b","gender_b"]
+  }
+}

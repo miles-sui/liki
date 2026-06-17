@@ -1,0 +1,19 @@
+{
+  "name": "purchase",
+  "description": "用户在对话中明确确认购买完整深度报告时调用。必须在用户明确肯定购买请求后调用，不能推测或假设用户意图。调用前先询问用户是否提供邮箱以保存报告链接。",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "product": {
+        "type": "string",
+        "enum": ["chart", "bond", "naming"],
+        "description": "用户要购买的报告类型：chart(八字命盘)、bond(合盘配对)、naming(起名分析)"
+      },
+      "email": {
+        "type": "string",
+        "description": "用户提供的邮箱地址，用于发送报告链接以便日后查阅。用户明确拒绝提供时为空字符串。"
+      }
+    },
+    "required": ["product"]
+  }
+}

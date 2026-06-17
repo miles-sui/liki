@@ -14,13 +14,16 @@ set -euo pipefail
 
 BACKUP_DIR="${1:-data/backups}"
 RETENTION_DAYS="${2:-30}"
-DB_PATH="${DB_PATH:-data/25types.db}"
+DB_PATH="${DB_PATH:-data/lingji.db}"
 DB_NAME="$(basename "$DB_PATH" .db)"
 
 mkdir -p "$BACKUP_DIR"
 
 TIMESTAMP="$(date -u +%Y%m%dT%H%M%SZ)"
 BACKUP_FILE="$BACKUP_DIR/${DB_NAME}-${TIMESTAMP}.db"
+
+# Sanity-check: path must not contain single-quotes (would break VACUUM INTO).
+case "$BACKUP_FILE" in *"'"*) echo "[backup] ERROR: path contains single-quote"; exit 1 ;; esac
 
 echo "[backup] $(date -u +%Y-%m-%dT%H:%M:%SZ) starting VACUUM INTO $BACKUP_FILE"
 

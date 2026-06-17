@@ -1,0 +1,373 @@
+package payment
+
+import (
+	"context"
+	"database/sql"
+	"strings"
+	"testing"
+	"liki/internal/agent"
+
+	"time"
+
+)
+
+func openTestDB(t *testing.T) *sql.DB {
+	t.Helper()
+	db, err := sql.Open("sqlite", ":memory:?_pragma=journal_mode(WAL)&_pragma=busy_timeout(5000)&_pragma=foreign_keys(ON)")
+	if err != nil {
+		t.Fatalf("open test db: %v", err)
+	}
+	db.SetMaxOpenConns(1)
+	t.Cleanup(func() { db.Close() })
+	return db
+}
+
+func TestNewStore_CreatesSchema(t *testing.T) {
+	db := openTestDB(t)
+	store, err := NewStore(db)
+	if err != nil {
+		t.Fatalf("NewStore: %v", err)
+	}
+
+	// Verify orders table exists with correct columns (no pdf_path).
+	rows, err := db.Query("PRAGMA table_info(orders)")
+	if err != nil {
+		t.Fatalf("PRAGMA table_info: %v", err)
+	}
+	defer rows.Close()
+
+	cols := make(map[string]bool)
+	for rows.Next() {
+		var cid int
+		var name, typ string
+		var notNull bool
+		var dflt sql.NullString
+		var pk int
+		if err := rows.Scan(&cid, &name, &typ, &notNull, &dflt, &pk); err != nil {
+			t.Fatalf("scan column: %v", err)
+		}
+		cols[name] = true
+	}
+
+	required := []string{"order_id", "product", "amount", "currency", "email", "chart_json", "llm_json", "status", "payment_id", "created_at", "updated_at"}
+	for _, c := range required {
+		if !cols[c] {
+			t.Errorf("missing column %q in orders table", c)
+		}
+	}
+	if cols["pdf_path"] {
+		t.Error("pdf_path column must not exist in orders table")
+	}
+	_ = store // suppress unused warning
+}
+
+func TestCreateAndGetOrder(t *testing.T) {
+	db := openTestDB(t)
+	store, err := NewStore(db)
+	if err != nil {
+		t.Fatalf("NewStore: %v", err)
+	}
+	ctx := context.Background()
+
+	orderID := "test-order-1"
+	if err := store.CreateOrder(ctx, orderID, agent.ProductChart, 990, "USD", `{"chart":{}}`, "", "zh-Hans"); err != nil {
+		t.Fatalf("CreateOrder: %v", err)
+	}
+
+	o, err := store.GetOrder(ctx, orderID)
+	if err != nil {
+		t.Fatalf("GetOrder: %v", err)
+	}
+	if o.OrderID != orderID {
+		t.Errorf("OrderID = %q, want %q", o.OrderID, orderID)
+	}
+	if o.Product != agent.ProductChart {
+		t.Errorf("Product = %q, want chart", o.Product)
+	}
+	if o.Amount != 990 {
+		t.Errorf("Amount = %d, want 990", o.Amount)
+	}
+	if o.Status != OrderPending {
+		t.Errorf("Status = %q, want pending", o.Status)
+	}
+	if o.ChartJSON != `{"chart":{}}` {
+		t.Errorf("ChartJSON = %q, want {\"chart\":{}}", o.ChartJSON)
+	}
+	if o.LlmJSON != "" {
+		t.Errorf("LlmJSON = %q, want empty", o.LlmJSON)
+	}
+	if o.CreatedAt.IsZero() {
+		t.Error("CreatedAt should not be zero")
+	}
+}
+
+func TestMarkPaid(t *testing.T) {
+	db := openTestDB(t)
+	store, err := NewStore(db)
+	if err != nil {
+		t.Fatalf("NewStore: %v", err)
+	}
+	ctx := context.Background()
+
+	orderID := "test-order-paid"
+	if err := store.CreateOrder(ctx, orderID, agent.ProductBond, 1990, "USD", `{"bond":{}}`, "", "zh-Hans"); err != nil {
+		t.Fatalf("CreateOrder: %v", err)
+	}
+	if err := store.UpdateEmail(ctx, orderID, "user@test.com"); err != nil {
+		t.Fatalf("UpdateEmail: %v", err)
+	}
+
+	_, email, product, _, err := store.MarkPaidIdempotent(ctx, orderID, "pay-123")
+	if err != nil {
+		t.Fatalf("MarkPaid: %v", err)
+	}
+	if email != "user@test.com" {
+		t.Errorf("email = %q, want user@test.com", email)
+	}
+	if product != agent.ProductBond {
+		t.Errorf("product = %q, want bond", product)
+	}
+
+	o, err := store.GetOrder(ctx, orderID)
+	if err != nil {
+		t.Fatalf("GetOrder after MarkPaid: %v", err)
+	}
+	if o.Status != OrderPaid {
+		t.Errorf("Status = %q, want paid", o.Status)
+	}
+	if o.PaymentID != "pay-123" {
+		t.Errorf("PaymentID = %q, want pay-123", o.PaymentID)
+	}
+}
+
+func TestGetOrder_NotFound(t *testing.T) {
+	db := openTestDB(t)
+	store, err := NewStore(db)
+	if err != nil {
+		t.Fatalf("NewStore: %v", err)
+	}
+	_, err = store.GetOrder(context.Background(), "nonexistent")
+	if err != ErrOrderNotFound {
+		t.Errorf("expected ErrOrderNotFound, got %v", err)
+	}
+}
+
+func TestMarkPaid_NotFound(t *testing.T) {
+	db := openTestDB(t)
+	store, err := NewStore(db)
+	if err != nil {
+		t.Fatalf("NewStore: %v", err)
+	}
+	_, _, _, _, err = store.MarkPaidIdempotent(context.Background(), "nonexistent", "pay-1")
+	if err != ErrOrderNotFound {
+		t.Errorf("expected ErrOrderNotFound, got %v", err)
+	}
+}
+
+func TestUpdateLlmJSON(t *testing.T) {
+	db := openTestDB(t)
+	store, err := NewStore(db)
+	if err != nil {
+		t.Fatalf("NewStore: %v", err)
+	}
+	ctx := context.Background()
+
+	orderID := "test-order-llm"
+	if err := store.CreateOrder(ctx, orderID, agent.ProductNaming, 2990, "USD", `{"naming":{}}`, "", "zh-Hans"); err != nil {
+		t.Fatalf("CreateOrder: %v", err)
+	}
+	if err := store.UpdateLlmJSON(ctx, orderID, "# Report\n\ncontent"); err != nil {
+		t.Fatalf("UpdateLlmJSON: %v", err)
+	}
+
+	o, err := store.GetOrder(ctx, orderID)
+	if err != nil {
+		t.Fatalf("GetOrder: %v", err)
+	}
+	if o.LlmJSON != "# Report\n\ncontent" {
+		t.Errorf("LlmJSON = %q, want # Report...", o.LlmJSON)
+	}
+}
+
+func TestCleanStale(t *testing.T) {
+	db := openTestDB(t)
+	store, err := NewStore(db)
+	if err != nil {
+		t.Fatalf("NewStore: %v", err)
+	}
+	ctx := context.Background()
+
+	// Create a paid order (should survive).
+	if err := store.CreateOrder(ctx, "paid-order", agent.ProductChart, 990, "USD", `{}`, "", "zh-Hans"); err != nil {
+		t.Fatalf("CreateOrder paid: %v", err)
+	}
+	if _, _, _, _, err := store.MarkPaidIdempotent(ctx, "paid-order", "pay-1"); err != nil {
+		t.Fatalf("MarkPaidIdempotent: %v", err)
+	}
+
+	// Create a pending order (should be cleaned).
+	if err := store.CreateOrder(ctx, "pending-order", agent.ProductChart, 990, "USD", `{}`, "", "zh-Hans"); err != nil {
+		t.Fatalf("CreateOrder pending: %v", err)
+	}
+	// Backdate created_at so it falls within the stale window.
+	if _, err := db.ExecContext(ctx, `UPDATE orders SET created_at = '2020-01-01 00:00:00' WHERE order_id = 'pending-order'`); err != nil {
+		t.Fatalf("ExecContext: %v", err)
+	}
+
+	// Clean orders older than 24h.
+	if err := store.CleanStale(ctx, 24*time.Hour); err != nil {
+		t.Fatalf("CleanStale: %v", err)
+	}
+
+	// Paid order still exists.
+	if _, err := store.GetOrder(ctx, "paid-order"); err != nil {
+		t.Errorf("paid order should survive cleanup: %v", err)
+	}
+
+	// Backdated pending order removed (older than 24h cutoff).
+	_, err = store.GetOrder(ctx, "pending-order")
+	if err != ErrOrderNotFound {
+		t.Errorf("pending order should be cleaned, got %v", err)
+	}
+}
+
+func TestSchemaColumnMatch(t *testing.T) {
+	// Verify the INSERT column list matches the CREATE TABLE schema (no extras).
+	db := openTestDB(t)
+	_, err := NewStore(db)
+	if err != nil {
+		t.Fatalf("NewStore: %v", err)
+	}
+
+	// Collect schema column names (excluding rowid).
+	rows, err := db.Query("SELECT name FROM pragma_table_info('orders') ORDER BY cid")
+	if err != nil {
+		t.Fatalf("pragma_table_info: %v", err)
+	}
+	defer rows.Close()
+
+	var schemaCols []string
+	for rows.Next() {
+		var name string
+		if err := rows.Scan(&name); err != nil {
+			t.Fatalf("scan: %v", err)
+		}
+		schemaCols = append(schemaCols, name)
+	}
+
+	// Columns used in CreateOrder INSERT (must be subset of schema).
+	insertCols := []string{"order_id", "product", "amount", "currency", "chart_json", "llm_json"}
+
+	schemaSet := make(map[string]bool, len(schemaCols))
+	for _, c := range schemaCols {
+		schemaSet[c] = true
+	}
+	for _, c := range insertCols {
+		if !schemaSet[c] {
+			t.Errorf("INSERT references column %q not in schema (schema has: %s)", c, strings.Join(schemaCols, ", "))
+		}
+	}
+
+	// Verify INSERT doesn't miss any NOT NULL column without DEFAULT.
+	for _, c := range []string{"order_id", "product", "amount", "currency", "chart_json"} {
+		found := false
+		for _, ic := range insertCols {
+			if ic == c {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Errorf("INSERT is missing NOT NULL column %q, will fail", c)
+		}
+	}
+}
+
+func TestMarkPaid_Idempotent(t *testing.T) {
+	db := openTestDB(t)
+	store, err := NewStore(db)
+	if err != nil {
+		t.Fatalf("NewStore: %v", err)
+	}
+	ctx := context.Background()
+
+	orderID := "test-idempotent"
+	if err := store.CreateOrder(ctx, orderID, agent.ProductChart, 990, "USD", `{}`, "", "zh-Hans"); err != nil {
+		t.Fatalf("CreateOrder: %v", err)
+	}
+
+	newPayment, _, _, _, err := store.MarkPaidIdempotent(ctx, orderID, "pay-1")
+	if err != nil {
+		t.Fatalf("first MarkPaid: %v", err)
+	}
+	if !newPayment {
+		t.Error("first MarkPaid should be new payment")
+	}
+
+	newPayment2, _, _, _, err := store.MarkPaidIdempotent(ctx, orderID, "pay-2")
+	if err != nil {
+		t.Fatalf("second MarkPaid: %v", err)
+	}
+	if newPayment2 {
+		t.Error("second MarkPaid should not be new payment")
+	}
+}
+
+func TestUpdateLlmJSONIfEmpty(t *testing.T) {
+	db := openTestDB(t)
+	store, err := NewStore(db)
+	if err != nil {
+		t.Fatalf("NewStore: %v", err)
+	}
+	ctx := context.Background()
+
+	orderID := "test-llm-if-empty"
+	if err := store.CreateOrder(ctx, orderID, agent.ProductChart, 990, "USD", `{}`, "", "zh-Hans"); err != nil {
+		t.Fatalf("CreateOrder: %v", err)
+	}
+
+	updated, err := store.UpdateLlmJSONIfEmpty(ctx, orderID, "report content")
+	if err != nil {
+		t.Fatalf("UpdateLlmJSONIfEmpty: %v", err)
+	}
+	if !updated {
+		t.Error("first UpdateLlmJSONIfEmpty should have updated")
+	}
+
+	o, err := store.GetOrder(ctx, orderID)
+	if err != nil { t.Fatalf("GetOrder: %v", err) }
+	if o.LlmJSON != "report content" {
+		t.Errorf("LlmJSON = %q, want 'report content'", o.LlmJSON)
+	}
+
+	updated2, err := store.UpdateLlmJSONIfEmpty(ctx, orderID, "new content")
+	if err != nil {
+		t.Fatalf("second UpdateLlmJSONIfEmpty: %v", err)
+	}
+	if updated2 {
+		t.Error("second UpdateLlmJSONIfEmpty should not have updated")
+	}
+
+	o2, err := store.GetOrder(ctx, orderID)
+	if err != nil { t.Fatalf("GetOrder: %v", err) }
+	if o2.LlmJSON != "report content" {
+		t.Errorf("LlmJSON after second call = %q, want 'report content'", o2.LlmJSON)
+	}
+}
+
+func TestCreateOrder_DuplicateID(t *testing.T) {
+	db := openTestDB(t)
+	store, err := NewStore(db)
+	if err != nil {
+		t.Fatalf("NewStore: %v", err)
+	}
+	ctx := context.Background()
+
+	if err := store.CreateOrder(ctx, "dup-order", agent.ProductChart, 990, "USD", `{}`, "", "zh-Hans"); err != nil {
+		t.Fatalf("CreateOrder: %v", err)
+	}
+	err = store.CreateOrder(ctx, "dup-order", agent.ProductBond, 1990, "CNY", `{}`, "", "zh-Hans")
+	if err == nil {
+		t.Error("expected error for duplicate order_id")
+	}
+}

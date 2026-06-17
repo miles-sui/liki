@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="zh" data-i18n-title="demo.title.naming">
+<head>
+<meta charset="UTF-8">
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<meta name="description" content="起名示例 | 查看完整八字起名分析报告样例，含用神解读、三才五格配置、生肖避讳与音韵评估。灵机（Liki）AI命理助手。">
+<meta property="og:title" content="起名示例 | 灵机 Liki">
+<meta property="og:description" content="查看完整八字起名分析报告样例，含用神解读、三才五格配置、生肖避讳与音韵评估。">
+<meta property="og:url" content="https://liki.hk/naming.html">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="起名示例 | 灵机 Liki">
+<meta name="twitter:description" content="查看完整八字起名分析报告样例，含用神解读、三才五格配置、生肖避讳与音韵评估。">
+	<meta property="og:image" content="https://liki.hk/img/og-image.png">
+	<meta property="og:image:width" content="1200">
+	<meta property="og:image:height" content="630">
+	<meta name="twitter:image" content="https://liki.hk/img/og-image.png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>起名示例 | 灵机 Liki</title>
+<script src="/js/i18next.min.js"></script>
+<script src="/js/i18nextHttpBackend.min.js"></script>
+<script src="/js/i18nextBrowserLanguageDetector.min.js"></script>
+<script src="/js/i18n.js"></script>
+<script src="/js/components.js"></script>
+<script defer src="/js/api.js"></script>
+<script defer src="/js/demo-utils.js"></script>
+<link rel="stylesheet" href="/css/app.css">
+</head>
+<body class="bg-stone-50 min-h-screen">
+
+<a href="#main" class="skip-link">跳到主要内容</a>
+
+<liki-header title-key="report.title.naming" title="起名报告"></liki-header>
+
+<sample-banner></sample-banner>
+
+<main id="main" class="max-w-4xl mx-auto px-4 py-8">
+  <article>
+
+  <print-cover product="起名命理報告"></print-cover>
+    <div class="pc-date" id="print-date"></div>
+  </div>
+
+  <print-brand></print-brand>
+
+  <!-- Summary -->
+  <div class="section-card">
+    <h2 data-i18n="naming.summary">命盘摘要</h2>
+    <div class="summary-grid">
+      <div class="summary-card">
+        <div class="label" data-i18n="form.surname">姓氏</div>
+        <div class="value">陈</div>
+      </div>
+      <div class="summary-card">
+        <div class="label" data-i18n="naming.yongShen">用神</div>
+        <div class="value" style="color:#b45309">火土</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Name candidates -->
+  <div class="section-card">
+    <h2 data-i18n="naming.recommendations">推荐名字</h2>
+
+    <div class="name-card">
+      <div class="name-card-header">
+        <span class="name-title">陈煜霖</span>
+        <span class="tag tag-green">火木木 | 大吉</span>
+      </div>
+      <div class="name-card-tags">
+        <span class="tag tag-amber">火旺助身</span>
+        <span class="tag tag-amber">五行流通</span>
+        <span class="tag tag-amber">音韵响亮</span>
+        <span class="tag tag-amber">生肖无冲</span>
+      </div>
+      <div class="name-card-chars">
+        <span>煜 (13画) 火</span>
+        <span>霖 (16画) 水</span>
+      </div>
+      <div class="name-card-wuge">五格: 天16 人29 地39 外26 总54</div>
+    </div>
+
+    <div class="name-card">
+      <div class="name-card-header">
+        <span class="name-title">陈景程</span>
+        <span class="tag tag-green">火火木 | 大吉</span>
+      </div>
+      <div class="name-card-tags">
+        <span class="tag tag-amber">火土相生</span>
+        <span class="tag tag-amber">三才顺配</span>
+        <span class="tag tag-amber">寓意进取</span>
+        <span class="tag tag-amber">字形协调</span>
+      </div>
+      <div class="name-card-chars">
+        <span>景 (12画) 木</span>
+        <span>程 (12画) 火</span>
+      </div>
+      <div class="name-card-wuge">五格: 天16 人27 地33 外21 总48</div>
+    </div>
+
+    <div class="name-card">
+      <div class="name-card-header">
+        <span class="name-title">陈彦廷</span>
+        <span class="tag tag-green">火木火 | 吉</span>
+      </div>
+      <div class="name-card-tags">
+        <span class="tag tag-amber">贵人运旺</span>
+        <span class="tag tag-amber">才德兼备</span>
+        <span class="tag tag-amber">平仄协调</span>
+        <span class="tag tag-amber">传统文化</span>
+      </div>
+      <div class="name-card-chars">
+        <span>彦 (9画) 木</span>
+        <span>廷 (7画) 火</span>
+      </div>
+      <div class="name-card-wuge">五格: 天16 人24 地30 外21 总44</div>
+    </div>
+  </div>
+
+  <!-- LLM Analysis -->
+  <div class="section-card">
+    <h2 data-i18n="naming.interpretation">起名解读</h2>
+    <div class="report-content">
+      <h3>一、命理基础与用神</h3>
+      <p>姓氏<strong>陈</strong>（16画，五行属火）。命主八字戊土日主生于寅月，得丙丁火印星生扶，为身旺正印格。印星过旺，<strong>用神取火土</strong>：以火疏通印星之力，以土帮身稳固根基。起名需以<strong>火、土</strong>五行为主，辅以木（木生火，间接助用神），忌金水过旺。</p>
+
+      <h3>二、候选名字分析</h3>
+      <p><strong>陈煜霖</strong>：煜从火、霖从水，火为主水为辅，既补用神之火，又有水之灵动调剂。"煜"意为照耀、光辉，寓意前程光明；"霖"意为甘霖、恩泽，寓意福泽深厚。火木木三才配置为大吉，五格数理均佳，是首推之选。</p>
+      <p><strong>陈景程</strong>：景从木、程从火，木生火旺，火势得力。"景"为光明景象，"程"为前路征程，寓意前程似锦。火火木三才配置亦为大吉，五格数理上佳。此名偏事业进取，适合期望子女事业有成之家庭。</p>
+      <p><strong>陈彦廷</strong>：彦从木、廷从火，火木相生。"彦"为才德出众之士，"廷"为朝堂、公正，寓意德才兼备、正直端庄。火木火三才配置为吉，五格数理良好。此名书卷气浓，偏重文化气质。</p>
+
+      <h3>三、选择建议</h3>
+      <p>三组名字均符合命主八字用神需求，本质差异在于<strong>寓意侧重点不同</strong>：煜霖重在福泽与光彩（适合期望孩子一生顺遂开心），景程重在前程与进取（适合期望事业有成），彦廷重在才德与气度（适合文化教育导向）。建议根据家庭对孩子的<strong>核心期望</strong>做出最终选择。</p>
+    </div>
+  </div>
+
+  <print-bar></print-bar>
+
+  <!-- Security -->
+  <security-section></security-section>
+
+  <!-- CTA -->
+  <cta-section product="naming"></cta-section>
+
+  </article>
+</main>
+
+<liki-footer></liki-footer>
+
+<script defer src="/js/analytics.js"></script>
+</body>
+</html>

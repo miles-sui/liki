@@ -1,5 +1,0 @@
-# configs/llm/models.yaml — LLM provider & model configuration.
-provider: anthropic
-model: claude-haiku-4-5
-max_tokens: 2048
-timeout: 15s

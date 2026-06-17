@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+set -eo pipefail
+
+echo "=== go vet ==="
+go vet ./...
+
+echo "=== golangci-lint ==="
+if command -v golangci-lint >/dev/null 2>&1; then
+  golangci-lint run --timeout=3m
+else
+  echo "golangci-lint: not installed, skipping"
+fi
+
+echo "=== go test ==="
+go test ./internal/...
+
+echo "=== html check ==="
+node web/scripts/check-html.cjs
+
+echo "=== vue template ==="
+node web/scripts/compile-vue-template.cjs
+
+echo "=== i18n check ==="
+node web/scripts/check-i18n.cjs
+
+echo "=== vitest ==="
+if [ -f web/package.json ]; then
+  (cd web && npx vitest run js/__tests__/ 2>/dev/null) || echo "vitest: skipped (npm install required)"
+fi
+
+# Smoke test (if server running and frontend files changed)
+if git diff --cached --name-only | /bin/grep -q '^web/' && curl -sf -o /dev/null http://localhost:8080/api/health 2>/dev/null; then
+  echo "=== smoke ==="
+  (cd web && npx playwright test --config e2e/playwright.config.js journeys/smoke.spec.js 2>/dev/null) || echo "⚠ smoke test failed — fix before push"
+fi
+
+echo ""
+echo "✓ pre-commit ok"

@@ -1,9 +1,0 @@
-<div class="{{ flowMargin | default('') }} {{ flowClass | default('') }}"{% if showCond %} x-show="{{ showCond }}"{% endif %}>
-{% include "section-header.njk" %}
-  <div class="card bg-base-200 shadow-sm {{ flowCardClass | default('') }}">
-    <div class="card-body">
-      {% set _outerCls = chartCls %}{% set chartCls = flowChartCls | default('chart-h-360') %}{% set id = chartId %}{% include "chart-container.njk" %}{% set chartCls = _outerCls %}
-      {% set items = deltaItems %}{% set deltaCls = 'mt-4' %}{% include "element-delta-bars.njk" %}
-    </div>
-  </div>
-</div>

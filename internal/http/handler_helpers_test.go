@@ -1,0 +1,160 @@
+package handler
+
+import (
+	"io"
+	"net/http"
+	"net/http/httptest"
+	"strings"
+	"testing"
+
+	validation "github.com/go-ozzo/ozzo-validation/v4"
+)
+
+func TestRespondValidationError(t *testing.T) {
+	w := httptest.NewRecorder()
+	respondValidationError(w, validation.Errors{})
+	if w.Code != http.StatusUnprocessableEntity {
+		t.Errorf("status=%d, want 422", w.Code)
+	}
+}
+
+type testReq struct {
+	Name string `json:"name"`
+	Age  int    `json:"age"`
+}
+
+func (r testReq) Validate() error {
+	return validation.ValidateStruct(&r,
+		validation.Field(&r.Name, validation.Required),
+		validation.Field(&r.Age, validation.Required, validation.Min(1)),
+	)
+}
+
+func TestDecodeAndValidate_Valid(t *testing.T) {
+	body := `{"name":"test","age":25}`
+	r := httptest.NewRequest("POST", "/", strings.NewReader(body))
+	w := httptest.NewRecorder()
+
+	req, ok := decodeAndValidate[testReq](w, r)
+	if !ok {
+		t.Fatal("expected ok=true")
+	}
+	if req.Name != "test" {
+		t.Errorf("Name = %s, want test", req.Name)
+	}
+	if req.Age != 25 {
+		t.Errorf("Age = %d, want 25", req.Age)
+	}
+}
+
+func TestDecodeAndValidate_InvalidJSON(t *testing.T) {
+	r := httptest.NewRequest("POST", "/", strings.NewReader(`{bad`))
+	w := httptest.NewRecorder()
+
+	_, ok := decodeAndValidate[testReq](w, r)
+	if ok {
+		t.Error("expected ok=false for bad JSON")
+	}
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("status = %d, want %d", w.Code, http.StatusBadRequest)
+	}
+}
+
+func TestDecodeAndValidate_EmptyBody(t *testing.T) {
+	r := httptest.NewRequest("POST", "/", strings.NewReader(``))
+	w := httptest.NewRecorder()
+
+	_, ok := decodeAndValidate[testReq](w, r)
+	if ok {
+		t.Error("expected ok=false for empty body")
+	}
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("status = %d, want %d", w.Code, http.StatusBadRequest)
+	}
+}
+
+func TestDecodeAndValidate_ValidationError(t *testing.T) {
+	body := `{"name":"","age":0}`
+	r := httptest.NewRequest("POST", "/", strings.NewReader(body))
+	w := httptest.NewRecorder()
+
+	_, ok := decodeAndValidate[testReq](w, r)
+	if ok {
+		t.Error("expected ok=false")
+	}
+	if w.Code != http.StatusUnprocessableEntity {
+		t.Errorf("status = %d, want %d", w.Code, http.StatusUnprocessableEntity)
+	}
+}
+
+func TestDecodeAndValidate_MissingField(t *testing.T) {
+	body := `{"name":"test"}`
+	r := httptest.NewRequest("POST", "/", strings.NewReader(body))
+	w := httptest.NewRecorder()
+
+	_, ok := decodeAndValidate[testReq](w, r)
+	if ok {
+		t.Error("expected ok=false")
+	}
+	if w.Code != http.StatusUnprocessableEntity {
+		t.Errorf("status = %d, want %d", w.Code, http.StatusUnprocessableEntity)
+	}
+}
+
+func TestDecodeAndValidate_WritesErrorResponse(t *testing.T) {
+	r := httptest.NewRequest("POST", "/", strings.NewReader(`{bad`))
+	w := httptest.NewRecorder()
+
+	decodeAndValidate[testReq](w, r)
+
+	body, err := io.ReadAll(w.Result().Body)
+	if err != nil { t.Fatal(err) }
+	if !strings.Contains(string(body), "error") {
+		t.Error("error response should contain 'error' key")
+	}
+}
+
+func TestSanitizeLocation(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{"chinese_city", "北京", "北京"},
+		{"english_city", "Beijing", "Beijing"},
+		{"city_with_space", "New York", "New York"},
+		{"city_with_hyphen", "New-York", "New-York"},
+		{"dangerous_chars", "foo; rm -rf /", ""},
+		{"too_long", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", ""},
+		{"empty", "", ""},
+		{"shell_injection", "$(whoami)", ""},
+		{"angle_brackets", "<script>", ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := sanitizeLocation(tt.input); got != tt.expected {
+				t.Errorf("sanitizeLocation(%q) = %q, want %q", tt.input, got, tt.expected)
+			}
+		})
+	}
+}
+
+func TestLangToLocale(t *testing.T) {
+	tests := []struct {
+		lang     string
+		expected string
+	}{
+		{"zh", "zh-Hans"},
+		{"hk", "zh-Hant"},
+		{"en", "en"},
+		{"unknown", "zh-Hans"},
+		{"", "zh-Hans"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.lang, func(t *testing.T) {
+			if got := langToLocale(tt.lang); got != tt.expected {
+				t.Errorf("langToLocale(%q) = %q, want %q", tt.lang, got, tt.expected)
+			}
+		})
+	}
+}

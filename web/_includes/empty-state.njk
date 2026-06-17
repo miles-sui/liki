@@ -1,7 +1,0 @@
-<div class="text-center py-20">
-  <h2 class="text-xl font-bold mb-4{% if error %} text-error{% endif %}" x-text="{{ title }}"></h2>
-  {% if desc %}<p class="text-base-content/60 mb-6" x-text="{{ desc }}"></p>{% endif %}
-  {% if ctaText and ctaLink %}
-  <a {% if alpineHref %}:href="{{ ctaLink }}"{% else %}href="{{ ctaLink }}"{% endif %} class="btn {{ ctaClass | default('btn-primary') }}" x-text="{{ ctaText }}"></a>
-  {% endif %}
-</div>

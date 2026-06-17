@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="zh" data-i18n-title="demo.title.chart">
+<head>
+<meta charset="UTF-8">
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<meta name="description" content="八字排盘示例 | 查看完整八字命理分析报告样例，含日主、四柱、十神、用神、大运流年等详细解读。灵机（Liki）AI命理助手。">
+<meta property="og:title" content="八字排盘示例 | 灵机 Liki">
+<meta property="og:description" content="查看完整八字命理分析报告样例，含日主、四柱、十神、用神、大运流年等详细解读。">
+<meta property="og:url" content="https://liki.hk/chart.html">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="八字排盘示例 | 灵机 Liki">
+<meta name="twitter:description" content="查看完整八字命理分析报告样例，含日主、四柱、十神、用神、大运流年等详细解读。">
+	<meta property="og:image" content="https://liki.hk/img/og-image.png">
+	<meta property="og:image:width" content="1200">
+	<meta property="og:image:height" content="630">
+	<meta name="twitter:image" content="https://liki.hk/img/og-image.png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>八字排盘示例 | 灵机 Liki</title>
+<script src="/js/i18next.min.js"></script>
+<script src="/js/i18nextHttpBackend.min.js"></script>
+<script src="/js/i18nextBrowserLanguageDetector.min.js"></script>
+<script src="/js/i18n.js"></script>
+<script src="/js/components.js"></script>
+<script defer src="/js/api.js"></script>
+<script defer src="/js/demo-utils.js"></script>
+<link rel="stylesheet" href="/css/app.css">
+</head>
+<body class="bg-stone-50 min-h-screen">
+
+<a href="#main" class="skip-link">跳到主要内容</a>
+
+<liki-header title-key="report.title.chart" title="八字报告"></liki-header>
+
+<sample-banner></sample-banner>
+
+<main id="main" class="max-w-4xl mx-auto px-4 py-8">
+  <article>
+
+  <print-cover product="八字命理報告"></print-cover>
+    <div class="pc-date" id="print-date"></div>
+  </div>
+
+  <print-brand></print-brand>
+
+  <!-- Summary cards -->
+  <div class="section-card">
+    <h2 data-i18n="chart.summary">命盘摘要</h2>
+    <div class="summary-grid">
+      <div class="summary-card">
+        <div class="label" data-i18n="chart.dayMaster">日主</div>
+        <div class="value">戊土</div>
+      </div>
+      <div class="summary-card">
+        <div class="label" data-i18n="chart.patternYong">格局 / 用神</div>
+        <div class="value" style="color:#b45309">正印格 / 火土</div>
+      </div>
+      <div class="summary-card">
+        <div class="label" data-i18n="chart.wangShuai">旺衰</div>
+        <div class="value">身旺</div>
+      </div>
+      <div class="summary-card">
+        <div class="label" data-i18n="chart.zodiac">生肖</div>
+        <div class="value">鼠</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pillars table -->
+  <div class="section-card">
+    <h2 data-i18n="chart.title.full">八字 · 灵机 Liki</h2>
+    <!-- Mobile pillar cards -->
+    <div class="pillar-cards">
+      <div class="pillar-card">
+        <div class="pc-label" data-i18n="pillar.year">年柱</div>
+        <div class="pc-gan">甲 (七杀)</div>
+        <div class="pc-zhi">子</div>
+        <div class="pc-detail">癸 · 海中金</div>
+      </div>
+      <div class="pillar-card">
+        <div class="pc-label" data-i18n="pillar.month">月柱</div>
+        <div class="pc-gan">丙 (偏印)</div>
+        <div class="pc-zhi">寅</div>
+        <div class="pc-detail">甲 丙 戊 · 炉中火</div>
+      </div>
+      <div class="pillar-card">
+        <div class="pc-label" data-i18n="pillar.day">日柱</div>
+        <div class="pc-gan">戊 (比肩)</div>
+        <div class="pc-zhi">辰</div>
+        <div class="pc-detail">乙 戊 癸 · 大林木</div>
+      </div>
+      <div class="pillar-card">
+        <div class="pc-label" data-i18n="pillar.hour">时柱</div>
+        <div class="pc-gan">丁 (正印)</div>
+        <div class="pc-zhi">巳</div>
+        <div class="pc-detail">丙 戊 庚 · 沙中土</div>
+      </div>
+    </div>
+    <div class="table-wrap hide-mobile">
+      <table>
+        <thead><tr>
+          <th data-i18n="chart.table.pillar">柱</th>
+          <th data-i18n="chart.table.stem">天干</th>
+          <th data-i18n="chart.table.branch">地支</th>
+          <th data-i18n="chart.table.hiddenStem">藏干</th>
+          <th data-i18n="chart.table.nayin">纳音</th>
+          <th data-i18n="chart.table.shensha">神煞</th>
+        </tr></thead>
+        <tbody>
+          <tr>
+            <td class="text-stone-500 text-sm" data-i18n="pillar.year">年柱</td>
+            <td class="font-medium">甲<br><span class="text-xs text-stone-500">七杀</span></td>
+            <td class="font-medium">子</td>
+            <td class="text-xs text-stone-500">癸</td>
+            <td class="text-xs text-stone-500">海中金</td>
+            <td class="text-xs"><span class="tag tag-amber">桃花</span></td>
+          </tr>
+          <tr>
+            <td class="text-stone-500 text-sm" data-i18n="pillar.month">月柱</td>
+            <td class="font-medium">丙<br><span class="text-xs text-stone-500">偏印</span></td>
+            <td class="font-medium">寅</td>
+            <td class="text-xs text-stone-500">甲 丙 戊</td>
+            <td class="text-xs text-stone-500">炉中火</td>
+            <td class="text-xs"><span class="tag tag-amber">驿马</span> <span class="tag tag-green">学堂</span></td>
+          </tr>
+          <tr>
+            <td class="text-stone-500 text-sm" data-i18n="pillar.day">日柱</td>
+            <td class="font-medium">戊<br><span class="text-xs text-stone-500">比肩</span></td>
+            <td class="font-medium">辰</td>
+            <td class="text-xs text-stone-500">乙 戊 癸</td>
+            <td class="text-xs text-stone-500">大林木</td>
+            <td class="text-xs"><span class="tag tag-amber">华盖</span></td>
+          </tr>
+          <tr>
+            <td class="text-stone-500 text-sm" data-i18n="pillar.hour">时柱</td>
+            <td class="font-medium">丁<br><span class="text-xs text-stone-500">正印</span></td>
+            <td class="font-medium">巳</td>
+            <td class="text-xs text-stone-500">丙 戊 庚</td>
+            <td class="text-xs text-stone-500">沙中土</td>
+            <td class="text-xs"><span class="tag tag-green">天乙贵人</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Element distribution -->
+  <div class="section-card">
+    <h2 data-i18n="chart.elementDist">五行分布</h2>
+    <div style="display:flex; flex-wrap:wrap; gap:.5rem;">
+      <span class="tag tag-green" style="font-size:.875rem">木: 2</span>
+      <span class="tag tag-green" style="font-size:.875rem">火: 3</span>
+      <span class="tag tag-green" style="font-size:.875rem">土: 4</span>
+      <span class="tag tag-green" style="font-size:.875rem">金: 1</span>
+      <span class="tag tag-green" style="font-size:.875rem">水: 1</span>
+    </div>
+  </div>
+
+  <!-- Dayun -->
+  <div class="section-card">
+    <h2 data-i18n="chart.dayun">大运</h2>
+    <p class="text-sm text-stone-500 mb-3">起运岁数: 6 岁</p>
+    <div style="display:flex; flex-wrap:wrap; gap:.5rem;">
+      <span class="tag tag-green">丁卯 (6-15岁)</span>
+      <span class="tag tag-green">戊辰 (16-25岁)</span>
+      <span class="tag tag-green">己巳 (26-35岁)</span>
+      <span class="tag tag-green">庚午 (36-45岁)</span>
+      <span class="tag tag-green">辛未 (46-55岁)</span>
+      <span class="tag tag-green">壬申 (56-65岁)</span>
+    </div>
+  </div>
+
+  <!-- LLM Analysis -->
+  <div class="section-card">
+    <h2 data-i18n="chart.interpretation">命理解读</h2>
+    <div class="report-content">
+      <h3>一、格局总论</h3>
+      <p>戊土生于寅月，得丙火偏印透出月干，时柱丁巳正印贴身相生，为<strong>正印格</strong>。印星旺盛，日主得令得生，属<strong>身旺</strong>之命。年柱甲子，甲木为七杀，子水为财星之根，财星有源。纵观全局，八字火土偏旺，取<strong>水木为用神</strong>，以财制印、以官疏土，方能五行流通。</p>
+
+      <h3>二、用神详解</h3>
+      <p>身旺印旺之八字，最喜<strong>财星破印</strong>。年柱甲木七杀坐子水，财星有根可用。若行水运（亥子丑），则财星得力，事业顺遂、财运亨通。次喜<strong>官杀制身</strong>，甲木七杀亦含官星之用，可约束旺土之性。忌火土运（巳午未戌），印比过旺则固执保守、进取不足。</p>
+
+      <h3>三、十神分析</h3>
+      <p>月干丙火偏印透出：主聪明好学，但偏印过旺有时思虑过多。时干丁火正印贴身：为人正直，有贵人缘。年干甲木七杀：理财观念强，善于规划。日支辰土为比肩库：内心自信，但有时固执己见。时支巳火藏丙戊庚：有食神生财之象，晚年财运佳。</p>
+
+      <h3>四、大运提示</h3>
+      <p>6-25岁丁卯、戊辰大运，木土运，学业顺利但火土仍旺，宜多读书积累。26-35岁<strong>己巳大运</strong>，巳火为印星之根，此运火土更旺，需注意人际关系，避免过于保守。36-45岁<strong>庚午大运</strong>，庚金食神透出，午火仍旺，食神有根，事业开始有突破。46岁后辛未、壬申大运，金水渐旺，为喜用神运，<strong>人生逐步进入佳境</strong>，事业财运皆有可观。</p>
+
+      <h3>五、流年建议</h3>
+      <p>每逢鼠年（子）、猪年（亥）、牛年（丑）水旺财旺，为有利年份；猴年（申）、鸡年（酉）金旺生水，亦有助益。虎年（寅）、兔年（卯）木旺制土，利于升迁变动。蛇年（巳）、马年（午）、羊年（未）、狗年（戌）火土太旺，宜保守行事，注意健康。</p>
+    </div>
+  </div>
+
+  <print-bar></print-bar>
+
+  <!-- Security -->
+  <security-section></security-section>
+
+  <!-- CTA -->
+  <cta-section product="chart"></cta-section>
+
+  </article>
+</main>
+
+<liki-footer></liki-footer>
+
+<script defer src="/js/analytics.js"></script>
+</body>
+</html>

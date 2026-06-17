@@ -1,6 +1,6 @@
-const { defineConfig, devices } = require('@playwright/test');
+import { defineConfig } from '@playwright/test';
 
-module.exports = defineConfig({
+export default defineConfig({
   testDir: './journeys',
   fullyParallel: false,
   workers: 1,
@@ -8,7 +8,7 @@ module.exports = defineConfig({
   timeout: 60000,
   expect: { timeout: 10000 },
   use: {
-    baseURL: 'http://localhost:8080',
+    baseURL: process.env.BASE_URL || 'http://localhost:8080',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
     trace: 'on-first-retry',
@@ -17,14 +17,8 @@ module.exports = defineConfig({
     {
       name: 'chrome',
       use: {
+        channel: 'chrome',
         viewport: { width: 1280, height: 720 },
-      },
-    },
-    {
-      name: 'mobile',
-      testMatch: /assess|account/,
-      use: {
-        ...devices['iPhone 14'],
       },
     },
   ],

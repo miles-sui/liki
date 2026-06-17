@@ -1,0 +1,59 @@
+# 灵机 (Liki)
+
+> 灵机（Liki）是一款 AI命理助手，为用户提供命盘解读、运势分析、合盘配对及起名等服务。
+
+## API 文档
+- [八字排盘](https://liki.hk/docs/bazi.md): 完整命盘计算，含四柱、十神、纳音、神煞、用神、大运
+- [真太阳时](https://liki.hk/docs/bazi.md#solar-time): 出生地经纬度校正真太阳时
+
+## 合盘
+- [合盘配对](https://liki.hk/docs/bazi.md#bazi-bond): 双人命盘交叉分析，天干地支十神纳音五维合盘
+
+## 起名
+- [智能起名](https://liki.hk/docs/qiming.md): 基于八字用神和生肖的起名建议
+- [名字评测](https://liki.hk/docs/qiming.md#qiming-evaluate): 单名五行评分
+
+## 黄历
+- [黄历查询](https://liki.hk/docs/huangli.md): 日期宜忌、建除、神煞、二十八宿
+- [择日参考](https://liki.hk/docs/huangli.md#huangli-bond): 结合生辰的黄历日期筛选
+
+## 风水
+- [命卦](https://liki.hk/docs/fengshui.md): 八宅法命卦计算
+- [三元九运](https://liki.hk/docs/fengshui.md#san-yuan-jiu-yun): 三元九运时间表
+
+## 查表
+- [命理参考数据](https://liki.hk/docs/reference.md): 天干地支、六十纳音、神煞、二十八宿、八卦、二十四山
+
+## 服务入口
+- [Agent Chat](https://liki.hk/zh/chat.html): AI 对话排盘
+- [八字报告示例](https://liki.hk/zh/chart.html): 完整命理分析报告样例
+- [起名报告示例](https://liki.hk/zh/naming.html): 八字起名分析报告样例
+- [合盘报告示例](https://liki.hk/zh/compatibility.html): 八字配对分析报告样例
+
+## 知识库 (zh-Hans)
+- [职业决策](https://liki.hk/wiki/zh-hans/career/): 职业方向与八字决策参考
+- [财富决策](https://liki.hk/wiki/zh-hans/wealth/): 财运分析与投资决策参考
+- [感情决策](https://liki.hk/wiki/zh-hans/relationship/): 感情婚恋决策参考
+- [人生方向](https://liki.hk/wiki/zh-hans/life/): 人生方向与八字指引
+- [起名决策](https://liki.hk/wiki/zh-hans/naming/): 起名与八字参考
+- [合盘决策](https://liki.hk/wiki/zh-hans/compatibility/): 合盘配对参考
+- [择日参考](https://liki.hk/wiki/zh-hans/timing/): 择日与黄历参考
+- [奇门决策](https://liki.hk/wiki/zh-hans/qimen/): 奇门遁甲决策参考
+
+## 知識庫 (zh-Hant)
+- [職業決策](https://liki.hk/wiki/zh-hant/career/): 職業方向與八字決策參考
+- [財富決策](https://liki.hk/wiki/zh-hant/wealth/): 財運分析與投資決策參考
+- [感情決策](https://liki.hk/wiki/zh-hant/relationship/): 感情婚戀決策參考
+- [人生方向](https://liki.hk/wiki/zh-hant/life/): 人生方向與八字指引
+- [起名決策](https://liki.hk/wiki/zh-hant/naming/): 起名與八字參考
+- [合盤決策](https://liki.hk/wiki/zh-hant/compatibility/): 合盤配對參考
+- [擇日參考](https://liki.hk/wiki/zh-hant/timing/): 擇日與黃曆參考
+- [奇門決策](https://liki.hk/wiki/zh-hant/qimen/): 奇門遁甲決策參考
+
+## Knowledge Base (en)
+- [Career](https://liki.hk/wiki/en/career/): Career direction and Bazi decision reference
+- [Wealth](https://liki.hk/wiki/en/wealth/): Wealth analysis and investment decision reference
+- [Relationship](https://liki.hk/wiki/en/relationship/): Relationship and marriage decision reference
+- [Life](https://liki.hk/wiki/en/life/): Life direction and Bazi guidance
+- [Timing](https://liki.hk/wiki/en/timing/): Date selection and Huangli reference
+- [Qimen](https://liki.hk/wiki/en/qimen/): Qimen Dunjia decision reference

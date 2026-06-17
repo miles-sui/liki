@@ -1,0 +1,14 @@
+{
+  "name": "get_city_coords",
+  "description": "根据城市名称查询经纬度和国家代码。用户提到城市名时调用此工具获取精确的地理坐标信息。时区需由你根据城市所在国家和地区推断。",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "city_name": {
+        "type": "string",
+        "description": "城市名称，中文或英文，如'北京'、'Tokyo'、'New York'"
+      }
+    },
+    "required": ["city_name"]
+  }
+}

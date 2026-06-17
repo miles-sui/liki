@@ -1,0 +1,33 @@
+{
+  "stem_he": {
+    "pairs": [
+      [1, 6, 3],
+      [2, 7, 4],
+      [3, 8, 5],
+      [4, 9, 1],
+      [5, 10, 2]
+    ]
+  },
+  "branch_he": {
+    "pairs": [
+      [1, 2, 3],
+      [3, 12, 1],
+      [4, 11, 2],
+      [5, 10, 4],
+      [6, 9, 5],
+      [7, 8, 3]
+    ]
+  },
+  "triple_he": [
+    {"branches": [9, 1, 5], "element": 5},
+    {"branches": [12, 4, 8], "element": 1},
+    {"branches": [3, 7, 11], "element": 2},
+    {"branches": [6, 10, 2], "element": 4}
+  ],
+  "triple_hui": [
+    {"branches": [3, 4, 5], "element": 1},
+    {"branches": [6, 7, 8], "element": 2},
+    {"branches": [9, 10, 11], "element": 4},
+    {"branches": [12, 1, 2], "element": 5}
+  ]
+}

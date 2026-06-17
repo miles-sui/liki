@@ -1,0 +1,19 @@
+{
+  "name": "compute_naming",
+  "description": "根据八字和姓氏生成起名推荐。你自己不会排盘、分析用神、计算五格三才——必须通过此工具获取所有计算数据。返回：用神分析、起名五行方向、候选名字列表（含五行、三才配置、五格数理、音韵评估）。",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "surname": {"type": "string", "description": "姓氏，如'陈'"},
+      "year": {"type": "integer", "description": "出生年份"},
+      "month": {"type": "integer", "description": "出生月份"},
+      "day": {"type": "integer", "description": "出生日期"},
+      "hour": {"type": "integer", "description": "出生小时"},
+      "minute": {"type": "integer", "description": "出生分钟"},
+      "longitude": {"type": "number", "description": "出生地经度"},
+      "timezone": {"type": "number", "description": "时区偏移"},
+      "gender": {"type": "string", "enum": ["male", "female"]}
+    },
+    "required": ["surname", "year", "month", "day", "hour", "minute", "longitude", "timezone", "gender"]
+  }
+}
