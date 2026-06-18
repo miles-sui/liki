@@ -1,5 +1,6 @@
 package ziwei
 
+import "liki/internal/engine/ganzhi"
 
 // yearStemBranch returns the stem and branch for a Gregorian year.
 func yearStemBranch(year int) (Gan, Zhi) {
@@ -20,15 +21,14 @@ func liuNianSiHua(liuYear int) siHuaResult {
 	return computeSiHua(liuGan)
 }
 
-// liuNianMinors computes the annual minor stars.
-func liuNianMinors(liuYearZhi, hourZhi Zhi) map[starIndex]palaceIndex {
-	yz := int(liuYearZhi)
-	h := int(hourZhi)
-	return map[starIndex]palaceIndex{
-		QingYang: qingYangPos(liuYearZhi),
-		TuoLuo:   tuoLuoPos(liuYearZhi),
-		HuoXing:  palaceIndex(marsIndex(yz, h)),
-		LingXing: palaceIndex(lingxingIndex(yz, h)),
+// liuNianMinors computes the annual minor stars (zhi-1 values).
+// Caller must convert to palaceIndex via zhiToPalace using the flow year 命宫.
+func liuNianMinors(yearZhu ganzhi.Zhu, hourZhi Zhi) map[starIndex]int {
+	return map[starIndex]int{
+		QingYang: qingYangPos(yearZhu.Gan),
+		TuoLuo:   tuoLuoPos(yearZhu.Gan),
+		HuoXing:  marsIndex(yearZhu.Zhi, hourZhi),
+		LingXing: lingxingIndex(yearZhu.Zhi, hourZhi),
 	}
 }
 
@@ -44,8 +44,8 @@ func ComputeLiuNian(liuYear int, chart Chart) LiuNian {
 			}
 		}
 	}
-	_, liuYearZhi := yearStemBranch(liuYear)
-	minorStars := liuNianMinors(liuYearZhi, chart.HourZhi)
+	liuYearGan, liuYearZhi := yearStemBranch(liuYear)
+	minorStars := liuNianMinors(ganzhi.Zhu{Gan: liuYearGan, Zhi: liuYearZhi}, chart.HourZhi)
 	return LiuNian{
 		MingGong:     mingGong,
 		MingGongName: PalaceNames[mingGong],

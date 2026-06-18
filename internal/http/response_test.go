@@ -73,28 +73,6 @@ func TestRespondStatus(t *testing.T) {
 	}
 }
 
-func TestRespondList(t *testing.T) {
-	w := httptest.NewRecorder()
-	items := []string{"a", "b", "c"}
-	respondList(w, items, len(items))
-
-	if w.Code != http.StatusOK {
-		t.Errorf("status = %d, want %d", w.Code, http.StatusOK)
-	}
-
-	var env envelope
-	if err := json.NewDecoder(w.Body).Decode(&env); err != nil {
-		t.Fatalf("decode: %v", err)
-	}
-	data, ok := env.Data.(map[string]interface{})
-	if !ok {
-		t.Fatal("data is not a map")
-	}
-	if data["total"].(float64) != 3 {
-		t.Errorf("total = %v, want 3", data["total"])
-	}
-}
-
 func TestRespondError_StatusCodes(t *testing.T) {
 	tests := []struct {
 		status int

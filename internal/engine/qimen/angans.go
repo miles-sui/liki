@@ -9,11 +9,18 @@ var eightStems = [8]ganzhi.Gan{
 }
 
 // placeAnGan arranges hidden stems (暗干) on the 9 palaces.
-func placeAnGan(driveGan ganzhi.Gan, dutyDoorPalace int) [9]ganzhi.Gan {
+func placeAnGan(driveZhu ganzhi.Zhu, dutyDoorPalace int) [9]ganzhi.Gan {
 	var angans [9]ganzhi.Gan
+
+	// 甲遁于旬首.
+	searchGan := driveZhu.Gan
+	if driveZhu.Gan == ganzhi.GanJia {
+		searchGan = findXunShou(driveZhu)
+	}
+
 	startIdx := 0
 	for i, s := range eightStems {
-		if s == driveGan {
+		if s == searchGan {
 			startIdx = i
 			break
 		}
@@ -45,10 +52,10 @@ func findMaXing(driveZhi ganzhi.Zhi) PalaceIndex {
 }
 
 // findKongWang returns the two 空亡 palaces.
-func findKongWang(driveGan ganzhi.Gan, driveZhi ganzhi.Zhi) [2]PalaceIndex {
-	idx := ganzhi.SixtyCycleName(driveGan, driveZhi) - 1 // 0-59
+func findKongWang(driveZhu ganzhi.Zhu) [2]PalaceIndex {
+	idx := ganzhi.SixtyCycleName(driveZhu.Gan, driveZhu.Zhi) // 0-59
 	xunIdx := idx / 10                                       // 0-5
-	kongWangZhi := [6][2]int{
+	kongWangZhi := [6][2]ganzhi.Zhi{
 		{11, 12}, // 甲子旬: 戌亥
 		{9, 10},  // 甲戌旬: 申酉
 		{7, 8},   // 甲申旬: 午未
@@ -56,7 +63,7 @@ func findKongWang(driveGan ganzhi.Gan, driveZhi ganzhi.Zhi) [2]PalaceIndex {
 		{3, 4},   // 甲辰旬: 寅卯
 		{1, 2},   // 甲寅旬: 子丑
 	}
-	z1 := ganzhi.Zhi(kongWangZhi[xunIdx][0])
-	z2 := ganzhi.Zhi(kongWangZhi[xunIdx][1])
+	z1 := kongWangZhi[xunIdx][0]
+	z2 := kongWangZhi[xunIdx][1]
 	return [2]PalaceIndex{zhiPalace(z1), zhiPalace(z2)}
 }

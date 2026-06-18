@@ -4,6 +4,17 @@
 //   Chart, MingGua, gua
 //
 // Functions
-//   ComputeChart(solarTime, gender) → Chart
-//   ComputeMingGua(gender, birthYear) → MingGua
+//   ComputeChart(st SolarTime, gender Gender) → Chart
+//   ComputeMingGua(gender Gender, birthYear int) → MingGua
 package bazhai
+
+import (
+	"liki/internal/engine/ganzhi"
+	"liki/internal/engine/tianwen"
+)
+
+// ComputeChart computes a complete八宅合参 from solar time and gender.
+func ComputeChart(st tianwen.SolarTime, gender ganzhi.Gender) Chart {
+	bz := tianwen.ComputeBazi(st)
+	return computeChart(bz, gender, st.Time().Year())
+}

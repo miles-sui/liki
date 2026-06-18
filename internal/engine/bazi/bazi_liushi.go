@@ -2,6 +2,7 @@ package bazi
 
 import (
 	"fmt"
+	"time"
 
 	"liki/internal/engine/ganzhi"
 	"liki/internal/engine/tianwen"
@@ -32,13 +33,14 @@ func hourBranchIndex(hour int) int {
 
 // ComputeLiuShi computes the hour pillar for the given day and hour, and its
 // interactions with the bazi chart.
-func ComputeLiuShi(date string, hour int, dayMaster ganzhi.Gan, bz ganzhi.Bazi) *LiuShi {
+func computeLiuShi(bz ganzhi.Bazi, date string, hour int) (*LiuShi, error) {
+	dayMaster := bz.Ri.Gan
 	y, m, d := 0, 0, 0
 	if n, _ := fmt.Sscanf(date, "%d-%d-%d", &y, &m, &d); n != 3 { //nolint:errcheck
-		return nil
+		return nil, fmt.Errorf("compute liushi: invalid date %q", date)
 	}
 
-	dp := tianwen.DayPillar(y, m, d)
+	dp := tianwen.RiZhu(tianwen.GregorianTime(time.Date(y, time.Month(m), d, 0, 0, 0, 0, time.UTC)))
 	hbi := hourBranchIndex(hour)
 	hourBranch := ganzhi.Zhi(hbi + 1)
 	hourStem := ganzhi.Gan(((int(dp.Gan)*2 + int(hourBranch) - 2) % 10))
@@ -51,15 +53,15 @@ func ComputeLiuShi(date string, hour int, dayMaster ganzhi.Gan, bz ganzhi.Bazi) 
 	hourName := ganzhi.GanName(hourStem) + ganzhi.ZhiName(hourBranch)
 
 	// Hour vs bazi: all 4 pillars, consistent with liunian.
-	stemRels, branchRels := analyzePillarWithBazi(ganzhi.Zhu{Gan: hourStem, Zhi: hourBranch}, bz)
+	stemRels, branchRels := analyzeZhuWithBazi(ganzhi.Zhu{Gan: hourStem, Zhi: hourBranch}, bz)
 
 	return &LiuShi{
 		Time:     ganzhi.HourRanges[hbi],
 		HourGan:  hourStem,
 		HourZhi:  hourBranch,
 		HourName: hourName,
-		TenGod:   tgName,
+		TenGod:   tgName.String(),
 		GanRels:  stemRels,
 		ZhiRels:  branchRels,
-	}
+	}, nil
 }

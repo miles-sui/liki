@@ -1,7 +1,9 @@
 package tianwen
 
 import (
+	"encoding/json"
 	"math"
+	"strings"
 	"time"
 
 	"liki/internal/engine/ganzhi"
@@ -10,11 +12,50 @@ import (
 // GregorianTime is the Gregorian calendar time.
 type GregorianTime time.Time
 
+func (g GregorianTime) Time() time.Time { return time.Time(g) }
+
+// MarshalJSON marshals GregorianTime as RFC3339 string.
+func (g GregorianTime) MarshalJSON() ([]byte, error) {
+	return json.Marshal(time.Time(g))
+}
+
+// UnmarshalJSON unmarshals GregorianTime from YYYY-MM-DD or RFC3339 string.
+func (g *GregorianTime) UnmarshalJSON(b []byte) error {
+	s := strings.Trim(string(b), `"`)
+	if len(s) == 10 {
+		if t, err := time.Parse("2006-01-02", s); err == nil {
+			*g = GregorianTime(t)
+			return nil
+		}
+	}
+	var t time.Time
+	if err := json.Unmarshal(b, &t); err != nil {
+		return err
+	}
+	*g = GregorianTime(t)
+	return nil
+}
+
 // SolarTime is the absolute true-solar time for a birth moment.
 type SolarTime time.Time
 
 func (s SolarTime) Time() time.Time  { return time.Time(s) }
 func (s SolarTime) Minutes() float64 { return float64(s.Time().Hour()*60 + s.Time().Minute()) }
+
+// MarshalJSON marshals SolarTime as RFC3339 string.
+func (s SolarTime) MarshalJSON() ([]byte, error) {
+	return json.Marshal(time.Time(s))
+}
+
+// UnmarshalJSON unmarshals SolarTime from RFC3339 string.
+func (s *SolarTime) UnmarshalJSON(b []byte) error {
+	var t time.Time
+	if err := json.Unmarshal(b, &t); err != nil {
+		return err
+	}
+	*s = SolarTime(t)
+	return nil
+}
 
 // computeSolarTime returns true solar time in minutes and day offset.
 // timezone is in hours (e.g. 8 for UTC+8).

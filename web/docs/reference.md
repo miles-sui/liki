@@ -1,93 +1,98 @@
-# Reference Data API
+# Agent API
 
-All `GET /api/reference/*`. Simple JSON lookup tables — no computation.
+## Agent Chat
 
-## Stems (天干)
+`POST /api/agent/chat` — SSE streaming chat endpoint.
 
-`GET /api/reference/stems` — Ten heavenly stems (十天干): name, wuxing, yin-yang.
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| session_id | string | no | Resume existing session |
+| message | string | yes | User message |
+| country | string | no | IP country code hint |
+| city | string | no | IP city hint |
+| lang | string | no | Frontend language: zh/hk/en |
 
-```bash
-curl -s https://liki.hk/api/reference/stems
-```
-
-## Branches (地支)
-
-`GET /api/reference/branches` — Twelve earthly branches (十二地支): name, wuxing, canggan, zodiac, hour range.
-
-```bash
-curl -s https://liki.hk/api/reference/branches
-```
-
-## Na Yin
-
-`GET /api/reference/nayin` — Sixty JiaZi nayin five-wuxing table (六十甲子纳音).
+Response: SSE stream with ChatEvent JSON objects (`data: {...}\n\n`).
 
 ```bash
-curl -s https://liki.hk/api/reference/nayin
+curl -s -X POST https://liki.hk/api/agent/chat \
+  -H 'Content-Type: application/json' \
+  -d '{"message":"我想算八字"}'
 ```
 
-## Shen Sha
+## Agent Greeting
 
-`GET /api/reference/shensha` — Shensha rules table (神煞规则): tianyi guiren, yuede, tiande.
+`GET /api/agent/greeting` — Cached LLM-generated greeting.
 
 ```bash
-curl -s https://liki.hk/api/reference/shensha
+curl -s https://liki.hk/api/agent/greeting
 ```
 
-## Zodiac
+## Session Restore
 
-`GET /api/reference/zodiac` — Zodiac relationships (生肖关系): liuhe (六合), sanhe (三合), sanhui (三会), liuchong (六冲), liuhai (六害), xiangxing (相刑).
+`GET /api/agent/session` — Restore session history.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| session_id | string | yes | Session ID |
 
 ```bash
-curl -s https://liki.hk/api/reference/zodiac
+curl -s 'https://liki.hk/api/agent/session?session_id=xxx'
 ```
 
-## Mansions
+---
 
-`GET /api/reference/mansions` — Twenty-eight mansions reference (二十八宿).
+# Payment API
+
+## Checkout
+
+`POST /api/payments/checkout` — Create payment checkout.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| order_id | string | yes | Order ID from chat done event |
+| email | string | no | Email for receipt |
 
 ```bash
-curl -s https://liki.hk/api/reference/mansions
+curl -s -X POST https://liki.hk/api/payments/checkout \
+  -H 'Content-Type: application/json' \
+  -d '{"order_id":"ord_xxx","email":"user@example.com"}'
 ```
 
-## Trigrams
+## Order Status
 
-`GET /api/reference/trigrams` — Eight trigrams reference (八卦): name, image, wuxing, direction.
+`GET /api/orders/{id}/status` — Get order status.
 
 ```bash
-curl -s https://liki.hk/api/reference/trigrams
+curl -s https://liki.hk/api/orders/ord_xxx/status
 ```
 
-## Huang Dao
+## Order Retry
 
-`GET /api/reference/huangdao` — Huangdao twelve gods reference (黄道十二神).
+`POST /api/orders/{id}/retry` — Retry report generation for paid orders missing llm_json.
 
 ```bash
-curl -s https://liki.hk/api/reference/huangdao
+curl -s -X POST https://liki.hk/api/orders/ord_xxx/retry
 ```
 
-## 24 Shan
+## Report
 
-`GET /api/reference/24-shan` — Twenty-four mountains reference (二十四山), fengshui compass directions.
+`GET /api/reports/{id}` — Get generated report.
 
 ```bash
-curl -s https://liki.hk/api/reference/24-shan
+curl -s https://liki.hk/api/reports/ord_xxx
 ```
+
+---
+
+# Misc
 
 ## Location
 
-`GET /api/location` — IP-based geolocation. Returns country, city, currency. Used by the chat agent to suggest default city and timezone.
+`GET /api/location` — IP-based geolocation. Returns country, city, currency.
 
 ```bash
 curl -s https://liki.hk/api/location
-```
-
-## Solar Terms
-
-`GET /api/solar-terms` — Current year's solar term months (12 months, each with start/end dates, plus current month).
-
-```bash
-curl -s https://liki.hk/api/solar-terms
 ```
 
 ## Health
@@ -96,4 +101,20 @@ curl -s https://liki.hk/api/solar-terms
 
 ```bash
 curl -s https://liki.hk/api/health
+```
+
+## Version
+
+`GET /api/version` — Build time of the running binary.
+
+```bash
+curl -s https://liki.hk/api/version
+```
+
+## Stats
+
+`GET /api/stats` — Anonymous page view and conversion counters.
+
+```bash
+curl -s https://liki.hk/api/stats
 ```

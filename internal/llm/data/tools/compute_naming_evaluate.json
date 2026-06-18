@@ -1,0 +1,13 @@
+{
+  "name": "compute_naming_evaluate",
+  "description": "对单个名字进行详细评分：三才五格、五行、音韵、字形、生肖。用于用户自选名字的评估。",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "surname": {"type": "string", "description": "姓氏"},
+      "given_name": {"type": "string", "description": "待评估的名字（不含姓氏）"},
+      "yong_shen": {"type": "string", "enum": ["木", "火", "土", "金", "水"], "description": "八字用神五行"}
+    },
+    "required": ["surname", "given_name", "yong_shen"]
+  }
+}

@@ -10,7 +10,7 @@ import (
 // Day is the huangli query result for one day.
 type Day struct {
 	Date       string            `json:"date"`
-	DayPillar  dayPillarInfo     `json:"day_pillar"`
+	RiZhu  riZhuInfo     `json:"day_pillar"`
 	NaYin    string `json:"nayin"`
 	Wuxing   string `json:"wuxing"`
 	JianChu    string            `json:"jian_chu"`
@@ -51,14 +51,14 @@ func QueryDate(dateStr string, eventType string) (Day, error) {
 		return Day{}, fmt.Errorf("huangli: parse date %s: %w", dateStr, err)
 	}
 
-	dpi := lookupDayPillar(t)
-	monthBranch := monthPillarForDate(t).Zhi
+	dpi := lookupRiZhu(t)
+	monthBranch := yueZhuForDate(t).Zhi
 	jq := computeJieQiDepth(t.Year(), int(t.Month()), t.Day())
 	ry := computeRenYuanSiLingForDate(monthBranch, jq.DaysIn)
 
 	entry := Day{
 		Date:       dateStr,
-		DayPillar:  dpi,
+		RiZhu:  dpi,
 		JianChu:    lookupJianChu(t),
 		HuangDao:   huangDaoForDay(monthBranch, dpi.Zhi),
 		XiShen:      xiShenDirection(dpi.Gan),
@@ -100,7 +100,7 @@ func QueryMonth(yearMonth string, eventType string) (Month, error) {
 		}
 		days = append(days, entry)
 	}
-	mp := monthPillarForDate(t)
+	mp := yueZhuForDate(t)
 	return Month{
 		Month:  yearMonth,
 		Stem:   ganzhi.GanName(mp.Gan),

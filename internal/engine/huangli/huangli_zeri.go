@@ -96,37 +96,12 @@ type huangDaoStar struct {
 	Sequence int    `json:"sequence"` // position in the 12-star cycle (0=青龙)
 }
 
-var huangDaoStars = [12]huangDaoStar{
-	{0, "青龙", "黄道", 0},
-	{1, "明堂", "黄道", 1},
-	{2, "天刑", "黑道", 2},
-	{3, "朱雀", "黑道", 3},
-	{4, "金匮", "黄道", 4},
-	{5, "天德", "黄道", 5},
-	{6, "白虎", "黑道", 6},
-	{7, "玉堂", "黄道", 7},
-	{8, "天牢", "黑道", 8},
-	{9, "玄武", "黑道", 9},
-	{10, "司命", "黄道", 10},
-	{11, "勾陈", "黑道", 11},
-}
-
-// qingLongStart maps month branch to the branch where 青龙 starts.
-var qingLongStart = map[int]int{
-	3: 1, 9: 1, // 寅申→子
-	4: 3, 10: 3, // 卯酉→寅
-	5: 5, 11: 5, // 辰戌→辰
-	6: 7, 12: 7, // 巳亥→午
-	7: 9, 1: 9, // 午子→申
-	8: 11, 2: 11, // 未丑→戌
-}
-
 // huangDaoForDay returns the yellow/black path star for a given month branch and day branch.
 func huangDaoForDay(monthBranch, dayBranch ganzhi.Zhi) huangDaoStar {
-	start, ok := qingLongStart[int(monthBranch)]
+	start, ok := qingLongStart[monthBranch]
 	if !ok {
 		return huangDaoStar{}
 	}
-	offset := (int(dayBranch) - start + 12) % 12
+	offset := (int(dayBranch) - int(start) + 12) % 12
 	return huangDaoStars[offset]
 }

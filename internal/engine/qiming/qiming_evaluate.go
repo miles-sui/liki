@@ -5,8 +5,11 @@ import "fmt"
 // EvaluateName evaluates a single given name against the surname and yong_shen.
 func EvaluateName(surname, givenName, yongShen string) (Evaluation, error) {
 	runes := []rune(givenName)
-	if len(runes) < 1 || len(runes) > 2 {
-		runes = runes[:min(len(runes), 2)]
+	if len(runes) == 0 {
+		return Evaluation{}, fmt.Errorf("qiming: given name is empty")
+	}
+	if len(runes) > 2 {
+		runes = runes[:2]
 	}
 
 	var charEntries []Character
@@ -36,8 +39,9 @@ func EvaluateName(surname, givenName, yongShen string) (Evaluation, error) {
 
 	wuxingMatch := false
 	if yongShen != "" {
+		yongElem := wuxingFromChinese(yongShen)
 		for _, ce := range charEntries {
-			if ce.Element.String() == yongShen {
+			if ce.Element == yongElem {
 				wuxingMatch = true
 				break
 			}

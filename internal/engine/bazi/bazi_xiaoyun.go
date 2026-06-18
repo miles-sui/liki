@@ -2,8 +2,8 @@ package bazi
 
 import "liki/internal/engine/ganzhi"
 
-// XiaoYunPillar is a single year of minor fortune (小运).
-type XiaoYunPillar struct {
+// XiaoYunZhu is a single year of minor fortune (小运).
+type XiaoYunZhu struct {
 	Age    int    `json:"age"`
 	Gan ganzhi.Gan    `json:"gan"`
 	Zhi ganzhi.Zhi    `json:"zhi"`
@@ -11,11 +11,12 @@ type XiaoYunPillar struct {
 	TenGod string `json:"shishen"`
 }
 
-// ComputeXiaoYun computes the minor fortune (小运) pillars for each age starting from 1.
+// ComputeXiaoYun computes the minor fortune (小运) zhus for each age starting from 1.
 // ganzhi.Male: start from 丙寅 (stem=3, branch=3) and go forward.
 // ganzhi.Female: start from 壬申 (stem=9, branch=9) and go backward.
-// Returns up to maxAge pillars (typically up to 12 for childhood).
-func ComputeXiaoYun(gender ganzhi.Gender, dayMaster ganzhi.Gan, maxAge int) []XiaoYunPillar {
+// Returns up to maxAge zhus (typically up to 12 for childhood).
+func computeXiaoYun(bz ganzhi.Bazi, gender ganzhi.Gender, maxAge int) []XiaoYunZhu {
+	dayMaster := bz.Ri.Gan
 	if maxAge <= 0 {
 		maxAge = 12
 	}
@@ -27,7 +28,7 @@ func ComputeXiaoYun(gender ganzhi.Gender, dayMaster ganzhi.Gan, maxAge int) []Xi
 		startIdx = ganzhi.SixtyCycleName(9, 9) // 壬申
 	}
 
-	pillars := make([]XiaoYunPillar, 0, maxAge)
+	zhus := make([]XiaoYunZhu, 0, maxAge)
 	for age := 1; age <= maxAge; age++ {
 		var idx int
 		if gender == ganzhi.Male {
@@ -35,18 +36,18 @@ func ComputeXiaoYun(gender ganzhi.Gender, dayMaster ganzhi.Gan, maxAge int) []Xi
 		} else {
 			idx = (startIdx - (age - 1) + 60) % 60
 		}
-		pillar := ganzhi.SixtyToZhu(idx)
-		name := ganzhi.GanName(pillar.Gan) + ganzhi.ZhiName(pillar.Zhi)
+		zhu := ganzhi.SixtyToZhu(idx)
+		name := ganzhi.GanName(zhu.Gan) + ganzhi.ZhiName(zhu.Zhi)
 
-		tg := ganzhi.TenGodFromGan(dayMaster, pillar.Gan)
+		tg := ganzhi.TenGodFromGan(dayMaster, zhu.Gan)
 
-		pillars = append(pillars, XiaoYunPillar{
+		zhus = append(zhus, XiaoYunZhu{
 			Age:    age,
-			Gan:    pillar.Gan,
-			Zhi:    pillar.Zhi,
+			Gan:    zhu.Gan,
+			Zhi:    zhu.Zhi,
 			Name:   name,
-			TenGod: tg,
+			TenGod: tg.String(),
 		})
 	}
-	return pillars
+	return zhus
 }

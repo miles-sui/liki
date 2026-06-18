@@ -8,8 +8,10 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"net"
 	"net/http"
 	"strings"
+	"time"
 
 )
 
@@ -52,7 +54,12 @@ func New(apiKey string) *Client {
 		apiKey:       apiKey,
 		baseURL:      defaultBaseURL,
 		model:        defaultModel,
-		streamClient: &http.Client{Timeout: 0},
+		streamClient: &http.Client{
+		Timeout: 0, // no request timeout; stream is unbounded
+		Transport: &http.Transport{
+			DialContext: (&net.Dialer{Timeout: 10 * time.Second}).DialContext,
+		},
+	},
 	}
 }
 
@@ -155,7 +162,7 @@ func (c *Client) ChatStreamWithTools(ctx context.Context, messages []Message, to
 		Messages: messages,
 		Stream:   true,
 		Tools:    tools,
-		Thinking: &thinkingParam{Type: "disabled"},
+		Thinking: &thinkingParam{Type: "disabled"}, // disabled for deterministic tool-calling latency; enable for report generation if needed
 	})
 	if err != nil {
 		return nil, err

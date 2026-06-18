@@ -21,6 +21,9 @@ type SanYuanYun struct {
 
 // ComputeSanYuanYun determines which 元 and 运 a given year belongs to.
 func ComputeSanYuanYun(year int) SanYuanYun {
+	if year < baseYear {
+		year = baseYear
+	}
 	yunIdx := (year - baseYear) / periodLength // 0-8+
 	yunNum := (yunIdx % 9) + 1
 

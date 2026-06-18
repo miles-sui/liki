@@ -18,7 +18,7 @@ var nayinJSON []byte
 //go:embed data/hidden_stems.json
 var hiddenStemsJSON []byte
 
-//go:embed data/life_stages.json
+//go:embed data/chang_sheng.json
 var lifeStagesJSON []byte
 
 //go:embed data/ren_yuan.json
@@ -28,8 +28,8 @@ var renYuanJSON []byte
 var NayinTable map[int]string
 
 var (
-	GanHes    []GanHe
-	ZhiHes    []ZhiHe
+	GanHes        []GanHe
+	ZhiHes        []ZhiHe
 	TripleHeList  []SanHeHui
 	TripleHuiList []SanHeHui
 	ChongPairs    []BranchPair
@@ -37,41 +37,23 @@ var (
 	HaiPairs      []BranchPair
 )
 
-// anHePairs lists 地支暗合 pairs (寅丑, 卯申, 午亥, 子戌).
-var anHePairs = []BranchPair{
-	{A: 3, B: 2},  // 寅丑
-	{A: 4, B: 9},  // 卯申
-	{A: 7, B: 12}, // 午亥
-	{A: 1, B: 11}, // 子戌
-}
-
-// poPairs lists 地支相破 pairs (子酉, 寅亥, 辰丑, 午卯, 申巳, 戌未).
-var poPairs = []BranchPair{
-	{A: 1, B: 10}, // 子酉
-	{A: 3, B: 12}, // 寅亥
-	{A: 5, B: 2},  // 辰丑
-	{A: 7, B: 4},  // 午卯
-	{A: 9, B: 6},  // 申巳
-	{A: 11, B: 8}, // 戌未
-}
-
 // HiddenStems holds the hidden (藏干) stems for a branch.
 type HiddenStems struct {
-	Main  *int
-	Mid   *int
-	Minor *int
+	Main  *Gan
+	Mid   *Gan
+	Minor *Gan
 }
 
-// Slice returns the three hidden stems as a [3]*int for indexed access.
-func (h HiddenStems) Slice() [3]*int {
-	return [3]*int{h.Main, h.Mid, h.Minor}
+// Slice returns the three hidden stems as a [3]*Gan for indexed access.
+func (h HiddenStems) Slice() [3]*Gan {
+	return [3]*Gan{h.Main, h.Mid, h.Minor}
 }
 
-// HiddenStemsTable maps branch index to its hidden stems.
-var HiddenStemsTable map[int]HiddenStems
+// HiddenStemsTable maps branch to its hidden stems.
+var HiddenStemsTable map[Zhi]HiddenStems
 
-// LifeStagesTable maps stem index to the 12 branch positions for 十二长生.
-var LifeStagesTable map[int][]int
+// ChangShengTable maps stem to the 12 branch positions for 十二长生.
+var ChangShengTable map[Gan][]Zhi
 
 // StageNamesZH is the Chinese names for the 12 life stages.
 var StageNamesZH = [12]string{
@@ -87,7 +69,7 @@ type RenYuanPhase struct {
 }
 
 // RenYuanTable maps month branch to its governing stem phases (人元司令分野).
-var renYuanTable map[int][]RenYuanPhase
+var renYuanTable map[Zhi][]RenYuanPhase
 
 // GanHe describes a 天干五合 pair and its resulting element.
 type GanHe struct {
@@ -108,14 +90,14 @@ type BranchPair struct {
 
 // SanHeHui describes a triple-branch configuration (三合 or 三会).
 type SanHeHui struct {
-	Branches []int
+	Branches []Zhi
 	Element  Wuxing
 }
 
 // Xing describes a 相刑 group.
 type Xing struct {
 	Type     string
-	Branches []int
+	Branches []Zhi
 }
 
 func init() {
@@ -139,21 +121,34 @@ func init() {
 	}
 }
 
+func parseGan(s string) Gan {
+	g, _ := ParseGan(s)
+	return g
+}
+func parseZhi(s string) Zhi {
+	z, _ := ParseZhi(s)
+	return z
+}
+func parseWuxing(s string) Wuxing {
+	w, _ := ParseWuxing(s)
+	return w
+}
+
 func loadHeHua() error {
 	var cfg struct {
 		StemHe struct {
-			Pairs [][3]int `json:"pairs"`
+			Pairs [][3]string `json:"pairs"`
 		} `json:"stem_he"`
 		BranchHe struct {
-			Pairs [][3]int `json:"pairs"`
+			Pairs [][3]string `json:"pairs"`
 		} `json:"branch_he"`
 		TripleHe []struct {
-			Branches []int `json:"branches"`
-			Element  int   `json:"element"`
+			Branches []string `json:"branches"`
+			Element  string   `json:"element"`
 		} `json:"triple_he"`
 		TripleHui []struct {
-			Branches []int `json:"branches"`
-			Element  int   `json:"element"`
+			Branches []string `json:"branches"`
+			Element  string   `json:"element"`
 		} `json:"triple_hui"`
 	}
 	if err := json.Unmarshal(heHuaJSON, &cfg); err != nil {
@@ -161,19 +156,25 @@ func loadHeHua() error {
 	}
 	GanHes = make([]GanHe, len(cfg.StemHe.Pairs))
 	for i, p := range cfg.StemHe.Pairs {
-		GanHes[i] = GanHe{A: Gan(p[0]), B: Gan(p[1]), Result: Wuxing(p[2])}
+		GanHes[i] = GanHe{A: parseGan(p[0]), B: parseGan(p[1]), Result: parseWuxing(p[2])}
 	}
 	ZhiHes = make([]ZhiHe, len(cfg.BranchHe.Pairs))
 	for i, p := range cfg.BranchHe.Pairs {
-		ZhiHes[i] = ZhiHe{A: Zhi(p[0]), B: Zhi(p[1]), Result: Wuxing(p[2])}
+		ZhiHes[i] = ZhiHe{A: parseZhi(p[0]), B: parseZhi(p[1]), Result: parseWuxing(p[2])}
 	}
-	TripleHeList = make([]SanHeHui, 0, len(cfg.TripleHe))
 	for _, th := range cfg.TripleHe {
-		TripleHeList = append(TripleHeList, SanHeHui{th.Branches, Wuxing(th.Element)})
+		branches := make([]Zhi, len(th.Branches))
+		for i, s := range th.Branches {
+			branches[i] = parseZhi(s)
+		}
+		TripleHeList = append(TripleHeList, SanHeHui{Branches: branches, Element: parseWuxing(th.Element)})
 	}
-	TripleHuiList = make([]SanHeHui, 0, len(cfg.TripleHui))
 	for _, th := range cfg.TripleHui {
-		TripleHuiList = append(TripleHuiList, SanHeHui{th.Branches, Wuxing(th.Element)})
+		branches := make([]Zhi, len(th.Branches))
+		for i, s := range th.Branches {
+			branches[i] = parseZhi(s)
+		}
+		TripleHuiList = append(TripleHuiList, SanHeHui{Branches: branches, Element: parseWuxing(th.Element)})
 	}
 	return nil
 }
@@ -181,14 +182,14 @@ func loadHeHua() error {
 func loadChongXingHai() error {
 	var cfg struct {
 		Chong struct {
-			Pairs [][2]int `json:"pairs"`
+			Pairs [][2]string `json:"pairs"`
 		} `json:"chong"`
 		Xing []struct {
-			Type     string `json:"type"`
-			Branches []int  `json:"branches"`
+			Type     string   `json:"type"`
+			Branches []string `json:"branches"`
 		} `json:"xing"`
 		Hai struct {
-			Pairs [][2]int `json:"pairs"`
+			Pairs [][2]string `json:"pairs"`
 		} `json:"hai"`
 	}
 	if err := json.Unmarshal(chongXingHaiJSON, &cfg); err != nil {
@@ -196,95 +197,23 @@ func loadChongXingHai() error {
 	}
 	ChongPairs = make([]BranchPair, len(cfg.Chong.Pairs))
 	for i, p := range cfg.Chong.Pairs {
-		ChongPairs[i] = BranchPair{A: Zhi(p[0]), B: Zhi(p[1])}
+		ChongPairs[i] = BranchPair{A: parseZhi(p[0]), B: parseZhi(p[1])}
 	}
 	for _, x := range cfg.Xing {
-		XingGroups = append(XingGroups, Xing{x.Type, x.Branches})
+		branches := make([]Zhi, len(x.Branches))
+		for i, s := range x.Branches {
+			branches[i] = parseZhi(s)
+		}
+		XingGroups = append(XingGroups, Xing{Type: x.Type, Branches: branches})
 	}
 	HaiPairs = make([]BranchPair, len(cfg.Hai.Pairs))
 	for i, p := range cfg.Hai.Pairs {
-		HaiPairs[i] = BranchPair{A: Zhi(p[0]), B: Zhi(p[1])}
+		HaiPairs[i] = BranchPair{A: parseZhi(p[0]), B: parseZhi(p[1])}
 	}
 	return nil
 }
 
 // --- query functions ---
-
-func inBranchList(branches []int, b Zhi) bool {
-	v := int(b)
-	for _, x := range branches {
-		if x == v {
-			return true
-		}
-	}
-	return false
-}
-
-// IsGanHe returns true if the two stems form a 天干五合 pair.
-func IsGanHe(a, b Gan) bool {
-	for _, p := range GanHes {
-		if (a == p.A && b == p.B) || (a == p.B && b == p.A) {
-			return true
-		}
-	}
-	return false
-}
-
-// IsZhiHe returns true if the two branches form a 地支六合 pair.
-func IsZhiHe(a, b Zhi) bool {
-	for _, p := range ZhiHes {
-		if (a == p.A && b == p.B) || (a == p.B && b == p.A) {
-			return true
-		}
-	}
-	return false
-}
-
-// IsTripleHe returns true if the two branches belong to the same 三合 group.
-func IsTripleHe(a, b Zhi) bool {
-	for _, tr := range TripleHeList {
-		if inBranchList(tr.Branches, a) && inBranchList(tr.Branches, b) {
-			return true
-		}
-	}
-	return false
-}
-
-// IsTripleHui returns true if the two branches belong to the same 三会 group.
-func IsTripleHui(a, b Zhi) bool {
-	for _, tr := range TripleHuiList {
-		if inBranchList(tr.Branches, a) && inBranchList(tr.Branches, b) {
-			return true
-		}
-	}
-	return false
-}
-
-// IsLiuChong returns true if the two branches form a 六冲 pair.
-func IsLiuChong(a, b Zhi) bool {
-	for _, p := range ChongPairs {
-		if (a == p.A && b == p.B) || (a == p.B && b == p.A) {
-			return true
-		}
-	}
-	return false
-}
-
-// IsXing returns true if the two branches are in a 相刑 relation.
-func IsXing(a, b Zhi) bool {
-	for _, x := range XingGroups {
-		if x.Type == "zi" {
-			if a == b && inBranchList(x.Branches, a) {
-				return true
-			}
-		} else if a != b {
-			if inBranchList(x.Branches, a) && inBranchList(x.Branches, b) {
-				return true
-			}
-		}
-	}
-	return false
-}
 
 // -- nayin --
 
@@ -310,79 +239,74 @@ func NaYinLabel(s Gan, b Zhi) string {
 	return "未知"
 }
 
-// IsHai returns true if the two branches form a 六害 pair.
-func IsHai(a, b Zhi) bool {
-	for _, p := range HaiPairs {
-		if (a == p.A && b == p.B) || (a == p.B && b == p.A) {
-			return true
-		}
+// NaYinWuxing extracts the five-element from a nayin name by its last character.
+func NaYinWuxing(nayin string) Wuxing {
+	rs := []rune(nayin)
+	if len(rs) == 0 {
+		return 0
 	}
-	return false
-}
-
-// IsAnHe returns true if the two branches form a 暗合 pair.
-func IsAnHe(a, b Zhi) bool {
-	for _, p := range anHePairs {
-		if (a == p.A && b == p.B) || (a == p.B && b == p.A) {
-			return true
-		}
+	wx, err := ParseWuxing(string(rs[len(rs)-1]))
+	if err != nil {
+		return 0
 	}
-	return false
-}
-
-// IsPo returns true if the two branches form a 相破 pair.
-func IsPo(a, b Zhi) bool {
-	for _, p := range poPairs {
-		if (a == p.A && b == p.B) || (a == p.B && b == p.A) {
-			return true
-		}
-	}
-	return false
+	return wx
 }
 
 // -- hidden stems --
 
 func loadHiddenStems() error {
 	var cfg struct {
-		Branches map[int]struct {
-			Main  int  `json:"main"`
-			Mid   *int `json:"mid"`
-			Minor *int `json:"minor"`
+		Branches map[string]struct {
+			Main  string  `json:"main"`
+			Mid   *string `json:"mid"`
+			Minor *string `json:"minor"`
 		} `json:"branches"`
 	}
 	if err := json.Unmarshal(hiddenStemsJSON, &cfg); err != nil {
 		return err
 	}
-	HiddenStemsTable = make(map[int]HiddenStems, len(cfg.Branches))
+	HiddenStemsTable = make(map[Zhi]HiddenStems, len(cfg.Branches))
 	for k, v := range cfg.Branches {
-		HiddenStemsTable[k] = HiddenStems{
-			Main:  &v.Main,
-			Mid:   v.Mid,
-			Minor: v.Minor,
+		z := parseZhi(k)
+		mainGan := parseGan(v.Main)
+		hs := HiddenStems{Main: &mainGan}
+		if v.Mid != nil {
+			mg := parseGan(*v.Mid)
+			hs.Mid = &mg
 		}
+		if v.Minor != nil {
+			mg := parseGan(*v.Minor)
+			hs.Minor = &mg
+		}
+		HiddenStemsTable[z] = hs
 	}
 	return nil
 }
 
 func loadLifeStages() error {
 	var cfg struct {
-		Stems map[int]struct {
-			Stages []int `json:"stages"`
+		Stems map[string]struct {
+			Stages []string `json:"stages"`
 		} `json:"stems"`
 	}
 	if err := json.Unmarshal(lifeStagesJSON, &cfg); err != nil {
 		return err
 	}
-	LifeStagesTable = make(map[int][]int, len(cfg.Stems))
+	ChangShengTable = make(map[Gan][]Zhi, len(cfg.Stems))
 	for k, v := range cfg.Stems {
-		LifeStagesTable[k] = v.Stages
+		g := parseGan(k)
+		stages := make([]Zhi, len(v.Stages))
+		for i, s := range v.Stages {
+			stages[i] = parseZhi(s)
+		}
+		ChangShengTable[g] = stages
 	}
 	return nil
 }
 
 // HiddenStemsForBranch returns the hidden stems (藏干) for a branch.
 func HiddenStemsForBranch(b Zhi) HiddenStems {
-	if hs, ok := HiddenStemsTable[int(b)]; ok {
+	if hs, ok := HiddenStemsTable[b]; ok {
 		return hs
 	}
 	return HiddenStems{}
@@ -390,29 +314,30 @@ func HiddenStemsForBranch(b Zhi) HiddenStems {
 
 func loadRenYuan() error {
 	var cfg struct {
-		Months map[int][]struct {
-			Gan     int    `json:"gan"`
-			GanName string `json:"gan_name"`
-			Days    int    `json:"days"`
+		Months map[string][]struct {
+			Gan  string `json:"gan"`
+			Days int    `json:"days"`
 		} `json:"months"`
 	}
 	if err := json.Unmarshal(renYuanJSON, &cfg); err != nil {
 		return err
 	}
-	renYuanTable = make(map[int][]RenYuanPhase, len(cfg.Months))
+	renYuanTable = make(map[Zhi][]RenYuanPhase, len(cfg.Months))
 	for k, v := range cfg.Months {
+		z := parseZhi(k)
 		phases := make([]RenYuanPhase, len(v))
 		for i, p := range v {
-			phases[i] = RenYuanPhase{Gan: Gan(p.Gan), GanName: p.GanName, Days: p.Days}
+			g := parseGan(p.Gan)
+			phases[i] = RenYuanPhase{Gan: g, GanName: GanName(g), Days: p.Days}
 		}
-		renYuanTable[k] = phases
+		renYuanTable[z] = phases
 	}
 	return nil
 }
 
 // RenYuanPhasesForBranch returns the 人元司令分野 phases for a month branch.
 func RenYuanPhasesForBranch(branch Zhi) []RenYuanPhase {
-	if phases, ok := renYuanTable[int(branch)]; ok {
+	if phases, ok := renYuanTable[branch]; ok {
 		return phases
 	}
 	return nil

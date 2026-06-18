@@ -4,25 +4,26 @@
 // Public API:
 //
 // Types
-//   BirthTime     — 三套日历输出（公历/太阳时/农历）
+//   Timeset       — 三套日历输出（公历/太阳时/农历）
 //   SolarTime     — 真太阳时
 //   GregorianTime — 公历时间
 //   LunarTime     — 农历时间（含时辰地支）
 //
 // Core functions
-//   ComputeBirthTime(y,m,d,h,min,lon,tz) → BirthTime
-//   ComputeSolarTime(y,m,d,h,min,lon,tz) → SolarTime
-//   ComputeBazi(SolarTime) → Bazi
+//   ComputeTime(y,m,d,h,min,lon,tz) → Timeset
+//   SolarToLunar(gt GregorianTime) → LunarTime
+//   LunarToSolar(y,m,d,leap) → (year, month, day)
 //
-// Pillar computations
-//   DayPillar(year, month, day) → Zhu
-//   YearPillar(year, month, day) → Zhu
-//   MonthPillar(birthTime, yearGan) → Zhu
-//   HourPillar(solarMinutes, dayGan) → Zhu
+// Zhu computations
+//   Bazi(st SolarTime) → ganzhi.Bazi
+//   RiZhu(gt GregorianTime) → Zhu
+//   NianZhu(gt GregorianTime) → Zhu
+//   YueZhu(gt GregorianTime) → Zhu
+//   ShiZhu(st SolarTime) → Zhu
 //
 // Solar terms
 //   SolarTermTime(year, targetLon) → time.Time
 //   SolarTermIndex(year, month, day) → int
-//   SolarMonthIndex(time) → int
+//   JianYue(gt GregorianTime) → ganzhi.Zhi
 //   JieQiLongitudes — [24]float64
 package tianwen

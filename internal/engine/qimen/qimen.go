@@ -129,6 +129,7 @@ type pan struct {
 	DutyDoor DoorIndex      `json:"duty_door"`
 	Palaces  [9]Palace      `json:"palaces"`
 	MaXing   PalaceIndex    `json:"ma_xing"`
+	DriveGan  ganzhi.Gan      `json:"drive_gan"`
 	DriveZhi  ganzhi.Zhi      `json:"drive_zhi"`
 	KongWang [2]PalaceIndex `json:"kong_wang"`
 }
@@ -171,10 +172,3 @@ type Pattern struct {
 	Palaces     []PalaceIndex `json:"palaces,omitempty"`
 }
 
-const (
-	wxMu   = 1 // 木
-	wxHuo  = 2 // 火
-	wxTu   = 3 // 土
-	wxJin  = 4 // 金
-	wxShui = 5 // 水
-)

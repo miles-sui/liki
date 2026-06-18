@@ -2,6 +2,7 @@ package bazi
 
 import (
 	"fmt"
+	"time"
 
 	"liki/internal/engine/ganzhi"
 	"liki/internal/engine/tianwen"
@@ -25,32 +26,32 @@ type LiuRi struct {
 
 // ComputeLiuRi computes the day pillar for the given date and its full
 // interactions with the bazi chart, current dayun, and current liunian.
-func ComputeLiuRi(date string, dayMaster ganzhi.Gan, bz ganzhi.Bazi, daYunPillar *ganzhi.Zhu, liuNianPillar *ganzhi.Zhu) *LiuRi {
+func computeLiuRi(bz ganzhi.Bazi, date string, daYunZhu *ganzhi.Zhu, liuNianZhu *ganzhi.Zhu) (*LiuRi, error) {
+	dayMaster := bz.Ri.Gan
 	bazi := bz.Slice()
-	// Parse date.
 	y, m, d := 0, 0, 0
 	if n, _ := fmt.Sscanf(date, "%d-%d-%d", &y, &m, &d); n != 3 { //nolint:errcheck
-		return nil
+		return nil, fmt.Errorf("compute liuri: invalid date %q", date)
 	}
 
-	dp := tianwen.DayPillar(y, m, d)
+	dp := tianwen.RiZhu(tianwen.GregorianTime(time.Date(y, time.Month(m), d, 0, 0, 0, 0, time.UTC)))
 	tgName := ganzhi.TenGodFromGan(dayMaster, dp.Gan)
 
 	dayName := ganzhi.GanName(dp.Gan) + ganzhi.ZhiName(dp.Zhi)
 
 	// Day vs bazi (stem + branch relations) — all 4 pillars, consistent with liunian.
-	stemRels, branchRels := analyzePillarWithBazi(dp, bz)
+	stemRels, branchRels := analyzeZhuWithBazi(dp, bz)
 
 	// Day vs dayun.
 	DaYunRels := make([]ZhiRelation, 0)
-	if daYunPillar != nil {
-		DaYunRels = append(DaYunRels, analyzeZhiRelation(dp.Zhi, daYunPillar.Zhi))
+	if daYunZhu != nil {
+		DaYunRels = append(DaYunRels, analyzeZhiRelation(dp.Zhi, daYunZhu.Zhi))
 	}
 
 	// Day vs liunian.
 	liunianRels := make([]ZhiRelation, 0)
-	if liuNianPillar != nil {
-		liunianRels = append(liunianRels, analyzeZhiRelation(dp.Zhi, liuNianPillar.Zhi))
+	if liuNianZhu != nil {
+		liunianRels = append(liunianRels, analyzeZhiRelation(dp.Zhi, liuNianZhu.Zhi))
 	}
 
 	// Na yin.
@@ -59,29 +60,29 @@ func ComputeLiuRi(date string, dayMaster ganzhi.Gan, bz ganzhi.Bazi, daYunPillar
 	// Daily shensha: day stem/branch vs bazi.
 	var shensha []shenShaEntry
 	// 天乙贵人 on day stem.
-	if targets, ok := tianYiLookup[int(dp.Gan)]; ok {
+	if targets, ok := tianYiLookup[dp.Gan]; ok {
 		for _, tb := range targets {
 			for _, np := range bazi {
-				if int(np.Zhi) == tb {
+				if np.Zhi == tb {
 					shensha = append(shensha, shenShaEntry{Name: "天乙贵人", Category: catJi, Description: "流日天乙贵人日"})
 				}
 			}
 		}
 	}
 	// 文昌 on day stem.
-	if targets, ok := wenChangLookup[int(dp.Gan)]; ok {
+	if targets, ok := wenChangLookup[dp.Gan]; ok {
 		for _, tb := range targets {
 			for _, np := range bazi {
-				if int(np.Zhi) == tb {
+				if np.Zhi == tb {
 					shensha = append(shensha, shenShaEntry{Name: "文昌", Category: catJi, Description: "流日文昌日，利学业文书"})
 				}
 			}
 		}
 	}
 	// 驿马/桃花/华盖 from year branch triad → day branch check.
-	yBranch := int(bazi[0].Zhi)
+	yBranch := bazi[0].Zhi
 	triadMaps := []struct {
-		m    map[int]int
+		m    map[ganzhi.Zhi]ganzhi.Zhi
 		name string
 		cat  string
 		desc string
@@ -91,7 +92,7 @@ func ComputeLiuRi(date string, dayMaster ganzhi.Gan, bz ganzhi.Bazi, daYunPillar
 		{huagaiBranchMap, "华盖", catZhongXing, "流日华盖，宜静思"},
 	}
 	for _, tm := range triadMaps {
-		if tb, ok := tm.m[yBranch]; ok && int(dp.Zhi) == tb {
+		if tb, ok := tm.m[yBranch]; ok && dp.Zhi == tb {
 			shensha = append(shensha, shenShaEntry{Name: tm.name, Category: tm.cat, Description: tm.desc})
 		}
 	}
@@ -102,11 +103,11 @@ func ComputeLiuRi(date string, dayMaster ganzhi.Gan, bz ganzhi.Bazi, daYunPillar
 		DayZhi:      dp.Zhi,
 		DayName:     dayName,
 		DayNaYin:    naYin,
-		TenGod:      tgName,
+		TenGod:      tgName.String(),
 		GanRels:     stemRels,
 		ZhiRels:     branchRels,
 		DaYunRels:   DaYunRels,
 		LiuNianRels: liunianRels,
 		ShenSha:     shensha,
-	}
+	}, nil
 }

@@ -1,0 +1,32 @@
+{
+  "name": "compute_xuankong",
+  "description": "计算玄空飞星盘。根据时间和山向排出玄空飞星宅命盘。当用户询问玄空风水、飞星布局、山向飞星时调用。",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "birth": {
+        "type": "object",
+        "description": "出生信息。time（公历）和lunar（农历）二选一",
+        "properties": {
+          "time": {"type": "string", "description": "公历出生时间，RFC3339格式。与lunar二选一"},
+          "lunar": {
+            "type": "object",
+            "properties": {
+              "year": {"type": "integer"}, "month": {"type": "integer"}, "day": {"type": "integer"},
+              "hour": {"type": "integer"}, "minute": {"type": "integer"}, "leap": {"type": "boolean"}
+            },
+            "required": ["year", "month", "day", "hour"]
+          },
+          "longitude": {"type": "number", "description": "出生地经度"}
+        },
+        "anyOf": [
+          {"required": ["time", "longitude"]},
+          {"required": ["lunar", "longitude"]}
+        ]
+      },
+      "sit_mountain": {"type": "integer", "description": "坐山索引 0-23，对应二十四山"},
+      "face_mountain": {"type": "integer", "description": "朝向索引 0-23，对应二十四山"}
+    },
+    "required": ["birth", "sit_mountain", "face_mountain"]
+  }
+}

@@ -25,6 +25,21 @@ func zhiPalace(z ganzhi.Zhi) PalaceIndex {
 	return PalaceKan
 }
 
+// palaceBranches returns all branches belonging to a palace.
+func palaceBranches(p PalaceIndex) []ganzhi.Zhi {
+	switch p {
+	case PalaceKun:
+		return []ganzhi.Zhi{ganzhi.ZhiWei, ganzhi.ZhiShen}
+	case PalaceXun:
+		return []ganzhi.Zhi{ganzhi.ZhiChen, ganzhi.ZhiSi}
+	case PalaceQian:
+		return []ganzhi.Zhi{ganzhi.ZhiXu, ganzhi.ZhiHai}
+	case PalaceGen:
+		return []ganzhi.Zhi{ganzhi.ZhiChou, ganzhi.ZhiYin}
+	}
+	return []ganzhi.Zhi{palaceZhi(p)}
+}
+
 // palaceZhi returns the principal branch of a palace.
 func palaceZhi(p PalaceIndex) ganzhi.Zhi {
 	switch p {
@@ -48,21 +63,21 @@ func palaceZhi(p PalaceIndex) ganzhi.Zhi {
 	return ganzhi.ZhiZi
 }
 
-// palaceWuxing returns the five-element index of a palace.
-func palaceWuxing(p PalaceIndex) int {
+// palaceWuxing returns the five-element of a palace.
+func palaceWuxing(p PalaceIndex) ganzhi.Wuxing {
 	switch p {
 	case PalaceKan:
-		return wxShui
+		return ganzhi.WxShui
 	case PalaceKun, PalaceZhong, PalaceGen:
-		return wxTu
+		return ganzhi.WxTu
 	case PalaceZhen, PalaceXun:
-		return wxMu
+		return ganzhi.WxMu
 	case PalaceQian, PalaceDui:
-		return wxJin
+		return ganzhi.WxJin
 	case PalaceLi:
-		return wxHuo
+		return ganzhi.WxHuo
 	}
-	return wxTu
+	return ganzhi.WxTu
 }
 
 // starHomePalace returns the home palace index (0-based internal) for a star.

@@ -64,8 +64,8 @@ func findPatterns(pan pan) []Pattern {
 			break
 		}
 	}
-	opposite := (dutyHome + 4) % 9
-	if dutyPos == opposite || dutyPos == (opposite+1)%9 {
+	opposite := 8 - dutyHome
+	if dutyPos == opposite {
 		patterns = append(patterns, Pattern{
 			Name: "反吟", Description: "值符反位，凡事反复，动则有成",
 			Auspicious: false,

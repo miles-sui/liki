@@ -1,16 +1,16 @@
 {
   "branches": {
-    "1": {"main": 10, "mid": null, "minor": null},
-    "2": {"main": 6, "mid": 10, "minor": 8},
-    "3": {"main": 1, "mid": 3, "minor": 5},
-    "4": {"main": 2, "mid": null, "minor": null},
-    "5": {"main": 5, "mid": 2, "minor": 10},
-    "6": {"main": 3, "mid": 7, "minor": 5},
-    "7": {"main": 4, "mid": 6, "minor": null},
-    "8": {"main": 6, "mid": 2, "minor": 4},
-    "9": {"main": 7, "mid": 9, "minor": 5},
-    "10": {"main": 8, "mid": null, "minor": null},
-    "11": {"main": 5, "mid": 8, "minor": 4},
-    "12": {"main": 9, "mid": 1, "minor": null}
+    "子": {"main": "癸", "mid": null, "minor": null},
+    "丑": {"main": "己", "mid": "癸", "minor": "辛"},
+    "寅": {"main": "甲", "mid": "丙", "minor": "戊"},
+    "卯": {"main": "乙", "mid": null, "minor": null},
+    "辰": {"main": "戊", "mid": "乙", "minor": "癸"},
+    "巳": {"main": "丙", "mid": "庚", "minor": "戊"},
+    "午": {"main": "丁", "mid": "己", "minor": null},
+    "未": {"main": "己", "mid": "乙", "minor": "丁"},
+    "申": {"main": "庚", "mid": "壬", "minor": "戊"},
+    "酉": {"main": "辛", "mid": null, "minor": null},
+    "戌": {"main": "戊", "mid": "辛", "minor": "丁"},
+    "亥": {"main": "壬", "mid": "甲", "minor": null}
   }
 }

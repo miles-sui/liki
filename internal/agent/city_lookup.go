@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log/slog"
 	"net/http"
 	"net/url"
 	"time"
@@ -21,18 +20,18 @@ type cityCoordsResult struct {
 
 func handleGetCityCoords(ctx context.Context, raw json.RawMessage) (json.RawMessage, error) {
 	var args struct {
-		CityName string `json:"city_name"`
+		City string `json:"city"`
 	}
 	if err := json.Unmarshal(raw, &args); err != nil {
 		return nil, fmt.Errorf("agent: city lookup: %w", err)
 	}
-	if args.CityName == "" {
-		return nil, fmt.Errorf("city_name is required")
+	if args.City == "" {
+		return nil, fmt.Errorf("city is required")
 	}
 
-	result, err := geocodeNominatim(ctx, args.CityName)
+	result, err := geocodeNominatim(ctx, args.City)
 	if err != nil {
-		return nil, fmt.Errorf("未找到城市 '%s'，请尝试附近大城市或直接提供经纬度和时区: %w", args.CityName, err)
+		return nil, fmt.Errorf("未找到城市 '%s'，请尝试附近大城市或直接提供经纬度和时区: %w", args.City, err)
 	}
 	return json.Marshal(result)
 }
@@ -79,19 +78,26 @@ func geocodeNominatim(ctx context.Context, query string) (cityCoordsResult, erro
 	}
 
 	r := results[0]
+	lon, err := parseFloat(r.Lon)
+	if err != nil {
+		return cityCoordsResult{}, fmt.Errorf("geocode: parse lon: %w", err)
+	}
+	lat, err := parseFloat(r.Lat)
+	if err != nil {
+		return cityCoordsResult{}, fmt.Errorf("geocode: parse lat: %w", err)
+	}
 	return cityCoordsResult{
 		Name:      r.Name,
-		Longitude: parseFloat(r.Lon),
-		Latitude:  parseFloat(r.Lat),
+		Longitude: lon,
+		Latitude:  lat,
 		Country:   r.Address.Country,
 	}, nil
 }
 
-func parseFloat(s string) float64 {
+func parseFloat(s string) (float64, error) {
 	var f float64
 	if n, err := fmt.Sscanf(s, "%f", &f); n != 1 || err != nil {
-		slog.Warn("city_lookup: parseFloat failed", "value", s)
-		return 0
+		return 0, fmt.Errorf("parseFloat: %q: %w", s, err)
 	}
-	return f
+	return f, nil
 }

@@ -1,0 +1,32 @@
+{
+  "name": "compute_liushi",
+  "description": "计算指定日期和小时的流时运势分析。返回：流时干支、十神、与命局的互动关系。当用户询问某个时辰或小时运势时调用。",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "date": {"type": "string", "description": "要分析的日期，YYYY-MM-DD 格式，如 2026-06-17"},
+      "hour": {"type": "integer", "description": "要分析的小时 0-23"},
+      "birth": {
+        "type": "object",
+        "description": "出生信息。time（公历）和lunar（农历）二选一",
+        "properties": {
+          "time": {"type": "string", "description": "公历出生时间，RFC3339格式。与lunar二选一"},
+          "lunar": {
+            "type": "object",
+            "properties": {
+              "year": {"type": "integer"}, "month": {"type": "integer"}, "day": {"type": "integer"},
+              "hour": {"type": "integer"}, "minute": {"type": "integer"}, "leap": {"type": "boolean"}
+            },
+            "required": ["year", "month", "day", "hour"]
+          },
+          "longitude": {"type": "number", "description": "出生地经度"}
+        },
+        "anyOf": [
+          {"required": ["time", "longitude"]},
+          {"required": ["lunar", "longitude"]}
+        ]
+      }
+    },
+    "required": ["date", "hour", "birth"]
+  }
+}

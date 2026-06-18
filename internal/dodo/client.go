@@ -9,21 +9,25 @@ import (
 	"github.com/dodopayments/dodopayments-go/option"
 )
 
+// Client wraps the Dodo Payments SDK for checkout and webhook operations.
 type Client struct {
 	checkoutSvc *dodopayments.CheckoutSessionService
 	webhookSvc  *dodopayments.WebhookService
 }
 
+// CheckoutResult holds the result of creating a checkout session.
 type CheckoutResult struct {
 	SessionID   string `json:"session_id"`
 	CheckoutURL string `json:"checkout_url"`
 }
 
+// WebhookEvent is a verified webhook event from Dodo Payments.
 type WebhookEvent struct {
 	Type string
 	Data WebhookEventData
 }
 
+// WebhookEventData holds the extracted fields from a webhook event.
 type WebhookEventData struct {
 	OrderID   string
 	Amount    int
@@ -31,6 +35,7 @@ type WebhookEventData struct {
 	PaymentID string
 }
 
+// New creates a Dodo Payments client with the given API key and webhook secret.
 func New(apiKey, webhookKey string, testMode bool) *Client {
 	opts := []option.RequestOption{option.WithBearerToken(apiKey)}
 	if testMode {
@@ -44,6 +49,7 @@ func New(apiKey, webhookKey string, testMode bool) *Client {
 	}
 }
 
+// CreateCheckout creates a Dodo Payments checkout session for the given order.
 func (c *Client) CreateCheckout(ctx context.Context, productID string, amount int, orderID, email, returnURL string) (*CheckoutResult, error) {
 	params := dodopayments.CheckoutSessionNewParams{
 		CheckoutSessionRequest: dodopayments.CheckoutSessionRequestParam{
@@ -66,6 +72,7 @@ func (c *Client) CreateCheckout(ctx context.Context, productID string, amount in
 	return &CheckoutResult{SessionID: resp.SessionID, CheckoutURL: resp.CheckoutURL}, nil
 }
 
+// VerifyWebhook verifies and parses a Dodo Payments webhook request.
 func (c *Client) VerifyWebhook(rawBody []byte, headers http.Header) (*WebhookEvent, error) {
 	event, err := c.webhookSvc.Unwrap(rawBody, headers)
 	if err != nil {

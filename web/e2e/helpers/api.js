@@ -18,13 +18,7 @@ async function req(method, path, body) {
 /** POST /api/bazi/chart — free full BaZi chart (docs/bazi.md) */
 export async function baziChart(params = {}) {
   return req('POST', '/bazi/chart', {
-    year: params.year || 2000,
-    month: params.month || 6,
-    day: params.day || 15,
-    hour: params.hour ?? 12,
-    minute: params.minute ?? 0,
-    longitude: params.longitude ?? 120,
-    timezone: params.timezone ?? 8,
+    solar_time: params.solar_time || '2000-06-15T12:00:00+08:00',
     gender: params.gender || 'male',
   });
 }
@@ -32,8 +26,8 @@ export async function baziChart(params = {}) {
 /** POST /api/bazi/bond — free bond analysis (docs/bazi.md) */
 export async function baziBond(aParams = {}, bParams = {}) {
   return req('POST', '/bazi/bond', {
-    a: { year: 2000, month: 6, day: 15, hour: 12, minute: 0, longitude: 120, timezone: 8, gender: 'male', ...aParams },
-    b: { year: 1999, month: 3, day: 20, hour: 8, minute: 0, longitude: 120, timezone: 8, gender: 'female', ...bParams },
+    a: { solar_time: '2000-06-15T12:00:00+08:00', gender: 'male', ...aParams },
+    b: { solar_time: '1999-03-20T08:00:00+08:00', gender: 'female', ...bParams },
   });
 }
 

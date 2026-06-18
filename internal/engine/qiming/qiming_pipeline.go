@@ -6,7 +6,7 @@ import "fmt"
 func PrepareWuGe(surname, yongShen string, xiShen []string) (WuGeData, error) {
 	strokes := lookupKangxiStroke(surname)
 	if strokes == 0 {
-		return WuGeData{}, fmt.Errorf("surname %q not found in Kangxi database", surname)
+		return WuGeData{}, fmt.Errorf("qiming: surname %q not found in Kangxi database", surname)
 	}
 
 	enum := enumWuGeCombinations(strokes)
@@ -14,9 +14,11 @@ func PrepareWuGe(surname, yongShen string, xiShen []string) (WuGeData, error) {
 	yongElem := wuxingFromChinese(yongShen)
 	yongChars := getCharsByElement(yongElem)
 
-	var xiChars map[int][]CharLite
-	if len(xiShen) > 0 {
-		xiChars = getCharsByElement(wuxingFromChinese(xiShen[0]))
+	xiChars := make(map[int][]CharLite)
+	for _, xs := range xiShen {
+		for stroke, chars := range getCharsByElement(wuxingFromChinese(xs)) {
+			xiChars[stroke] = append(xiChars[stroke], chars...)
+		}
 	}
 
 	return WuGeData{
@@ -27,10 +29,20 @@ func PrepareWuGe(surname, yongShen string, xiShen []string) (WuGeData, error) {
 	}, nil
 }
 
+// hasNegativeChar checks whether a name contains any character with negative meaning.
+func hasNegativeChar(name string) bool {
+	for _, r := range name {
+		if negativeChars[string(r)] {
+			return true
+		}
+	}
+	return false
+}
+
 // ComposeNames builds name strings from character pools across all combos.
 // Only yong+yong, yong+xi, and xi+yong pairs are allowed. Names that fail
-// phonetic validation are filtered out. Returns only name strings.
-func ComposeNames(surname string, combos []StrokeCombo, yongChars, xiChars map[int][]string) []string {
+// phonetic validation or contain negative characters are filtered out.
+func ComposeNames(surname string, combos []StrokeCombo, yongChars, xiChars map[int][]CharLite) []string {
 	seen := make(map[string]bool)
 	var names []string
 
@@ -40,7 +52,7 @@ func ComposeNames(surname string, combos []StrokeCombo, yongChars, xiChars map[i
 		xi1 := xiChars[combo.Stroke1]
 		xi2 := xiChars[combo.Stroke2]
 
-		pairs := [][2][]string{
+		pairs := [][2][]CharLite{
 			{yong1, yong2}, // yong+yong
 			{yong1, xi2},   // yong+xi
 			{xi1, yong2},   // xi+yong
@@ -48,16 +60,26 @@ func ComposeNames(surname string, combos []StrokeCombo, yongChars, xiChars map[i
 		for _, p := range pairs {
 			for _, c1 := range p[0] {
 				for _, c2 := range p[1] {
-					t1 := lookupTone(c1)
-					t2 := lookupTone(c2)
+					t1 := c1.Tone
+					t2 := c2.Tone
+					if t1 == 0 {
+						t1 = lookupTone(c1.Char)
+					}
+					if t2 == 0 {
+						t2 = lookupTone(c2.Char)
+					}
 					if !isPhoneticValid(t1, t2) {
 						continue
 					}
-					name := surname + c1 + c2
-					if !seen[name] {
-						names = append(names, name)
-						seen[name] = true
+					name := surname + c1.Char + c2.Char
+					if seen[name] {
+						continue
 					}
+					if hasNegativeChar(name) {
+						continue
+					}
+					names = append(names, name)
+					seen[name] = true
 				}
 			}
 		}
@@ -67,15 +89,20 @@ func ComposeNames(surname string, combos []StrokeCombo, yongChars, xiChars map[i
 
 // DetailNames returns the full five-grid, three-talent, and phonetic analysis
 // for a batch of given names sharing the same surname.
-func DetailNames(surname string, names []string) []NameCandidate {
+func DetailNames(surname string, names []string) ([]NameCandidate, error) {
 	surnameStrokes := lookupKangxiStroke(surname)
 	if surnameStrokes == 0 {
-		return nil
+		return nil, fmt.Errorf("detail names: surname %q not found in Kangxi dictionary", surname)
 	}
 
 	var results []NameCandidate
 	for _, fullName := range names {
-		given := fullName[len([]rune(surname)):]
+		fullRunes := []rune(fullName)
+		surnameRunes := len([]rune(surname))
+		if len(fullRunes) <= surnameRunes {
+			continue
+		}
+		given := string(fullRunes[surnameRunes:])
 		rs := []rune(given)
 		if len(rs) != 2 {
 			continue
@@ -102,7 +129,7 @@ func DetailNames(surname string, names []string) []NameCandidate {
 			Phonetic:   phon,
 		})
 	}
-	return results
+	return results, nil
 }
 
 // computeWuGeFromStrokes computes the five-grid analysis from raw stroke counts.
@@ -110,6 +137,9 @@ func computeWuGeFromStrokes(surnameStroke, s1, s2 int) WuGe {
 	tian := surnameStroke + 1
 	ren := surnameStroke + s1
 	di := s1 + s2
+	if s2 == 0 {
+		di = s1 + 1 // 单字名地格 = 名笔画 + 1
+	}
 	zong := surnameStroke + s1 + s2
 	wai := zong - ren + 1
 	if wai < 1 {
@@ -146,10 +176,10 @@ func isAllZe(t1, t2 int) bool {
 	return (t1 == 3 || t1 == 4) && (t2 == 3 || t2 == 4)
 }
 
-func isAdjacentTone3(t1, t2 int) bool {
-	return t1 == 3 && t2 == 3
+func isSameTone(t1, t2 int) bool {
+	return t1 == t2
 }
 
 func isPhoneticValid(t1, t2 int) bool {
-	return !isAllPing(t1, t2) && !isAllZe(t1, t2) && !isAdjacentTone3(t1, t2)
+	return !isAllPing(t1, t2) && !isAllZe(t1, t2) && !isSameTone(t1, t2)
 }

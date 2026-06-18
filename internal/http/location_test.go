@@ -216,3 +216,71 @@ func (m *mockLocationTransport) RoundTrip(_ *http.Request) (*http.Response, erro
 		Header:     http.Header{"Content-Type": []string{"application/json"}},
 	}, nil
 }
+
+func TestEd3_Location_DifferentTPs(t *testing.T) {
+	tests := []struct {
+		name string
+		xff  string
+		addr string
+	}{
+		{"normal XFF", "1.2.3.4, 10.0.0.1", "10.0.0.1:12345"},
+		{"private XFF", "10.0.0.1, 192.168.1.1", "10.0.0.1:12345"},
+		{"loopback", "127.0.0.1", "127.0.0.1:12345"},
+		{"no XFF, public", "", "8.8.8.8:12345"},
+		{"no XFF, no port", "", "8.8.8.8"},
+		{"invalid IP in XFF", "not-an-ip", "10.0.0.1:12345"},
+		{"empty XFF", "", "10.0.0.1:12345"},
+		{"IPv6", "::1", "[::1]:12345"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := httptest.NewRequest("GET", "/api/location", nil)
+			if tt.xff != "" {
+				r.Header.Set("X-Forwarded-For", tt.xff)
+			}
+			r.RemoteAddr = tt.addr
+			w := httptest.NewRecorder()
+			handleLocation(w, r)
+			if w.Code >= 500 {
+				t.Errorf("status=%d", w.Code)
+			}
+			var env struct {
+				Data struct {
+					Country  string `json:"country"`
+					City     string `json:"city"`
+					Currency string `json:"currency"`
+				} `json:"data"`
+			}
+			if err := json.NewDecoder(w.Body).Decode(&env); err != nil {
+				t.Fatal(err)
+			}
+			if env.Data.Country == "" {
+				t.Error("country is empty (should be 'unknown' at minimum)")
+			}
+		})
+	}
+}
+
+func TestEd3_Location_CFHeaders(t *testing.T) {
+	r := httptest.NewRequest("GET", "/api/location", nil)
+	r.Header.Set("CF-IPCountry", "CN")
+	r.RemoteAddr = "127.0.0.1:12345"
+	w := httptest.NewRecorder()
+	handleLocation(w, r)
+
+	var env struct {
+		Data struct {
+			Country  string `json:"country"`
+			Currency string `json:"currency"`
+		} `json:"data"`
+	}
+	if err := json.NewDecoder(w.Body).Decode(&env); err != nil {
+		t.Fatal(err)
+	}
+	if env.Data.Country != "CN" {
+		t.Errorf("country=%q, want CN", env.Data.Country)
+	}
+	if env.Data.Currency != "CNY" {
+		t.Errorf("currency=%q, want CNY for CN country", env.Data.Currency)
+	}
+}

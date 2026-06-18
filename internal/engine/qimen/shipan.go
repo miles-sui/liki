@@ -1,9 +1,7 @@
 package qimen
 
 import (
-
 	"liki/internal/engine/ganzhi"
-	"liki/internal/engine/tianwen"
 )
 
 // Chart bundles a complete奇门盘 with all analysis layers.
@@ -19,28 +17,24 @@ type Chart struct {
 	YingQi           YingQi             `json:"ying_qi"`
 }
 
-// ComputeChart computes a complete奇门盘 with all analyses.
+// computeChart computes a complete奇门盘 with all analyses.
 // kind: "shi"/"ri"/"yue"/"nian".
-func ComputeChart(kind string, st tianwen.SolarTime) Chart {
-	bz := tianwen.ComputeBazi(st)
-	t := st.Time()
-	y, m, d := t.Date()
-	ju := determineJuShu(y, int(m), d, int(bz.Ri.Gan), int(bz.Ri.Zhi))
+func computeChart(bz ganzhi.Bazi, kind string, y, m, d int) Chart {
+	ju := determineJuShu(y, m, d, bz.Ri.Gan, bz.Ri.Zhi)
 
-	var driveGan ganzhi.Gan
-	var driveZhi ganzhi.Zhi
+	var driveZhu ganzhi.Zhu
 	switch kind {
 	case "ri":
-		driveGan, driveZhi = bz.Ri.Gan, bz.Ri.Zhi
+		driveZhu = bz.Ri
 	case "yue":
-		driveGan, driveZhi = bz.Yue.Gan, bz.Yue.Zhi
+		driveZhu = bz.Yue
 	case "nian":
-		driveGan, driveZhi = bz.Nian.Gan, bz.Nian.Zhi
+		driveZhu = bz.Nian
 	default: // "shi"
-		driveGan, driveZhi = bz.Shi.Gan, bz.Shi.Zhi
+		driveZhu = bz.Shi
 	}
 
-	p := computePan(ju, driveGan, driveZhi)
+	p := computePan(ju, driveZhu)
 	return Chart{
 		Pan:              p,
 		StemInteractions: computeStemInteractions(p),

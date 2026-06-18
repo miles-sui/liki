@@ -21,7 +21,7 @@ func RegisterRoutes(mux *http.ServeMux, deps ServerDeps, buildTime string, rl *R
 	mux.HandleFunc("POST /api/payments/checkout", rl.Wrap(3.0/60, 1, handleCheckout(deps.Payment)))
 	mux.HandleFunc("POST /api/payments/webhook", handleWebhook(deps.Payment))
 	mux.HandleFunc("GET /api/payments/return/{id}", handlePaymentReturn())
-	mux.HandleFunc("GET /api/orders/{id}/download", redirectDownload())
+	mux.HandleFunc("GET /api/orders/{id}/report", redirectReport())
 	mux.HandleFunc("GET /api/orders/{id}/status", handleOrderStatus(deps.Payment))
 	mux.HandleFunc("POST /api/orders/{id}/retry", handleRetryOrder(deps.Payment))
 	mux.HandleFunc("GET /api/reports/{id}", handleReport(deps.Payment))
@@ -43,17 +43,22 @@ func RegisterRoutes(mux *http.ServeMux, deps ServerDeps, buildTime string, rl *R
 func registerCoreRoutes(mux *http.ServeMux, rl *RateLimiter) {
 	core := func(h http.HandlerFunc) http.HandlerFunc { return rl.Wrap(60.0/60, 10, h) }
 
-	// Compute endpoints — 60/min per IP
-	mux.HandleFunc("GET /api/huangli/query", core(queryHuangli))
-	mux.HandleFunc("POST /api/huangli/bond", core(bondHuangli))
+	// huangli
+	mux.HandleFunc("GET /api/huangli/date", core(huangliDate))
+	mux.HandleFunc("GET /api/huangli/month", core(huangliMonth))
+	mux.HandleFunc("POST /api/huangli/bond/date", core(huangliBondDate))
+	mux.HandleFunc("POST /api/huangli/bond/month", core(huangliBondMonth))
 
-	mux.HandleFunc("GET /api/fengshui/sanyuan", core(getSanYuan))
-	mux.HandleFunc("POST /api/fengshui/minggua", core(mingGua))
-	mux.HandleFunc("POST /api/fengshui/chart", core(fengshuiChart))
+	// bazhai
+	mux.HandleFunc("POST /api/bazhai/chart", core(bazhaiChart))
+	mux.HandleFunc("POST /api/bazhai/minggua", core(bazhaiMingGua))
+
+	// xuankong
+	mux.HandleFunc("GET /api/xuankong/sanyuan", core(xuankongSanYuan))
 	mux.HandleFunc("POST /api/xuankong/chart", core(xuankongChart))
 
+	// bazi
 	mux.HandleFunc("POST /api/bazi/chart", core(computeChart))
-	mux.HandleFunc("POST /api/tianwen/solartime", core(computeSolarTime))
 	mux.HandleFunc("POST /api/bazi/bond", core(bondCharts))
 	mux.HandleFunc("POST /api/bazi/liunian", core(liuNian))
 	mux.HandleFunc("POST /api/bazi/liuyue", core(liuYue))
@@ -62,20 +67,23 @@ func registerCoreRoutes(mux *http.ServeMux, rl *RateLimiter) {
 	mux.HandleFunc("POST /api/bazi/xiaoyun", core(xiaoYun))
 	mux.HandleFunc("POST /api/bazi/xiaoxian", core(xiaoXian))
 
+	// ziwei
 	mux.HandleFunc("POST /api/ziwei/chart", core(computeZiweiChart))
 	mux.HandleFunc("POST /api/ziwei/daxian", core(computeZiweiDaxian))
 	mux.HandleFunc("POST /api/ziwei/liunian", core(computeZiweiLiunian))
-
 	mux.HandleFunc("POST /api/ziwei/liuyue", core(computeZiweiLiuyue))
 	mux.HandleFunc("POST /api/ziwei/liuri", core(computeZiweiLiuri))
 	mux.HandleFunc("POST /api/ziwei/bond", core(computeZiweiBond))
 
+	// qiming
 	mux.HandleFunc("POST /api/qiming/wuge", core(handleWuge))
 	mux.HandleFunc("POST /api/qiming/compose", core(handleCompose))
 	mux.HandleFunc("POST /api/qiming/detail", core(handleDetail))
 	mux.HandleFunc("POST /api/qiming/evaluate", core(handleEvaluate))
 
+	// liuyao
 	mux.HandleFunc("POST /api/liuyao/chart", core(handleLiuyaoChart))
-	mux.HandleFunc("POST /api/qimen/pan", core(handleQimenPan))
 
+	// qimen
+	mux.HandleFunc("POST /api/qimen/pan", core(handleQimenPan))
 }

@@ -1,0 +1,11 @@
+{
+  "name": "compute_sanyuan_yun",
+  "description": "查询三元九运。返回：当前元运、上下元运划分、各运起止年份。",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "year": {"type": "integer", "description": "年份，如 2026"}
+    },
+    "required": ["year"]
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "name": "compute_qimen",
+  "description": "根据时间计算奇门遁甲盘。返回：九宫盘（九星/八门/八神/天盘干/地盘干）、星门神干互作关系、格局、旺衰、应期。当用户询问奇门遁甲时调用。",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "birth": {
+        "type": "object",
+        "description": "排盘时间。time（公历）和lunar（农历）二选一",
+        "properties": {
+          "time": {"type": "string", "description": "公历时间，RFC3339格式。与lunar二选一"},
+          "lunar": {
+            "type": "object",
+            "properties": {
+              "year": {"type": "integer"}, "month": {"type": "integer"}, "day": {"type": "integer"},
+              "hour": {"type": "integer"}, "minute": {"type": "integer"}, "leap": {"type": "boolean"}
+            },
+            "required": ["year", "month", "day", "hour"]
+          },
+          "longitude": {"type": "number", "description": "经度，如 116.4"}
+        },
+        "anyOf": [
+          {"required": ["time", "longitude"]},
+          {"required": ["lunar", "longitude"]}
+        ]
+      },
+      "kind": {"type": "string", "enum": ["shi", "ri", "yue", "nian"], "description": "盘的类型：shi=时盘(默认), ri=日盘, yue=月盘, nian=年盘"}
+    },
+    "required": ["birth"]
+  }
+}

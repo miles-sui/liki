@@ -14,9 +14,9 @@ type TripleHeFull struct {
 }
 
 func branchSet(bz ganzhi.Bazi) [13]bool {
-	pillars := bz.Slice()
+	zhus := bz.Slice()
 	var bs [13]bool
-	for _, p := range pillars {
+	for _, p := range zhus {
 		if b := int(p.Zhi); b >= 1 && b <= 12 {
 			bs[b] = true
 		}
@@ -24,7 +24,7 @@ func branchSet(bz ganzhi.Bazi) [13]bool {
 	return bs
 }
 
-func countBranches(bs [13]bool, targets ...int) int {
+func countBranches(bs [13]bool, targets ...ganzhi.Zhi) int {
 	c := 0
 	for _, t := range targets {
 		if t >= 1 && t <= 12 && bs[t] {
@@ -34,12 +34,25 @@ func countBranches(bs [13]bool, targets ...int) int {
 	return c
 }
 
-func tripleName(branches []int, element ganzhi.Wuxing, suffix string) string {
+func tripleName(branches []ganzhi.Zhi, element ganzhi.Wuxing, suffix string) string {
 	parts := make([]string, len(branches))
 	for i, b := range branches {
-		parts[i] = ganzhi.ZhiName(ganzhi.Zhi(b))
+		parts[i] = ganzhi.ZhiName(b)
 	}
 	return strings.Join(parts, "") + element.String() + suffix
+}
+
+func containsPair(list []ganzhi.Zhi, a, b ganzhi.Zhi) bool {
+	hasA, hasB := false, false
+	for _, v := range list {
+		if v == a {
+			hasA = true
+		}
+		if v == b {
+			hasB = true
+		}
+	}
+	return hasA && hasB
 }
 
 // computeFullTripleHeHui detects complete 三合局 and 三会方 across the bazi pillars.
@@ -70,15 +83,3 @@ func computeFullTripleHeHui(bz ganzhi.Bazi) []TripleHeFull {
 	return results
 }
 
-func containsPair(list []int, a, b int) bool {
-	hasA, hasB := false, false
-	for _, v := range list {
-		if v == a {
-			hasA = true
-		}
-		if v == b {
-			hasB = true
-		}
-	}
-	return hasA && hasB
-}

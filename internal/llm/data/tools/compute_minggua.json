@@ -1,0 +1,12 @@
+{
+  "name": "compute_minggua",
+  "description": "计算命卦（东西四命）。根据性别和出生年确定命卦。当用户询问命卦、东四命、西四命时调用。",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "gender": {"type": "string", "enum": ["male", "female"]},
+      "birth_year": {"type": "integer", "description": "出生年份，如 1990"}
+    },
+    "required": ["gender", "birth_year"]
+  }
+}

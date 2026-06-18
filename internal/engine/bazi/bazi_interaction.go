@@ -39,9 +39,9 @@ const (
 	relPo       = "破"
 )
 
-// pillarInteraction holds stem and branch relations for one pillar against the bazi chart.
-type pillarInteraction struct {
-	PillarLabel string        `json:"pillar_label"`
+// zhuInteraction holds stem and branch relations for one pillar against the bazi chart.
+type zhuInteraction struct {
+	ZhuLabel string        `json:"pillar_label"`
 	GanRels     []GanRelation `json:"gan_rels"`
 	ZhiRels     []ZhiRelation `json:"zhi_rels"`
 }
@@ -87,7 +87,7 @@ func analyzeGanRelation(a, b ganzhi.Gan) GanRelation {
 }
 
 // analyzeZhiRelation checks all relationship types between two branches.
-// Priority: 六合 > 三合 > 三会 > 六冲 > 相刑 > 六害 > 暗合 > 破.
+// Priority: 六合 > 三合 > 六冲 > 六害 > 三会 > 相刑 > 暗合 > 破.
 func analyzeZhiRelation(a, b ganzhi.Zhi) ZhiRelation {
 	r := ZhiRelation{ZhiA: a, ZhiB: b}
 	if a == b {
@@ -105,17 +105,9 @@ func analyzeZhiRelation(a, b ganzhi.Zhi) ZhiRelation {
 	}
 
 	for _, th := range ganzhi.TripleHeList {
-		if containsPair(th.Branches, int(a), int(b)) {
+		if containsPair(th.Branches, a, b) {
 			r.Type = relSanHe
 			r.Detail = fmt.Sprintf("%s%s三合%s局", ganzhi.ZhiName(a), ganzhi.ZhiName(b), th.Element.String())
-			return r
-		}
-	}
-
-	for _, th := range ganzhi.TripleHuiList {
-		if containsPair(th.Branches, int(a), int(b)) {
-			r.Type = relSanHui
-			r.Detail = fmt.Sprintf("%s%s三会%s方", ganzhi.ZhiName(a), ganzhi.ZhiName(b), th.Element.String())
 			return r
 		}
 	}
@@ -128,18 +120,26 @@ func analyzeZhiRelation(a, b ganzhi.Zhi) ZhiRelation {
 		}
 	}
 
-	for _, x := range ganzhi.XingGroups {
-		if containsPair(x.Branches, int(a), int(b)) {
-			r.Type = relXing
-			r.Detail = fmt.Sprintf("%s%s%s", ganzhi.ZhiName(a), ganzhi.ZhiName(b), xingTypeLabel(x.Type))
-			return r
-		}
-	}
-
 	for _, p := range ganzhi.HaiPairs {
 		if (a == p.A && b == p.B) || (a == p.B && b == p.A) {
 			r.Type = relLiuHai
 			r.Detail = fmt.Sprintf("%s%s相害", ganzhi.ZhiName(a), ganzhi.ZhiName(b))
+			return r
+		}
+	}
+
+	for _, th := range ganzhi.TripleHuiList {
+		if containsPair(th.Branches, a, b) {
+			r.Type = relSanHui
+			r.Detail = fmt.Sprintf("%s%s三会%s方", ganzhi.ZhiName(a), ganzhi.ZhiName(b), th.Element.String())
+			return r
+		}
+	}
+
+	for _, x := range ganzhi.XingGroups {
+		if containsPair(x.Branches, a, b) {
+			r.Type = relXing
+			r.Detail = fmt.Sprintf("%s%s%s", ganzhi.ZhiName(a), ganzhi.ZhiName(b), xingTypeLabel(x.Type))
 			return r
 		}
 	}
@@ -182,13 +182,13 @@ func xingTypeLabel(t string) string {
 	return "刑"
 }
 
-// analyzePillarWithBazi analyzes one pillar against all 4 bazi chart pillars.
-func analyzePillarWithBazi(pillar ganzhi.Zhu, bz ganzhi.Bazi) ([]GanRelation, []ZhiRelation) {
+// analyzeZhuWithBazi analyzes one pillar against all 4 bazi chart pillars.
+func analyzeZhuWithBazi(zhu ganzhi.Zhu, bz ganzhi.Bazi) ([]GanRelation, []ZhiRelation) {
 	stemRels := make([]GanRelation, 4)
 	branchRels := make([]ZhiRelation, 4)
 	for i, np := range bz.Slice() {
-		stemRels[i] = analyzeGanRelation(pillar.Gan, np.Gan)
-		branchRels[i] = analyzeZhiRelation(pillar.Zhi, np.Zhi)
+		stemRels[i] = analyzeGanRelation(zhu.Gan, np.Gan)
+		branchRels[i] = analyzeZhiRelation(zhu.Zhi, np.Zhi)
 	}
 	return stemRels, branchRels
 }

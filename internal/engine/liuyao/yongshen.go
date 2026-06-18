@@ -19,24 +19,25 @@ var yongShenNames = [6]string{"父母", "兄弟", "官鬼", "妻财", "子孙", 
 func (y YongShen) String() string { return yongShenNames[y] }
 
 // findYongShen finds the 用神 line position (1-6) based on the question type.
-// Returns 0 if the 用神 is not present (needs 飞伏).
-func (p *Chart) findYongShen(typ YongShen) int {
+// Returns (position, isBian) — isBian is true if found in变卦.
+// Returns (0, false) if the 用神 is not present (needs 飞伏).
+func (p *Chart) findYongShen(typ YongShen) (int, bool) {
 	if typ == YongShiYao {
-		return p.findShiYao()
+		return p.findShiYao(), false
 	}
 	target := yongShenToLiuQin(typ)
 	for _, l := range p.Lines {
 		if l.LiuQin == target {
-			return l.Position
+			return l.Position, false
 		}
 	}
 	// Check变卦.
 	for _, l := range p.BianLines {
 		if l.LiuQin == target {
-			return l.Position
+			return l.Position, true
 		}
 	}
-	return 0
+	return 0, false
 }
 
 func (p *Chart) findShiYao() int {
@@ -79,13 +80,13 @@ func (p *Chart) findFuShen(typ YongShen) *FuShen {
 
 	// For each line of the palace base hexagram, check if it has the target六亲.
 	for i := 0; i < 6; i++ {
-		branchWx := ganzhi.ZhiWuxing(ganzhi.Zhi(naZhi[i]))
+		branchWx := ganzhi.ZhiWuxing(naZhi[i])
 		qin := computeLiuQin(branchWx, elem)
 		if qin == target {
 			return &FuShen{
 				Position: i + 1,
 				LiuQin:   qin,
-				Zhi:      ganzhi.ZhiName(ganzhi.Zhi(naZhi[i])),
+				Zhi:      ganzhi.ZhiName(naZhi[i]),
 			}
 		}
 	}

@@ -14,7 +14,7 @@ import "liki/internal/engine/ganzhi"
 func isSelfHe(p ganzhi.Zhu) bool {
 	hs := ganzhi.HiddenStemsForBranch(p.Zhi)
 	for _, h := range hs.Slice() {
-		if h != nil && isGanHePair(int(p.Gan), *h) {
+		if h != nil && isGanHePair(p.Gan, *h) {
 			return true
 		}
 	}
@@ -25,14 +25,14 @@ func isSelfHe(p ganzhi.Zhu) bool {
 func selfHeName(p ganzhi.Zhu) string {
 	hs := ganzhi.HiddenStemsForBranch(p.Zhi)
 	for _, h := range hs.Slice() {
-		if h != nil && isGanHePair(int(p.Gan), *h) {
-			return ganzhi.GanName(p.Gan) + ganzhi.GanName(ganzhi.Gan(*h)) + "合"
+		if h != nil && isGanHePair(p.Gan, *h) {
+			return ganzhi.GanName(p.Gan) + ganzhi.GanName(*h) + "合"
 		}
 	}
 	return ""
 }
 
-func isGanHePair(a, b int) bool { return ganzhi.IsGanHe(ganzhi.Gan(a), ganzhi.Gan(b)) }
+func isGanHePair(a, b ganzhi.Gan) bool { return ganzhi.IsGanHe(a, b) }
 
 // isKuiGang checks if the pillar is a 魁罡 day pillar.
 // 魁罡: 庚辰, 庚戌, 壬辰, 戊戌.
@@ -47,9 +47,9 @@ func isKuiGang(p ganzhi.Zhu) bool {
 // sanQiType checks if the four-pillar stem set contains a 三奇贵人 pattern.
 // Returns "天上" (甲戊庚), "地下" (乙丙丁), or "人中" (壬癸辛), or empty.
 func sanQiType(bz ganzhi.Bazi) string {
-	pillars := bz.Slice()
+	zhus := bz.Slice()
 	stemSet := [11]bool{}
-	for _, p := range pillars {
+	for _, p := range zhus {
 		if s := int(p.Gan); s >= 1 && s <= 10 {
 			stemSet[s] = true
 		}

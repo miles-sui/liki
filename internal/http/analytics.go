@@ -50,8 +50,11 @@ func handlePageView(a *Analytics) http.HandlerFunc {
 	}
 	return func(w http.ResponseWriter, r *http.Request) {
 		body, ok := decodeJSON[pageViewReq](w, r)
+		if !ok {
+			return
+		}
 		path := r.URL.Path
-		if ok && body.Path != "" {
+		if body.Path != "" {
 			path = body.Path
 		}
 		a.RecordPageView(path)

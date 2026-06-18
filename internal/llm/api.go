@@ -21,8 +21,4 @@
 //	StreamEvent              — streaming chunk: text delta + reasoning + finish reason
 //	ToolDef                  — tool definition passed to LLM API
 //
-// Tool loading
-//
-//	LoadTool                 — load tool schema from embedded data/tools/*.json
-//	ParseToolDef             — parse raw JSON into ToolDef with validation
 package llm

@@ -43,15 +43,12 @@ data/prompts/       LLM 提示词（嵌入，不对外）
 internal/llm/data/tools/  LLM tool schema JSON（embed 到 llm 包）
 internal/
   agent/            ChatAgent（Chat + GenerateFromData）。单 Agent，全部 5 个 tool
-  domain/           共享类型（Product, CollectParams, BirthParams, OrderStore）
   engine/           Gan-Zhi/Tianwen/BaZi/HuangLi/Fengshui/Qiming — 计算引擎
-  engine/service.go EngineService — Gather（tool handler 内部调用）
   payment/          支付服务（checkout/webhook/download/report）+ Store
   llm/              DeepSeek 客户端 + tool schema JSON
   dodo/             Dodo Payments SDK 封装
   email/            Resend 邮件客户端
-  http/             Handler (package handler) + 中间件 + 路由 + SessionStore（含 Free API）
-  orchestrator/     Chat 管线: 单 Agent → purchase → done
+  http/             Handler (package handler) + 中间件 + 路由 + 编排 + SessionStore（含 Free API）
   i18n/             国际化工具
 
 ### 模块边界
@@ -59,8 +56,6 @@ internal/
 | 模块 | 职责 | 依赖 | 禁止依赖 |
 |---|---|---|---|
 | ChatAgent | LLM 对话 + tool calling + purchase 处理 | LLMClient, ToolRegistry 接口 | engine, payment |
-| EngineService | 八字/合婚/起名计算 | engine/* 包 | LLM, HTTP, DB |
-| Orchestrator | 薄层: 调 Chat → 发 done | ChatAgent, payment 接口 | engine, LLM |
 | Handler | 薄层: 参数绑定 + SSE 流 + 响应 | 以上所有 | 引擎逻辑, LLM 逻辑 |
 
 分层原则：Handler 薄（只做参数绑定+响应），逻辑在 service 层。
@@ -109,7 +104,7 @@ internal/
 
 ### 流程
 - **Form 流**: POST /api/bazi/chart (或 /api/bazi/bond, /api/qiming/generate) → engine+LLM → 预览 → 支付 → 报告页
-- **Chat 流**: POST /api/agent/chat → SSE 通道 → Orchestrator.Run() → ChatAgent.Chat（单流：收集 → compute_* → teaser → Q&A → purchase tool → 创建订单 → done 事件）→ 前端 buy card → 支付 → webhook 触发 GenerateFromData（完整报告）→ GET /api/reports/{id} 返回。购买引导由 LLM 自然完成，purchase tool 触发订单创建。
+- **Chat 流**: POST /api/agent/chat → SSE 通道 → ChatAgent.Chat（单流：收集 → compute_* → teaser → Q&A → purchase tool → 创建订单 → done 事件）→ 前端 buy card → 支付 → webhook 触发 GenerateFromData（完整报告）→ GET /api/reports/{id} 返回。购买引导由 LLM 自然完成，purchase tool 触发订单创建。
 
 ## Don't
 

@@ -1,0 +1,17 @@
+{
+  "name": "compute_ziwei_liuri",
+  "description": "计算紫微斗数流日运势。返回该日的流日四化和各宫吉凶。需要先通过 compute_ziwei 获取命盘。当用户询问紫微某日运势时调用。",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "liu_year": {"type": "integer", "description": "要分析的年份，如 2026"},
+      "lunar_month": {"type": "integer", "description": "农历月份 1-12"},
+      "lunar_day": {"type": "integer", "description": "农历日期 1-30"},
+      "chart": {
+        "type": "object",
+        "description": "紫微命盘数据，直接传入 compute_ziwei 返回结果中的 data 对象。"
+      }
+    },
+    "required": ["liu_year", "lunar_month", "lunar_day", "chart"]
+  }
+}

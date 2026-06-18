@@ -2,7 +2,6 @@ package xuankong
 
 import (
 	"liki/internal/engine/fengshui"
-	"liki/internal/engine/tianwen"
 )
 
 // xuanKongStar holds the three stars (运星, 山星, 向星) for one palace.
@@ -29,11 +28,6 @@ type Chart struct {
 	ShouShanChuSha shouShanChuSha `json:"shou_shan_chu_sha"`
 }
 
-// ComputeChart computes the 玄空飞星盘 for a given坐向.
-func ComputeChart(st tianwen.SolarTime, sitMountain, faceMountain int) Chart {
-	return computeChart(sitMountain, faceMountain, st.Time().Year())
-}
-
 func computeChart(sitMountain, faceMountain int, year int) Chart {
 	if sitMountain < 0 || sitMountain > 23 || faceMountain < 0 || faceMountain > 23 {
 		return Chart{}
@@ -53,7 +47,7 @@ func computeChart(sitMountain, faceMountain int, year int) Chart {
 	sitPeriodStar := periodStars[sitPalace-1]
 	shanNum := sitPeriodStar.Number
 
-	if ti := tiXingShanStar(sitMountain, shanNum); ti > 0 {
+	if ti := tiXingShanStar(sitMountain); ti > 0 {
 		shanNum = ti
 	}
 	shanForward := sit.YinYang == "阳"
@@ -64,7 +58,7 @@ func computeChart(sitMountain, faceMountain int, year int) Chart {
 	facePeriodStar := periodStars[facePalace-1]
 	xiangNum := facePeriodStar.Number
 
-	if ti := tiXingXiangStar(faceMountain, xiangNum); ti > 0 {
+	if ti := tiXingXiangStar(faceMountain); ti > 0 {
 		xiangNum = ti
 	}
 	xiangForward := face.YinYang == "阳"
@@ -155,7 +149,7 @@ func (p *Chart) evaluate() {
 	p.ShanXing = sitPStar != yunNum && sitMStar != yunNum
 	p.XiaShui = facePStar != yunNum && faceFStar != yunNum
 
-	opposite := (sitPalace+4)%9 + 1
+	opposite := 10 - sitPalace
 	p.FanYin = p.Palaces[opposite-1].PeriodStar.Number == yunNum
 
 	for i := 0; i < 9; i++ {
@@ -167,13 +161,36 @@ func (p *Chart) evaluate() {
 }
 
 // tiXingTable maps 24 mountain index → substitute star number (1-9).
+// Based on玄空替星口诀: 子癸甲申→1(贪狼), 壬卯乙未坤→2(巨门),
+// 乾亥辰巽巳戌→6(武曲), 酉辛丑艮丙→7(破军), 寅午庚丁→9(右弼).
 var tiXingTable = [24]int{
-	1, 2, 3, 4, 5, 6, 7, 8, 9, //  子癸丑艮寅甲卯乙辰 (0-8)
-	1, 2, 3, 4, 5, 6, 7, 8, 9, //  巽巳丙午丁未坤申庚 (9-17)
-	1, 2, 3, 4, 5, 6, //         酉辛戌乾亥壬 (18-23)
+	1, // 子(0) → 1 贪狼
+	1, // 癸(1) → 1 贪狼
+	7, // 丑(2) → 7 破军
+	7, // 艮(3) → 7 破军
+	9, // 寅(4) → 9 右弼
+	1, // 甲(5) → 1 贪狼
+	2, // 卯(6) → 2 巨门
+	2, // 乙(7) → 2 巨门
+	6, // 辰(8) → 6 武曲
+	6, // 巽(9) → 6 武曲
+	6, // 巳(10) → 6 武曲
+	7, // 丙(11) → 7 破军
+	9, // 午(12) → 9 右弼
+	9, // 丁(13) → 9 右弼
+	2, // 未(14) → 2 巨门
+	2, // 坤(15) → 2 巨门
+	1, // 申(16) → 1 贪狼
+	9, // 庚(17) → 9 右弼
+	7, // 酉(18) → 7 破军
+	7, // 辛(19) → 7 破军
+	6, // 戌(20) → 6 武曲
+	6, // 乾(21) → 6 武曲
+	6, // 亥(22) → 6 武曲
+	2, // 壬(23) → 2 巨门
 }
 
-func tiXingShanStar(sitIdx int, periodStarNum int) int {
+func tiXingShanStar(sitIdx int) int {
 	num := tiXingTable[sitIdx%24]
 	sit := fengshui.Mountains24Table[sitIdx%24]
 	if sit.YuanLong != "天元龙" {
@@ -182,8 +199,13 @@ func tiXingShanStar(sitIdx int, periodStarNum int) int {
 	return 0
 }
 
-func tiXingXiangStar(faceIdx int, periodStarNum int) int {
-	return tiXingTable[faceIdx%24]
+func tiXingXiangStar(faceIdx int) int {
+	num := tiXingTable[faceIdx%24]
+	face := fengshui.Mountains24Table[faceIdx%24]
+	if face.YuanLong != "天元龙" {
+		return num
+	}
+	return 0
 }
 
 // -- 双星加会 (Double Star Combination) --------------------------------
@@ -194,38 +216,6 @@ type xingJiaHui struct {
 	Name       string `json:"name"`
 	Meaning    string `json:"meaning"`
 	Auspicious bool   `json:"auspicious"`
-}
-
-var xingJiaHuiTable = map[[2]int]xingJiaHui{
-	{1, 4}: {1, 4, "一四同宫", "准发科名之显", true},
-	{4, 1}: {4, 1, "四一同宫", "准发科名之显", true},
-	{1, 6}: {1, 6, "一六共宗", "启八代之文章，官贵", true},
-	{6, 1}: {6, 1, "六一联星", "文武双全，名利双收", true},
-	{2, 7}: {2, 7, "二七同道", "火煞重重，定见火灾", false},
-	{7, 2}: {7, 2, "七二同道", "火煞重重，定见火灾", false},
-	{3, 8}: {3, 8, "三八为朋", "旺丁旺财，家业兴隆", true},
-	{8, 3}: {8, 3, "八三为朋", "旺丁旺财，家业兴隆", true},
-	{4, 9}: {4, 9, "四九为友", "富贵荣华，文笔生辉", true},
-	{9, 4}: {9, 4, "九四为友", "富贵荣华，文笔生辉", true},
-	{6, 8}: {6, 8, "六八同宫", "武科发迹，名利双收", true},
-	{8, 6}: {8, 6, "八六同宫", "武科发迹，名利双收", true},
-	{5, 5}: {5, 5, "五黄同宫", "大凶之象，损丁破财", false},
-	{9, 1}: {9, 1, "九一同宫", "水火既济，文采风流", true},
-	{1, 9}: {1, 9, "一九同宫", "水火既济，文采风流", true},
-	{2, 5}: {2, 5, "二五交加", "损主重病，多灾多难", false},
-	{5, 2}: {5, 2, "五二交加", "损主重病，多灾多难", false},
-	{5, 9}: {5, 9, "九五交加", "紫黄毒药，犯之损人", false},
-	{9, 5}: {9, 5, "五九交加", "紫黄毒药，犯之损人", false},
-	{3, 7}: {3, 7, "三七穿心", "劫盗官非，破财损丁", false},
-	{7, 3}: {7, 3, "七三穿心", "劫盗官非，破财损丁", false},
-	{2, 3}: {2, 3, "二三斗牛", "官非口舌，夫妻反目", false},
-	{3, 2}: {3, 2, "三二斗牛", "官非口舌，夫妻反目", false},
-	{2, 9}: {2, 9, "二九同宫", "火土相生，旺丁旺财", true},
-	{9, 2}: {9, 2, "九二同宫", "火土相生，旺丁旺财", true},
-	{4, 7}: {4, 7, "四七同宫", "金木相战，刀伤之厄", false},
-	{7, 4}: {7, 4, "七四同宫", "金木相战，刀伤之厄", false},
-	{6, 9}: {6, 9, "六九同宫", "火照天门，丁财两败", false},
-	{9, 6}: {9, 6, "九六同宫", "火照天门，丁财两败", false},
 }
 
 func (p *Chart) computeXingJiaHui() [9]xingJiaHui {
@@ -260,10 +250,7 @@ type shouShanChuSha struct {
 func (p *Chart) computeShouShanChuSha() shouShanChuSha {
 	yunNum := p.Yun.YunNumber
 	zhengShen := yunNum
-	lingShen := (yunNum + 4) % 9
-	if lingShen == 0 {
-		lingShen = 9
-	}
+	lingShen := 10 - yunNum
 
 	sitPalace := mountainPalace(p.SitMountain)
 	facePalace := mountainPalace(p.FaceMountain)

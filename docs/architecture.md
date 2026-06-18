@@ -73,6 +73,29 @@ internal/engine/
 
 所有 Engine 包遵循同一原则：**纯 Go 计算，无 I/O 依赖**。每个函数原子化（单一输入→单一输出），SQL/HTTP/LLM 全部在上层。
 
+### api.go 编排层
+
+每个业务 Engine 包（bazi、ziwei、qimen、liuyao、bazhai、xuankong、huangli、tianwen）暴露 `api.go`：
+
+- **公开入口**：`api.go` 中的大写函数接收 `tianwen.SolarTime`，编排 `ComputeBazi` → 小写引擎函数。
+- **引擎核心**：小写函数接收精确实体（`ganzhi.Bazi`、`tianwen.LunarTime`、`tianwen.GregorianTime`），不收 `SolarTime`。
+
+```
+api.go (public)                          engine file (private)
+────────────────────────────────────     ──────────────────────
+ComputeChart(st SolarTime, …) Chart  →  computeChart(bz Bazi, …) Chart
+ComputeLiuNian(st SolarTime, …)      →  computeLiuNian(bz Bazi, …)
+ComputeBondDay(st SolarTime, …)      →  computeBondDay(bz Bazi, …)
+```
+
+纯查询函数（`QueryDate`、`ComputeMingGua` 等）不属于编排，保持在原文件大写导出。
+
+### 命名约定
+
+- `Compute` 前缀：多步编排（如 `ComputeChart`、`ComputeBazi`）
+- 无前缀：单公式推导（如 `RiZhu`、`NianZhu`、`JianYue`）
+- 所有领域概念使用类型化实体，不用裸 `int`
+
 ## 核心数据流
 
 ### Chat 流（Agent 对话）
@@ -116,7 +139,10 @@ POST /api/bazi/chart  (或 /api/bazi/bond, /api/qiming/generate, /api/ziwei/char
 - `llm.Message/Role/ToolCall` — LLM 线格式
 - `agent.Product` — 报告产品类型
 - `handler.BirthParams` — HTTP 契约
-- `ganzhi.Gan/Zhi/Wuxing` — 干支基础类型
+- `ganzhi.Gan/Zhi/Wuxing/ShiShen/Zhu/Bazi` — 干支基础类型
+- `tianwen.SolarTime/GregorianTime/LunarTime` — 时间类型
+
+所有领域概念用类型化实体传递，禁用裸 `int`。Map key 用 `ganzhi.Zhi` 而非 `int`，函数参数收 `ganzhi.Gan` 而非 `int`。
 
 ### 单连接 SQLite
 

@@ -2,40 +2,6 @@ package liuyao
 
 import "liki/internal/engine/ganzhi"
 
-// WangShuai classifies 旺衰 level.
-type WangShuai int
-
-const (
-	WSWang  WangShuai = iota // 旺
-	WSXiang                   // 相
-	WSXiu                     // 休
-	WSQiu                     // 囚
-	WSSi                      // 死
-)
-
-var wangShuaiNames = [5]string{"旺", "相", "休", "囚", "死"}
-
-func (w WangShuai) String() string { return wangShuaiNames[w] }
-
-func monthWangShuai(lineZhi ganzhi.Zhi, monthZhi ganzhi.Zhi) WangShuai {
-	le := int(ganzhi.ZhiWuxing(lineZhi))
-	me := int(ganzhi.ZhiWuxing(monthZhi))
-
-	if le == (me%5)+1 { // month generates line → 旺
-		return WSWang
-	}
-	if me == (le%5)+1 { // line generates month → 休
-		return WSXiu
-	}
-	if le == me { // same → 相
-		return WSXiang
-	}
-	if le == ((me+1)%5)+1 { // line overcomes month → 囚
-		return WSQiu
-	}
-	return WSSi // month overcomes line → 死
-}
-
 // DayRelation describes 日建与爻的关系.
 type DayRelation struct {
 	Relation string `json:"relation"` // 生/扶/克/冲/合
@@ -43,30 +9,27 @@ type DayRelation struct {
 }
 
 func dayInteraction(lineZhi ganzhi.Zhi, dayZhi ganzhi.Zhi) DayRelation {
-	li, di := int(lineZhi), int(dayZhi)
-	le, de := int(ganzhi.ZhiWuxing(lineZhi)), int(ganzhi.ZhiWuxing(dayZhi))
+	le := ganzhi.ZhiWuxing(lineZhi)
+	de := ganzhi.ZhiWuxing(dayZhi)
 
 	rel := DayRelation{}
 
-	// 冲: 地支六冲 (子午, 丑未, 寅申, 卯酉, 辰戌, 巳亥)
-	if (li+6)%12 == di%12 || (di+6)%12 == li%12 {
+	// 冲
+	if ganzhi.IsLiuChong(lineZhi, dayZhi) {
 		rel.Relation = "冲"
 		rel.Strength = "衰"
 		return rel
 	}
 
-	// 合: 地支六合 (子丑, 寅亥, 卯戌, 辰酉, 巳申, 午未)
-	hePairs := [][2]int{{1,2}, {3,12}, {4,11}, {5,10}, {6,9}, {7,8}}
-	for _, p := range hePairs {
-		if (li == p[0] && di == p[1]) || (li == p[1] && di == p[0]) {
-			rel.Relation = "合"
-			rel.Strength = "旺"
-			return rel
-		}
+	// 合
+	if ganzhi.IsZhiHe(lineZhi, dayZhi) {
+		rel.Relation = "合"
+		rel.Strength = "旺"
+		return rel
 	}
 
 	// 生: day generates line
-	if sheng(de, le) {
+	if ganzhi.Sheng(de, le) {
 		rel.Relation = "生"
 		rel.Strength = "旺"
 		return rel
@@ -80,7 +43,7 @@ func dayInteraction(lineZhi ganzhi.Zhi, dayZhi ganzhi.Zhi) DayRelation {
 	}
 
 	// 克: day overcomes line
-	if ke(de, le) {
+	if ganzhi.Ke(de, le) {
 		rel.Relation = "克"
 		rel.Strength = "衰"
 		return rel
@@ -105,7 +68,7 @@ func computeYingQi(p *Chart, typ YongShen) YingQi {
 		YongShen: typ.String(),
 	}
 
-	yongPos := p.findYongShen(typ)
+	yongPos, isBian := p.findYongShen(typ)
 	if yongPos == 0 {
 		// 用神不上卦，找伏神.
 		fs := p.findFuShen(typ)
@@ -117,15 +80,22 @@ func computeYingQi(p *Chart, typ YongShen) YingQi {
 		return yq
 	}
 
+	// 用神在变卦时读变卦数据，在本卦时读本卦数据.
+	var yao Line
+	if isBian {
+		yao = p.BianLines[yongPos-1]
+	} else {
+		yao = p.Lines[yongPos-1]
+	}
+
 	// Check if the用神 line is a动爻.
-	yao := p.Lines[yongPos-1]
 	if yao.Type.IsChanging() {
 		yq.DongYaoPos = yongPos
 		yq.YingTime = "动爻临值之时（" + ganzhi.ZhiName(yao.Zhi) + "年月）为应"
 	}
 
 	// Month旺衰.
-	ws := monthWangShuai(yao.Zhi, p.MonthZhi)
+	ws := ganzhi.WangShuaiOf(ganzhi.ZhiWuxing(yao.Zhi), p.MonthZhi)
 
 	// Day interaction.
 	di := dayInteraction(yao.Zhi, p.DayZhi)
@@ -148,6 +118,6 @@ func ordinal(n int) string {
 }
 
 func chongZhi(z ganzhi.Zhi) ganzhi.Zhi {
-	return ganzhi.Zhi((int(z) + 6) % 12)
+	return ganzhi.Zhi((int(z)+5)%12 + 1)
 }
 

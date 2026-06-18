@@ -5,21 +5,19 @@ import (
 	"liki/internal/engine/tianwen"
 )
 
-// ComputeChart produces a full Chart from solar birth time and gender.
-func ComputeChart(st tianwen.SolarTime, gender ganzhi.Gender) Chart {
-	bz := tianwen.ComputeBazi(st)
+func computeChart(bz ganzhi.Bazi, st tianwen.SolarTime, gender ganzhi.Gender) Chart {
 	dm := bz.Ri.Gan
 	hs := computeHiddenStems(bz)
 	ny := computeNaYin(bz)
-	ls := computeLifeStages(dm)
+	ls := computeChangSheng(dm)
 	ec := computeElementCount(bz, hs)
 	tgTable := computeTenGodsTable(bz, hs)
-	lsTable := computeLifeStageTable(bz, hs)
+	lsTable := computeChangShengTable(bz, hs)
 	shensha := computeShenSha(bz)
 	voidHits := computeKongWang(bz)
 	ps := bz.Slice()
 
-	makePI := func(i int) pillarInfo {
+	makePI := func(i int) zhuInfo {
 		isVoid := false
 		for _, vh := range voidHits {
 			if vh == i {
@@ -28,7 +26,7 @@ func ComputeChart(st tianwen.SolarTime, gender ganzhi.Gender) Chart {
 			}
 		}
 		pz := ganzhi.Zhu{Gan: ps[i].Gan, Zhi: ps[i].Zhi}
-		pi := pillarInfo{Gan: ps[i].Gan, Zhi: ps[i].Zhi, NaYin: ny[i], HiddenStems: hs[i], TenGods: tgTable[i], LifeStages: lsTable[i], ShenSha: shensha[i], IsVoid: isVoid}
+		pi := zhuInfo{Gan: ps[i].Gan, Zhi: ps[i].Zhi, NaYin: ny[i], HiddenStems: hs[i], TenGods: tgTable[i], ChangSheng: lsTable[i], ShenSha: shensha[i], IsVoid: isVoid}
 		pi.IsSelfHe = isSelfHe(pz)
 		if pi.IsSelfHe {
 			pi.SelfHeName = selfHeName(pz)
@@ -40,8 +38,8 @@ func ComputeChart(st tianwen.SolarTime, gender ganzhi.Gender) Chart {
 	cr := Chart{
 		ChartBase: ChartBase{
 			Year: makePI(0), Month: makePI(1), Day: makePI(2), Hour: makePI(3),
-			DayMaster:   dm,
-			LifeStages:  ls,
+			SolarTime: st, DayMaster: dm,
+			ChangSheng:  ls,
 			WuxingCount: ec,
 		},
 		HeHui:     computeFullTripleHeHui(bz),
@@ -49,11 +47,11 @@ func ComputeChart(st tianwen.SolarTime, gender ganzhi.Gender) Chart {
 		NayinRel:  computeNaYinRelations(ny),
 		SanQiName: sanQiName(sanQiType(bz)),
 		WangShuai: map[string]string{
-			ganzhi.WxMu.String():   monthWangShuai(ganzhi.WxMu, bz.Yue.Zhi),
-			ganzhi.WxHuo.String():  monthWangShuai(ganzhi.WxHuo, bz.Yue.Zhi),
-			ganzhi.WxTu.String():   monthWangShuai(ganzhi.WxTu, bz.Yue.Zhi),
-			ganzhi.WxJin.String():  monthWangShuai(ganzhi.WxJin, bz.Yue.Zhi),
-			ganzhi.WxShui.String(): monthWangShuai(ganzhi.WxShui, bz.Yue.Zhi),
+			ganzhi.WxMu.String():   ganzhi.WangShuaiOf(ganzhi.WxMu, bz.Yue.Zhi).String(),
+			ganzhi.WxHuo.String():  ganzhi.WangShuaiOf(ganzhi.WxHuo, bz.Yue.Zhi).String(),
+			ganzhi.WxTu.String():   ganzhi.WangShuaiOf(ganzhi.WxTu, bz.Yue.Zhi).String(),
+			ganzhi.WxJin.String():  ganzhi.WangShuaiOf(ganzhi.WxJin, bz.Yue.Zhi).String(),
+			ganzhi.WxShui.String(): ganzhi.WangShuaiOf(ganzhi.WxShui, bz.Yue.Zhi).String(),
 		},
 	}
 	cr.FuYi = computeFuYi(cr)
@@ -89,9 +87,9 @@ func computeNaYin(bz ganzhi.Bazi) [4]string {
 	return ny
 }
 
-func computeLifeStages(dm ganzhi.Gan) [12]stageOut {
+func computeChangSheng(dm ganzhi.Gan) [12]stageOut {
 	var out [12]stageOut
-	branches := ganzhi.LifeStagesTable[int(dm)]
+	branches := ganzhi.ChangShengTable[dm]
 	for i := 0; i < 12; i++ {
 		out[i] = stageOut{
 			Name:  ganzhi.StageNamesZH[i],
@@ -157,16 +155,16 @@ func computeTenGodsTable(bz ganzhi.Bazi, hs [4]hiddenStemsOut) [4][]tenGodEntry 
 	return table
 }
 
-func computeLifeStageTable(bz ganzhi.Bazi, hs [4]hiddenStemsOut) [4][]lifeStageEntry {
-	var table [4][]lifeStageEntry
+func computeChangShengTable(bz ganzhi.Bazi, hs [4]hiddenStemsOut) [4][]changShengEntry {
+	var table [4][]changShengEntry
 	for i, z := range bz.Slice() {
-		stages, ok := ganzhi.LifeStagesTable[int(z.Gan)]
+		stages, ok := ganzhi.ChangShengTable[z.Gan]
 		if !ok {
 			continue
 		}
 		for stageIdx, b := range stages {
-			if b == int(z.Zhi) {
-				table[i] = []lifeStageEntry{{
+			if b == z.Zhi {
+				table[i] = []changShengEntry{{
 					Stage: ganzhi.StageNamesZH[stageIdx],
 					Gan:   z.Gan,
 				}}
@@ -181,8 +179,8 @@ func computeNaYinRelations(nayins [4]string) []naYinRelation {
 	var rels []naYinRelation
 	for i := 0; i < 4; i++ {
 		for j := i + 1; j < 4; j++ {
-			ae := nayinElement(nayins[i])
-			be := nayinElement(nayins[j])
+			ae := ganzhi.NaYinWuxing(nayins[i])
+			be := ganzhi.NaYinWuxing(nayins[j])
 			rel := "相同"
 			if ae != 0 && be != 0 && ae != be {
 				if ganzhi.Sheng(ae, be) || ganzhi.Sheng(be, ae) {
@@ -191,7 +189,7 @@ func computeNaYinRelations(nayins [4]string) []naYinRelation {
 					rel = "相克"
 				}
 			}
-			rels = append(rels, naYinRelation{A: pillarNames[i], B: pillarNames[j], Relation: rel})
+			rels = append(rels, naYinRelation{A: zhuNames[i], B: zhuNames[j], Relation: rel})
 		}
 	}
 	return rels

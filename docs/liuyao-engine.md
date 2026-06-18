@@ -157,7 +157,9 @@ type Chart struct {
 
 | 函数 | 说明 |
 |------|------|
-| `ComputeChart(solarTime, yongShen, fixed) → Chart` | 起卦+排盘+用神+旺衰+日建关系+应期 |
+| `ComputeChart(st SolarTime, yongShen YongShen, fixed [6]int) → Chart` | 起卦+排盘+用神+旺衰+日建关系+应期（编排入口，api.go） |
+
+编排层 `api.go` 收 `SolarTime` → `ComputeBazi` → 引擎 `computeChart(bz Bazi, yongShen YongShen, fixed [6]int)` 收精确实体。`computeGuaPan` 收 `ganzhi.Zhu` 而非 `time.Time`。
 
 ## HTTP Route
 

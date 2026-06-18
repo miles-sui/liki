@@ -11,11 +11,13 @@ import (
 	resend "github.com/resend/resend-go/v3"
 )
 
+// Client sends emails via the Resend API with retry support.
 type Client struct {
 	client *resend.Client
 	from   string
 }
 
+// New creates a Resend email client with the given API key and from address.
 func New(apiKey, from string) *Client {
 	return &Client{
 		client: resend.NewClient(apiKey),
@@ -23,6 +25,7 @@ func New(apiKey, from string) *Client {
 	}
 }
 
+// SendReport sends an HTML email with up to 3 retries on rate limit or transient errors.
 func (c *Client) SendReport(ctx context.Context, to, subject, htmlBody string) error {
 	params := &resend.SendEmailRequest{
 		From:    c.from,

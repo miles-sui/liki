@@ -97,3 +97,27 @@ func TestIsPrivateIP_Unspecified(t *testing.T) {
 		t.Error("0.0.0.0 should be private")
 	}
 }
+
+func TestEd3_Health_AllMethods(t *testing.T) {
+	h := handleHealth()
+	for _, method := range []string{"GET", "POST", "PUT", "DELETE", "PATCH"} {
+		t.Run(method, func(t *testing.T) {
+			r := httptest.NewRequest(method, "/api/health", nil)
+			w := httptest.NewRecorder()
+			h(w, r)
+			if w.Code >= 500 {
+				t.Errorf("%s health: status=%d", method, w.Code)
+			}
+		})
+	}
+}
+
+func TestEd3_Health_IgnoresQueryParams(t *testing.T) {
+	h := handleHealth()
+	r := httptest.NewRequest("GET", "/api/health?foo=bar&baz=qux", nil)
+	w := httptest.NewRecorder()
+	h(w, r)
+	if w.Code != http.StatusOK {
+		t.Errorf("status=%d, want 200", w.Code)
+	}
+}

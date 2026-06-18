@@ -1,0 +1,12 @@
+{
+  "name": "compute_naming_detail",
+  "description": "对候选名字进行详细分析：五行/数理/音韵/生肖。起名流程第三步，需先调用 compute_naming_compose 获取候选名字列表。",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "surname": {"type": "string", "description": "姓氏，1-2个汉字"},
+      "names": {"type": "array", "items": {"type": "string"}, "description": "候选名字列表，来自 compute_naming_compose 的返回结果"}
+    },
+    "required": ["surname", "names"]
+  }
+}

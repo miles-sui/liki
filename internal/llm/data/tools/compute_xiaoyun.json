@@ -1,0 +1,32 @@
+{
+  "name": "compute_xiaoyun",
+  "description": "计算小运（童年运势）。返回每年干支、十神。当用户询问小运或幼年运势时调用。",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "birth": {
+        "type": "object",
+        "description": "出生信息。time（公历）和lunar（农历）二选一",
+        "properties": {
+          "time": {"type": "string", "description": "公历出生时间，RFC3339格式。与lunar二选一"},
+          "lunar": {
+            "type": "object",
+            "properties": {
+              "year": {"type": "integer"}, "month": {"type": "integer"}, "day": {"type": "integer"},
+              "hour": {"type": "integer"}, "minute": {"type": "integer"}, "leap": {"type": "boolean"}
+            },
+            "required": ["year", "month", "day", "hour"]
+          },
+          "longitude": {"type": "number", "description": "出生地经度"}
+        },
+        "anyOf": [
+          {"required": ["time", "longitude"]},
+          {"required": ["lunar", "longitude"]}
+        ]
+      },
+      "gender": {"type": "string", "enum": ["male", "female"]},
+      "count": {"type": "integer", "description": "需要计算的年数，默认 12，最大 120"}
+    },
+    "required": ["birth", "gender"]
+  }
+}

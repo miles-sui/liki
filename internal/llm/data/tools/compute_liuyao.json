@@ -1,0 +1,35 @@
+{
+  "name": "compute_liuyao",
+  "description": "六爻起卦排盘。根据时间和用神类别起卦，返回六爻卦象、世应、六亲、六兽、旺衰、应期。当用户要求六爻、摇卦、占卜时调用。",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "birth": {
+        "type": "object",
+        "description": "起卦时间。time（公历）和lunar（农历）二选一",
+        "properties": {
+          "time": {"type": "string", "description": "公历时间，RFC3339格式。与lunar二选一"},
+          "lunar": {
+            "type": "object",
+            "properties": {
+              "year": {"type": "integer"}, "month": {"type": "integer"}, "day": {"type": "integer"},
+              "hour": {"type": "integer"}, "minute": {"type": "integer"}, "leap": {"type": "boolean"}
+            },
+            "required": ["year", "month", "day", "hour"]
+          },
+          "longitude": {"type": "number", "description": "经度，如 116.4"}
+        },
+        "anyOf": [
+          {"required": ["time", "longitude"]},
+          {"required": ["lunar", "longitude"]}
+        ]
+      },
+      "yong_shen": {"type": "string", "enum": ["父母", "兄弟", "官鬼", "妻财", "子孙", "世爻"], "description": "用神类别，如用户未指定则默认世爻"},
+      "fixed": {
+        "type": "array", "items": {"type": "integer"},
+        "description": "6个爻的固定结果数组，0=随机摇卦。用户指定摇卦结果时使用。"
+      }
+    },
+    "required": ["birth"]
+  }
+}

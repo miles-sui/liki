@@ -5,12 +5,12 @@ import (
 	"liki/internal/engine/ganzhi"
 )
 
-// computePan builds a pan from bureau info and driving stem/branch.
-func computePan(ju juShu, driveGan ganzhi.Gan, driveZhi ganzhi.Zhi) pan {
+// computePan builds a pan from bureau info and driving pillar.
+func computePan(ju juShu, driveZhu ganzhi.Zhu) pan {
 	dipan := placeDiPan(ju.Number, ju.YinDun)
-	duty := findDuty(driveGan, driveZhi, dipan)
-	tianStars, tianStems := placeTianPan(driveGan, duty.Star, dipan)
-	renDoors := placeRenPan(driveZhi, duty.Door)
+	duty := findDuty(driveZhu, dipan)
+	tianStars, tianStems := placeTianPan(driveZhu, duty.Star, dipan)
+	renDoors := placeRenPan(driveZhu.Zhi, duty.Door)
 
 	var dutyStarPalace int
 	for i, s := range tianStars {
@@ -28,10 +28,10 @@ func computePan(ju juShu, driveGan ganzhi.Gan, driveZhi ganzhi.Zhi) pan {
 			break
 		}
 	}
-	angans := placeAnGan(driveGan, dutyDoorPalace)
+	angans := placeAnGan(driveZhu, dutyDoorPalace)
 
-	mata := findMaXing(driveZhi)
-	kongWang := findKongWang(driveGan, driveZhi)
+	mata := findMaXing(driveZhu.Zhi)
+	kongWang := findKongWang(driveZhu)
 
 	pan := pan{
 		Jushu:    ju.Number,
@@ -39,7 +39,8 @@ func computePan(ju juShu, driveGan ganzhi.Gan, driveZhi ganzhi.Zhi) pan {
 		DutyStar: duty.Star,
 		DutyDoor: duty.Door,
 		MaXing:   mata,
-		DriveZhi: driveZhi,
+		DriveGan:  driveZhu.Gan,
+		DriveZhi: driveZhu.Zhi,
 		KongWang: kongWang,
 	}
 	for i := 0; i < 9; i++ {

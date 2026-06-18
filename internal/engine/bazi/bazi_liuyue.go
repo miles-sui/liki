@@ -1,6 +1,7 @@
 package bazi
 
 import (
+	"fmt"
 	"time"
 
 	"liki/internal/engine/ganzhi"
@@ -25,14 +26,16 @@ type LiuYue struct {
 
 // ComputeLiuYue computes the month pillar for a given year+month and analyzes
 // its interactions with the bazi chart.
-func ComputeLiuYue(year, month int, dayMaster ganzhi.Gan, bz ganzhi.Bazi) *LiuYue {
+func computeLiuYue(bz ganzhi.Bazi, year, month int) (*LiuYue, error) {
+	if month < 1 || month > 12 {
+		return nil, fmt.Errorf("compute liuyue: invalid month %d", month)
+	}
+	dayMaster := bz.Ri.Gan
 	bazi := bz.Slice()
 	// Use mid-month (15th) for stable solar term calculation.
 	birthTime := time.Date(year, time.Month(month), 15, 12, 0, 0, 0, time.UTC)
 
-	// Year pillar for the WuHuDun formula.
-	yp := tianwen.YearPillar(year, month, 15)
-	mp := tianwen.MonthPillar(birthTime, yp.Gan)
+	mp := tianwen.YueZhu(tianwen.GregorianTime(birthTime))
 
 	dmElem := ganzhi.GanWuxing(dayMaster)
 	monthElem := ganzhi.GanWuxing(mp.Gan)
@@ -42,7 +45,7 @@ func ComputeLiuYue(year, month int, dayMaster ganzhi.Gan, bz ganzhi.Bazi) *LiuYu
 	gen, rest := countGenRest(monthElem, dmElem)
 
 	// Month vs bazi: all 4 pillars, consistent with liunian.
-	stemRels, branchRels := analyzePillarWithBazi(mp, bz)
+	stemRels, branchRels := analyzeZhuWithBazi(mp, bz)
 
 	shensha := computeDynamicShenSha(mp.Zhi, bazi[0].Zhi, dayMaster)
 
@@ -55,11 +58,11 @@ func ComputeLiuYue(year, month int, dayMaster ganzhi.Gan, bz ganzhi.Bazi) *LiuYu
 		MonthZhi:  mp.Zhi,
 		MonthName: ganzhi.ZhiName(mp.Zhi) + "月",
 		Element:   monthElemStr,
-		TenGod:    tgName,
+		TenGod:    tgName.String(),
 		Generates: gen,
 		Restrains: rest,
 		GanRels:   stemRels,
 		ZhiRels:   branchRels,
 		ShenSha:   shensha,
-	}
+	}, nil
 }

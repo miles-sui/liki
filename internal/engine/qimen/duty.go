@@ -32,8 +32,8 @@ var palaceDoor = [9]DoorIndex{
 }
 
 // findDuty determines 值符星 and 值使门 from the driving pillar and earth plate.
-func findDuty(driveGan ganzhi.Gan, driveZhi ganzhi.Zhi, dipan [9]ganzhi.Gan) duty {
-	xunShou := findXunShou(driveGan, driveZhi)
+func findDuty(driveZhu ganzhi.Zhu, dipan [9]ganzhi.Gan) duty {
+	xunShou := findXunShou(driveZhu)
 
 	var targetPalace int
 	for i := 0; i < 9; i++ {
@@ -49,8 +49,8 @@ func findDuty(driveGan ganzhi.Gan, driveZhi ganzhi.Zhi, dipan [9]ganzhi.Gan) dut
 	}
 }
 
-// findXunShou returns the 六仪 that corresponds to the 六甲旬 of the given gan/zhi.
-func findXunShou(g ganzhi.Gan, z ganzhi.Zhi) ganzhi.Gan {
-	idx := ganzhi.SixtyCycleName(g, z) - 1 // 0-59
+// findXunShou returns the 六仪 that corresponds to the 六甲旬 of the given pillar.
+func findXunShou(zhu ganzhi.Zhu) ganzhi.Gan {
+	idx := ganzhi.SixtyCycleName(zhu.Gan, zhu.Zhi) // 0-59
 	return liuJiaLiuYi[idx/10]
 }

@@ -47,6 +47,7 @@ const (
 	OrderPaid    OrderStatus = "paid"
 )
 
+// Order holds the database record for a payment order.
 type Order struct {
 	OrderID   string
 	Product   agent.Product
@@ -62,8 +63,10 @@ type Order struct {
 	UpdatedAt time.Time
 }
 
+// Store provides SQLite-backed order persistence.
 type Store struct{ db *sql.DB }
 
+// NewStore creates the orders table and returns a new Store.
 func NewStore(db *sql.DB) (*Store, error) {
 	if _, err := db.Exec(schema); err != nil {
 		return nil, fmt.Errorf("payment: create table: %w", err)
@@ -81,6 +84,7 @@ func NewStore(db *sql.DB) (*Store, error) {
 	return &Store{db: db}, nil
 }
 
+// CreateOrder inserts a new pending order into the database.
 func (s *Store) CreateOrder(ctx context.Context, orderID string, product agent.Product, amount int, currency, chartJSON, llmJSON, locale string) error {
 	_, err := s.db.ExecContext(ctx,
 		`INSERT INTO orders (order_id, product, amount, currency, chart_json, llm_json, locale) VALUES (?, ?, ?, ?, ?, ?, ?)`,
@@ -91,6 +95,7 @@ func (s *Store) CreateOrder(ctx context.Context, orderID string, product agent.P
 	return nil
 }
 
+// UpdateEmail updates the email address for an existing order.
 func (s *Store) UpdateEmail(ctx context.Context, orderID, email string) error {
 	_, err := s.db.ExecContext(ctx,
 		`UPDATE orders SET email = ?, updated_at = datetime('now') WHERE order_id = ?`,
@@ -127,6 +132,7 @@ func (s *Store) MarkPaidIdempotent(ctx context.Context, orderID, paymentID strin
 	return false, e.String, agent.Product(p), cj, nil
 }
 
+// GetOrder retrieves an order by ID.
 func (s *Store) GetOrder(ctx context.Context, orderID string) (*Order, error) {
 	var o Order
 	var ca, ua string
@@ -141,9 +147,12 @@ func (s *Store) GetOrder(ctx context.Context, orderID string) (*Order, error) {
 		return nil, fmt.Errorf("payment: scan order: %w", err)
 	}
 	o.Product = agent.Product(productStr)
-	o.CreatedAt, _ = time.Parse("2006-01-02 15:04:05", ca) //nolint:errcheck
-	o.UpdatedAt, _ = time.Parse("2006-01-02 15:04:05", ua) //nolint:errcheck
-	// time.Parse errors are ignored: SQLite datetime('now') always produces the expected format.
+		var err2, err3 error
+	o.CreatedAt, err2 = time.Parse("2006-01-02 15:04:05", ca)
+	o.UpdatedAt, err3 = time.Parse("2006-01-02 15:04:05", ua)
+	if err2 != nil || err3 != nil {
+		slog.Warn("payment: parse order timestamps", "orderID", orderID, "created_at", ca, "updated_at", ua, "err", fmt.Errorf("created: %w, updated: %w", err2, err3))
+	}
 	return &o, nil
 }
 
@@ -174,6 +183,7 @@ func (s *Store) CleanStale(ctx context.Context, maxAge time.Duration) error {
 	return err
 }
 
+// OpenDB opens a SQLite database at the given path with WAL mode.
 func OpenDB(dbPath string) (*sql.DB, error) {
 	dir := filepath.Dir(dbPath)
 	if err := os.MkdirAll(dir, 0755); err != nil {

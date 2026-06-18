@@ -103,41 +103,6 @@ func TestChatStream_ContextCancel(t *testing.T) {
 	}
 }
 
-func TestParseToolDef_Valid(t *testing.T) {
-	raw := []byte(`{"name":"compute_chart","description":"compute bazi chart"}`)
-	td, err := ParseToolDef(raw)
-	if err != nil {
-		t.Fatalf("ParseToolDef: %v", err)
-	}
-	if td.Type != "function" {
-		t.Errorf("Type=%q, want function", td.Type)
-	}
-	if td.Function == nil {
-		t.Fatal("Function is nil")
-	}
-}
-
-func TestParseToolDef_MissingName(t *testing.T) {
-	_, err := ParseToolDef([]byte(`{"description":"no name"}`))
-	if err == nil {
-		t.Fatal("expected error for missing name")
-	}
-}
-
-func TestParseToolDef_InvalidJSON(t *testing.T) {
-	_, err := ParseToolDef([]byte(`{bad json`))
-	if err == nil {
-		t.Fatal("expected error for invalid JSON")
-	}
-}
-
-func TestLoadTool_NotFound(t *testing.T) {
-	_, err := LoadTool("nonexistent_tool")
-	if err == nil {
-		t.Fatal("expected error for nonexistent tool")
-	}
-}
-
 func TestChatStream_HTTPError(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(401)

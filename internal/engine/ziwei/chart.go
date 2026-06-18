@@ -1,29 +1,27 @@
 package ziwei
 
 
-import "liki/internal/engine/ganzhi"
-// chartParams holds the input needed for ziwei chart computation.
-type chartParams struct {
-	LunarMonth int
-	LunarDay   int
-	HourZhi    Zhi
-	YearGan    Gan
-	YearZhi    Zhi
-	Gender     ganzhi.Gender
-}
-
+import (
+	"liki/internal/engine/ganzhi"
+	"liki/internal/engine/tianwen"
+)
 // computeChart builds the core ziwei chart (palaces + stars, no brightness/patterns).
-func computeChart(p chartParams) Chart {
-	mingZhi, shenZhi := computeMingShen(p.LunarMonth, p.HourZhi)
+func computeChart(bz ganzhi.Bazi, lt tianwen.LunarTime) Chart {
+	lunarMonth, lunarDay := lt.Month, lt.Day
+	hourZhi := bz.Shi.Zhi
+	yearGan := bz.Nian.Gan
+	yearZhi := bz.Nian.Zhi
+
+	mingZhi, shenZhi := computeMingShen(lunarMonth, hourZhi)
 	palaceZhis := arrangePalaceZhis(mingZhi)
 	shenGong := findShenGongIndex(palaceZhis, shenZhi)
 
-	mingGan, palaceGans := arrangePalaceGans(p.YearGan, mingZhi)
+	mingGan, palaceGans := arrangePalaceGans(yearGan, mingZhi)
 	ju := determineJuShu(mingGan, mingZhi)
-	ziweiPos := findZiwei(ju, p.LunarDay)
+	ziweiPos := findZiwei(ju, lunarDay)
 
 	mainByPalace := placeMainStars(ziweiPos)
-	minorByPalace := placeMinorStars(p.YearGan, p.YearZhi, p.LunarMonth, p.HourZhi)
+	minorByPalace := placeMinorStars(ganzhi.Zhu{Gan: yearGan, Zhi: yearZhi}, lunarMonth, hourZhi, mingZhi)
 
 	var palaces [12]palace
 	for i := 0; i < 12; i++ {
@@ -51,8 +49,8 @@ func computeChart(p chartParams) Chart {
 		JuShu:     ju,
 		JuShuName: juShuName(ju),
 		ZiweiPos:  ziweiPos,
-		YearGan:   p.YearGan,
-		HourZhi:   p.HourZhi,
+		YearGan:   yearGan,
+		HourZhi:   hourZhi,
 	}
 }
 
@@ -75,15 +73,3 @@ func buildChartDetail(chart Chart) Chart {
 }
 
 
-// ComputeChart computes a complete紫微命盘.
-func ComputeChart(birthYear, lunarMonth, lunarDay int, hourZhi Zhi, yearGan Gan, yearZhi Zhi, gender ganzhi.Gender) Chart {
-	p := chartParams{
-		LunarMonth: lunarMonth, LunarDay: lunarDay,
-		HourZhi: hourZhi, YearGan: yearGan, YearZhi: yearZhi, Gender: gender,
-	}
-	chart := computeChart(p)
-	chart.BirthYear = birthYear
-	chart.Gender = gender
-	chart = buildChartDetail(chart)
-	return chart
-}

@@ -1,61 +1,67 @@
-# Fengshui API (风水)
+# Bazhai API (八宅风水)
 
-Base: `GET /api/fengshui/*`, `POST /api/fengshui/*`, `POST /api/xuankong/*`
+Base: `POST /api/bazhai/*`
 
-## Bazhai MingGua
+All responses wrapped in `{"data":{...}}`.
 
-`POST /api/fengshui/minggua` — Compute fate trigram (命卦) via Eight Mansions (八宅) method. Returns personal trigram, gua number, East/West group classification.
+## MingGua
+
+`POST /api/bazhai/minggua` — Compute fate trigram (命卦).
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| birth_year | int | yes | Birth year, 1900-2200 |
+| birth_year | int | yes | Birth year, 1900-2100 |
 | gender | string | yes | "male" or "female" |
 
 ```bash
-curl -s -X POST https://liki.hk/api/fengshui/minggua \
+curl -s -X POST https://liki.hk/api/bazhai/minggua \
   -H 'Content-Type: application/json' \
   -d '{"birth_year":2000,"gender":"male"}'
 ```
 
 ## Bazhai Chart
 
-`POST /api/fengshui/chart` — Combined八宅合参. Returns: fate trigram (命卦), Eight Mansions four-auspicious-four-inauspicious directions (八宅四吉四凶), annual purple-white flying stars (年紫白飞星), pillar bagua (四柱纳甲卦). No scoring — each system speaks for itself.
+`POST /api/bazhai/chart` — Combined 八宅合参: fate trigram, eight stars directions, annual purple-white flying stars, pillar bagua.
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| solar_time | object | yes | SolarTime `{"year","month","day","hour","minute","longitude","offset"}` |
+| birth | object | yes | `{time, longitude}` |
 | gender | string | yes | "male" or "female" |
 
 ```bash
-curl -s -X POST https://liki.hk/api/fengshui/chart \
+curl -s -X POST https://liki.hk/api/bazhai/chart \
   -H 'Content-Type: application/json' \
-  -d '{"solar_time":{"year":2000,"month":1,"day":1,"hour":12,"minute":0,"longitude":120,"offset":480},"gender":"male"}'
+  -d '{"birth":{"time":"2000-01-01T12:00:00+08:00","longitude":116.4},"gender":"male"}'
+```
+
+---
+
+# Xuankong API (玄空飞星)
+
+## SanYuan JiuYun
+
+`GET /api/xuankong/sanyuan` — San Yuan Jiu Yun (三元九运) timetable.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| year | int | no | Query year (default: 2024) |
+
+```bash
+curl -s 'https://liki.hk/api/xuankong/sanyuan?year=2026'
 ```
 
 ## Xuankong Chart
 
-`POST /api/xuankong/chart` — 玄空飞星排盘. Returns: 三元九运, 坐向, nine-palace flying stars (period/mountain/facing), 旺山旺向/上山下水/反吟伏吟 evaluation, 双星加会, 收山出煞.
+`POST /api/xuankong/chart` — 玄空飞星排盘: 三元九运, 坐向, nine-palace flying stars, 旺山旺向 evaluation, 双星加会.
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| solar_time | object | yes | SolarTime `{"year","month","day","hour","minute","longitude","offset"}` |
+| birth | object | yes | `{time, longitude}` |
 | sit_mountain | int | yes | 坐山 index, 0-23 |
 | face_mountain | int | yes | 朝向 index, 0-23 |
 
 ```bash
 curl -s -X POST https://liki.hk/api/xuankong/chart \
   -H 'Content-Type: application/json' \
-  -d '{"solar_time":{"year":2026,"month":6,"day":16,"hour":12,"minute":0,"longitude":120,"offset":480},"sit_mountain":0,"face_mountain":11}'
-```
-
-## San Yuan Jiu Yun
-
-`GET /api/fengshui/sanyuan` — Get San Yuan Jiu Yun (三元九运) timetable. Current period: 九运 (2024-2043).
-
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| year | int | yes | Query year, >=1864 |
-
-```bash
-curl -s 'https://liki.hk/api/fengshui/sanyuan?year=2026'
+  -d '{"birth":{"time":"2026-06-17T12:00:00+08:00","longitude":116.4},"sit_mountain":0,"face_mountain":11}'
 ```

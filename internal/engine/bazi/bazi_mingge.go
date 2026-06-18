@@ -47,7 +47,7 @@ func (s strength) String() string {
 func computeFuYi(chart Chart) FuYi {
 	strength := computeDayMasterStrength(chart.WuxingCount, chart.DayMaster, chart.Month.Zhi, chart.HiddenStemsArray())
 	yong, xi, ji := computeYongJiElements(chart.WuxingCount, chart.DayMaster, strength)
-	monthTenGodStem := ""
+	var monthTenGodStem ganzhi.TenGod
 	for _, e := range chart.Month.TenGods {
 		if e.Source == sourceGan {
 			monthTenGodStem = e.TenGod
@@ -82,9 +82,9 @@ func computeDayMasterStrength(elementCount map[ganzhi.Wuxing]int, dayMaster ganz
 	case monthElem == genElem:
 		seasonScore = 2 // 相: generating element in season — strong
 	case monthElem == ctrlElem:
-		seasonScore = -2 // 囚: controlling element in season — day master is controlled, weakest
+		seasonScore = -2 // 死: day master controlled by season — weakest
 	case elementThatControls(monthElem) == dmElem:
-		seasonScore = -1 // 死: day master controls season — depleted
+		seasonScore = -1 // 囚: day master controls season — trapped
 	default:
 		seasonScore = 0 // 休: neutral
 	}
@@ -143,7 +143,7 @@ func computeYongJiElements(elementCount map[ganzhi.Wuxing]int, dayMaster ganzhi.
 }
 
 // computePattern determines the chart pattern (格局).
-func computePattern(dayMaster ganzhi.Gan, monthBranch ganzhi.Zhi, monthTenGodStem string) string {
+func computePattern(dayMaster ganzhi.Gan, monthBranch ganzhi.Zhi, monthTenGodStem ganzhi.TenGod) string {
 	dmElem := ganzhi.GanWuxing(dayMaster)
 	monthElem := ganzhi.ZhiWuxing(monthBranch)
 
@@ -155,21 +155,21 @@ func computePattern(dayMaster ganzhi.Gan, monthBranch ganzhi.Zhi, monthTenGodSte
 	}
 
 	switch monthTenGodStem {
-	case "正官":
+	case ganzhi.TenGodZhengGuan:
 		return "正官格"
-	case "七杀":
+	case ganzhi.TenGodQiSha:
 		return "七杀格"
-	case "正财":
+	case ganzhi.TenGodZhengCai:
 		return "正财格"
-	case "偏财":
+	case ganzhi.TenGodPianCai:
 		return "偏财格"
-	case "正印":
+	case ganzhi.TenGodZhengYin:
 		return "正印格"
-	case "偏印":
+	case ganzhi.TenGodPianYin:
 		return "偏印格"
-	case "食神":
+	case ganzhi.TenGodShiShen:
 		return "食神格"
-	case "伤官":
+	case ganzhi.TenGodShangGuan:
 		return "伤官格"
 	}
 	return "杂格"

@@ -1,10 +1,8 @@
 package ziwei
 
-// --- 紫微定位 (0.4) ---
+import "liki/internal/engine/ganzhi"
 
-var ziweiStartPos = map[juShu]int{
-	JuWater: 2, JuWood: 4, JuMetal: 11, JuEarth: 6, JuFire: 9,
-}
+// --- 紫微定位 (0.4) ---
 
 func findZiwei(ju juShu, lunarDay int) palaceIndex {
 	start, ok := ziweiStartPos[ju]
@@ -52,100 +50,102 @@ func placeMainStars(ziweiPos palaceIndex) map[palaceIndex][]starIndex {
 
 // --- 辅星安星 (0.6) — 每颗一个函数 + 装配 ---
 
-func luCunPos(yearGan Gan) palaceIndex {
-	table := [10]int{2, 3, 5, 6, 5, 6, 8, 9, 11, 0}
+// The following functions return zhi-1 values (0=子..11=亥), NOT palace indices.
+// Callers must convert via zhiToPalace when placing into a chart.
+
+func luCunPos(yearGan Gan) int {
 	if yg := int(yearGan); yg >= 1 && yg <= 10 {
-		return palaceIndex(table[yg-1])
+		return luCunTable[yg-1]
 	}
 	return 0
 }
 
-func tianKuiPos(yearGan Gan) palaceIndex {
-	table := [10]int{1, 0, 11, 9, 1, 0, 1, 6, 3, 5}
+func tianKuiPos(yearGan Gan) int {
 	if yg := int(yearGan); yg >= 1 && yg <= 10 {
-		return palaceIndex(table[yg-1])
+		return tianKuiTable[yg-1]
 	}
 	return 0
 }
 
-func tianYuePos(tk palaceIndex) palaceIndex { return (tk + 6) % 12 }
+func tianYuePos(tk int) int { return (tk + 6) % 12 }
 
-func qingYangPos(yearZhi Zhi) palaceIndex { return palaceIndex(int(yearZhi) % 12) }
-func tuoLuoPos(yearZhi Zhi) palaceIndex   { return palaceIndex(((int(yearZhi)-2+12)%12+12)%12) }
+func qingYangPos(yearGan Gan) int { return (luCunPos(yearGan) + 1) % 12 }
+func tuoLuoPos(yearGan Gan) int  { return (luCunPos(yearGan) - 1 + 12) % 12 }
 
-func tianMaPos(yearZhi Zhi) palaceIndex {
-	table := [12]int{2, 11, 8, 5, 2, 11, 8, 5, 2, 11, 8, 5}
+func tianMaPos(yearZhi Zhi) int {
 	if yz := int(yearZhi); yz >= 1 && yz <= 12 {
-		return palaceIndex(table[yz-1])
+		return tianMaTable[yz-1]
 	}
 	return 0
 }
 
-func zuoFuPos(lunarMonth int) palaceIndex  { return palaceIndex((lunarMonth + 2) % 12) }
-func youBiPos(lunarMonth int) palaceIndex   { return palaceIndex((11 - lunarMonth + 12) % 12) }
-func wenChangPos(hourZhi Zhi) palaceIndex   { return palaceIndex((11 - int(hourZhi) + 12) % 12) }
-func wenQuPos(hourZhi Zhi) palaceIndex      { return palaceIndex((int(hourZhi) + 3) % 12) }
-func diKongPos(hourZhi Zhi) palaceIndex     { return palaceIndex((12 - int(hourZhi) + 12) % 12) }
-func diJiePos(hourZhi Zhi) palaceIndex      { return palaceIndex((int(hourZhi) + 10) % 12) }
+func zuoFuPos(lunarMonth int) int  { return (lunarMonth + 2) % 12 }
+func youBiPos(lunarMonth int) int   { return (11 - lunarMonth + 12) % 12 }
+func wenChangPos(hourZhi Zhi) int   { return (11 - int(hourZhi) + 12) % 12 }
+func wenQuPos(hourZhi Zhi) int      { return (int(hourZhi) + 3) % 12 }
+func diKongPos(hourZhi Zhi) int     { return (12 - int(hourZhi) + 12) % 12 }
+func diJiePos(hourZhi Zhi) int      { return (int(hourZhi) + 10) % 12 }
 
-func huoXingPos(yearZhi Zhi, hourZhi Zhi) palaceIndex {
-	return palaceIndex(marsIndex(int(yearZhi), int(hourZhi)))
-}
+func huoXingPos(yearZhi, hourZhi Zhi) int { return marsIndex(yearZhi, hourZhi) }
+func lingXingPos(yearZhi, hourZhi Zhi) int { return lingxingIndex(yearZhi, hourZhi) }
 
-func lingXingPos(yearZhi Zhi, hourZhi Zhi) palaceIndex {
-	return palaceIndex(lingxingIndex(int(yearZhi), int(hourZhi)))
-}
-
-func marsIndex(yearZhi, hourZhi int) int {
+func marsIndex(yearZhi, hourZhi Zhi) int {
 	switch {
-	case inGroup(yearZhi, 3, 7, 11):
-		return (hourZhi + 1) % 12
-	case inGroup(yearZhi, 9, 1, 5):
-		return (3 - hourZhi + 12) % 12
-	case inGroup(yearZhi, 6, 10, 2):
-		return (hourZhi + 2) % 12
-	case inGroup(yearZhi, 12, 4, 8):
-		return (hourZhi + 8) % 12
+	case inGroup(yearZhi, 3, 7, 11):  // 寅午戌: 丑宫起子时
+		return int((hourZhi + 1) % 12)
+	case inGroup(yearZhi, 9, 1, 5):   // 申子辰: 寅宫起子时
+		return int((hourZhi + 2) % 12)
+	case inGroup(yearZhi, 6, 10, 2):  // 巳酉丑: 卯宫起子时
+		return int((hourZhi + 3) % 12)
+	case inGroup(yearZhi, 12, 4, 8):  // 亥卯未: 酉宫起子时
+		return int((hourZhi + 9) % 12)
 	}
 	return 0
 }
 
-func lingxingIndex(yearZhi, hourZhi int) int {
+func lingxingIndex(yearZhi, hourZhi Zhi) int {
 	switch {
-	case inGroup(yearZhi, 3, 7, 11):
-		return (hourZhi + 2) % 12
-	case inGroup(yearZhi, 9, 1, 5):
-		return (hourZhi + 9) % 12
-	case inGroup(yearZhi, 6, 10, 2):
-		return (hourZhi + 9) % 12
-	case inGroup(yearZhi, 12, 4, 8):
-		return (10 - hourZhi + 12) % 12
+	case inGroup(yearZhi, 3, 7, 11):  // 寅午戌: 卯宫起子时
+		return int((hourZhi + 3) % 12)
+	case inGroup(yearZhi, 9, 1, 5):   // 申子辰: 戌宫起子时
+		return int((hourZhi + 10) % 12)
+	case inGroup(yearZhi, 6, 10, 2):  // 巳酉丑: 戌宫起子时
+		return int((hourZhi + 10) % 12)
+	case inGroup(yearZhi, 12, 4, 8):  // 亥卯未: 戌宫起子时
+		return int((hourZhi + 10) % 12)
 	}
 	return 0
 }
 
-func inGroup(zhi, a, b, c int) bool { return zhi == a || zhi == b || zhi == c }
+func inGroup(zhi, a, b, c Zhi) bool { return zhi == a || zhi == b || zhi == c }
+
+// zhiToPalace converts an absolute branch position (zhi-1: 0=子..11=亥) to
+// the palace index whose branch matches, given the 命宫 branch.
+func zhiToPalace(zhiMinus1 int, mingZhi Zhi) palaceIndex {
+	targetZhi := zhiMinus1 + 1
+	return palaceIndex((int(mingZhi) - targetZhi + 12) % 12)
+}
 
 // placeMinorStars collects all 14 minor star placements.
-func placeMinorStars(yearGan Gan, yearZhi Zhi, lunarMonth int, hourZhi Zhi) map[palaceIndex][]starIndex {
+func placeMinorStars(yearZhu ganzhi.Zhu, lunarMonth int, hourZhi, mingZhi Zhi) map[palaceIndex][]starIndex {
 	m := make(map[palaceIndex][]starIndex)
 	add := func(pos palaceIndex, s starIndex) {
 		m[pos] = append(m[pos], s)
 	}
-	tk := tianKuiPos(yearGan)
-	add(luCunPos(yearGan), LuCun)
-	add(tk, TianKui)
-	add(tianYuePos(tk), TianYue)
-	add(qingYangPos(yearZhi), QingYang)
-	add(tuoLuoPos(yearZhi), TuoLuo)
-	add(tianMaPos(yearZhi), TianMa)
-	add(zuoFuPos(lunarMonth), ZuoFu)
-	add(youBiPos(lunarMonth), YouBi)
-	add(wenChangPos(hourZhi), WenChang)
-	add(wenQuPos(hourZhi), WenQu)
-	add(diKongPos(hourZhi), DiKong)
-	add(diJiePos(hourZhi), DiJie)
-	add(huoXingPos(yearZhi, hourZhi), HuoXing)
-	add(lingXingPos(yearZhi, hourZhi), LingXing)
+	tk := tianKuiPos(yearZhu.Gan)
+	add(zhiToPalace(luCunPos(yearZhu.Gan), mingZhi), LuCun)
+	add(zhiToPalace(tk, mingZhi), TianKui)
+	add(zhiToPalace(tianYuePos(tk), mingZhi), TianYue)
+	add(zhiToPalace(qingYangPos(yearZhu.Gan), mingZhi), QingYang)
+	add(zhiToPalace(tuoLuoPos(yearZhu.Gan), mingZhi), TuoLuo)
+	add(zhiToPalace(tianMaPos(yearZhu.Zhi), mingZhi), TianMa)
+	add(zhiToPalace(zuoFuPos(lunarMonth), mingZhi), ZuoFu)
+	add(zhiToPalace(youBiPos(lunarMonth), mingZhi), YouBi)
+	add(zhiToPalace(wenChangPos(hourZhi), mingZhi), WenChang)
+	add(zhiToPalace(wenQuPos(hourZhi), mingZhi), WenQu)
+	add(zhiToPalace(diKongPos(hourZhi), mingZhi), DiKong)
+	add(zhiToPalace(diJiePos(hourZhi), mingZhi), DiJie)
+	add(zhiToPalace(marsIndex(yearZhu.Zhi, hourZhi), mingZhi), HuoXing)
+	add(zhiToPalace(lingxingIndex(yearZhu.Zhi, hourZhi), mingZhi), LingXing)
 	return m
 }

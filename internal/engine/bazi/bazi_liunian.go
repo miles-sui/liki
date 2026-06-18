@@ -1,6 +1,9 @@
 package bazi
 
 import (
+	"fmt"
+	"time"
+
 	"liki/internal/engine/ganzhi"
 	"liki/internal/engine/tianwen"
 )
@@ -16,8 +19,8 @@ type LiuNian struct {
 	TenGod            string              `json:"shishen"`
 	Generates         int                 `json:"generates"`
 	Restrains         int                 `json:"restrains"`
-	NatalInteractions []pillarInteraction `json:"natal_interactions"`
-	DaYunInteractions []pillarInteraction `json:"dayun_interactions"`
+	NatalInteractions []zhuInteraction `json:"natal_interactions"`
+	DaYunInteractions []zhuInteraction `json:"dayun_interactions"`
 	ShenSha           []shenShaEntry      `json:"shensha"`
 	FuYinFanYin       []FuYinFanYin  `json:"fuyin_fanyin"`
 }
@@ -25,8 +28,12 @@ type LiuNian struct {
 // ComputeLiuNian computes the year pillar for a given year and analyzes its
 // relationship to the day master. When bazi and currentDaYun are provided,
 // it also computes three-layer interaction analysis.
-func ComputeLiuNian(year int, dayMaster ganzhi.Gan, bz ganzhi.Bazi, currentDaYun *DaYunPillar) *LiuNian {
-	yp := tianwen.YearPillar(year, 6, 15) // mid-year avoids LiChun edge
+func computeLiuNian(bz ganzhi.Bazi, year int, currentDaYun *DaYunZhu) (*LiuNian, error) {
+	if year < 1 || year > 9999 {
+		return nil, fmt.Errorf("compute liunian: invalid year %d", year)
+	}
+	dayMaster := bz.Ri.Gan
+	yp := tianwen.NianZhu(tianwen.GregorianTime(time.Date(year, 6, 15, 0, 0, 0, 0, time.UTC))) // mid-year avoids LiChun edge
 	yearStem, yearBranch := yp.Gan, yp.Zhi
 
 	dmElem := ganzhi.GanWuxing(dayMaster)
@@ -45,35 +52,49 @@ func ComputeLiuNian(year int, dayMaster ganzhi.Gan, bz ganzhi.Bazi, currentDaYun
 		YearName:  ganzhi.GanName(yearStem) + ganzhi.ZhiName(yearBranch),
 		Element:   yearElem.String(),
 		NaYin:     naYin,
-		TenGod:    tgName,
+		TenGod:    tgName.String(),
 		Generates: gen,
 		Restrains: rest,
 	}
 
 	// Three-layer analysis when bazi chart and current dayun are available.
-	liuNianPillar := ganzhi.Zhu{Gan: yearStem, Zhi: yearBranch}
-	r.NatalInteractions = make([]pillarInteraction, 1)
-	stemRels, branchRels := analyzePillarWithBazi(liuNianPillar, bz)
-	r.NatalInteractions[0] = pillarInteraction{
-		PillarLabel: r.YearName,
+	liuNianZhu := ganzhi.Zhu{Gan: yearStem, Zhi: yearBranch}
+	r.NatalInteractions = make([]zhuInteraction, 1)
+	stemRels, branchRels := analyzeZhuWithBazi(liuNianZhu, bz)
+	r.NatalInteractions[0] = zhuInteraction{
+		ZhuLabel: r.YearName,
 		GanRels:     stemRels,
 		ZhiRels:     branchRels,
 	}
 
 	if currentDaYun != nil {
-		dyPillar := ganzhi.Zhu{Gan: currentDaYun.Gan, Zhi: currentDaYun.Zhi}
-		dyStemRels, dyBranchRels := analyzePillarWithBazi(dyPillar, bz)
-		r.DaYunInteractions = []pillarInteraction{{
-			PillarLabel: currentDaYun.TenGod + "(" + currentDaYun.Name + ")",
+		dyZhu := ganzhi.Zhu{Gan: currentDaYun.Gan, Zhi: currentDaYun.Zhi}
+		dyStemRels, dyBranchRels := analyzeZhuWithBazi(dyZhu, bz)
+		r.DaYunInteractions = []zhuInteraction{{
+			ZhuLabel: currentDaYun.TenGod + "(" + currentDaYun.Name + ")",
 			GanRels:     dyStemRels,
 			ZhiRels:     dyBranchRels,
 		}}
 	}
 
 	r.ShenSha = computeDynamicShenSha(yearBranch, bz.Nian.Zhi, dayMaster)
-	r.FuYinFanYin = computeFuYinFanYin(liuNianPillar, bz)
+	r.FuYinFanYin = computeFuYinFanYin(liuNianZhu, bz)
 
-	return r
+	return r, nil
 }
 
-func countGenRest(elem, dmElem ganzhi.Wuxing) (gen, rest int) { return 0, 0 } // TODO: implement
+func countGenRest(elem, dmElem ganzhi.Wuxing) (gen, rest int) {
+	if elem == dmElem {
+		return 1, 0
+	}
+	if ganzhi.Sheng(elem, dmElem) {
+		return 1, 0
+	}
+	if ganzhi.Sheng(dmElem, elem) {
+		return 0, 1
+	}
+	if ganzhi.Ke(elem, dmElem) {
+		return 0, 1
+	}
+	return 1, 0
+}

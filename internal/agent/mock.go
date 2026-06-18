@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sync"
 
 	"liki/internal/llm"
 )
@@ -12,6 +13,7 @@ import (
 type MockLLM struct {
 	ToolResps    []*llm.ChatResult
 	ToolErrs     []error
+	mu           sync.Mutex
 	toolIdx      int
 	StreamTokens []string
 	StreamErr    error
@@ -19,6 +21,8 @@ type MockLLM struct {
 
 // ChatStreamWithTools converts the next ChatResult in ToolResps into StreamEvents.
 func (m *MockLLM) ChatStreamWithTools(ctx context.Context, messages []llm.Message, tools []llm.ToolDef) (<-chan llm.StreamEvent, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	if m.toolIdx < len(m.ToolErrs) && m.ToolErrs[m.toolIdx] != nil {
 		err := m.ToolErrs[m.toolIdx]
 		m.toolIdx++

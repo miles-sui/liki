@@ -6,10 +6,10 @@ import "liki/internal/engine/ganzhi"
 type YaoType int
 
 const (
-	LaoYin   YaoType = 6 // 老阴 ⚋→⚊ (6, 两个背面)
-	ShaoYang YaoType = 7 // 少阳 ⚊ (7, 一个背面)
-	ShaoYin  YaoType = 8 // 少阴 ⚋ (8, 两个正面)
-	LaoYang  YaoType = 9 // 老阳 ⚊→⚋ (9, 三个正面)
+	LaoYin   YaoType = 6 // 老阴 ⚋→⚊ (6, 三个2 = 三背)
+	ShaoYang YaoType = 7 // 少阳 ⚊ (7, 两背一面)
+	ShaoYin  YaoType = 8 // 少阴 ⚋ (8, 两面一背)
+	LaoYang  YaoType = 9 // 老阳 ⚊→⚋ (9, 三个3 = 三面)
 )
 
 func (y YaoType) IsYang() bool     { return y == ShaoYang || y == LaoYang }
@@ -93,7 +93,7 @@ type Chart struct {
 	DongYao   []int          `json:"dong_yao"` // 动爻位置 1-6
 	// Analysis layers set by ComputeChart.
 	YongShen     YongShenResult `json:"yong_shen"`
-	WangShuai    [6]WangShuai   `json:"wang_shuai"`
+	WangShuai    [6]ganzhi.WangShuai   `json:"wang_shuai"`
 	DayRelations [6]DayRelation `json:"day_relations"`
 	YingQi    YingQi         `json:"ying_qi"`
 }

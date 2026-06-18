@@ -1,7 +1,5 @@
 package qiming
 
-import "liki/internal/engine/ganzhi"
-
 // ge is one of the five-grid (五格) numbers.
 type ge struct {
 	Stroke      int    `json:"stroke"`
@@ -27,7 +25,7 @@ func enumWuGeCombinations(surnameStrokes int) wuGeEnumerationResult {
 	tian := strokeResult(tianRaw)
 
 	var combos []StrokeCombo
-	for s1 := 1; s1 <= 31; s1++ {
+	for s1 := 1; s1 <= 36; s1++ {
 		for s2 := 1; s2 <= 31; s2++ {
 			renRaw := surnameStrokes + s1
 			diRaw := s1 + s2
@@ -47,14 +45,10 @@ func enumWuGeCombinations(surnameStrokes int) wuGeEnumerationResult {
 				continue
 			}
 
-			tianElem := wuxingFromChinese(tian.Element)
-			renElem := wuxingFromChinese(ren.Element)
-			diElem := wuxingFromChinese(di.Element)
-			if !ganzhi.Sheng(tianElem, renElem) || !ganzhi.Sheng(renElem, diElem) {
+			sc := computeSanCai(tian.Element, ren.Element, di.Element)
+			if !isAuspicious(sc.Fortune) {
 				continue
 			}
-
-			sc := computeSanCai(tian.Element, ren.Element, di.Element)
 			combos = append(combos, StrokeCombo{
 				Stroke1: s1,
 				Stroke2: s2,

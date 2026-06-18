@@ -1,42 +1,16 @@
 package qimen
 
-import "liki/internal/engine/tianwen"
-
-// solarTermBureau maps 24 solar terms (0=冬至) → [上元, 中元, 下元, yangDun(1/0)].
-var solarTermBureau = [24][4]int{
-	{1, 7, 4, 1}, // 冬至 yang
-	{2, 8, 5, 1}, // 小寒 yang
-	{3, 9, 6, 1}, // 大寒 yang
-	{8, 5, 2, 1}, // 立春 yang
-	{9, 6, 3, 1}, // 雨水 yang
-	{1, 7, 4, 1}, // 惊蛰 yang
-	{3, 9, 6, 1}, // 春分 yang
-	{4, 1, 7, 1}, // 清明 yang
-	{5, 2, 8, 1}, // 谷雨 yang
-	{4, 1, 7, 1}, // 立夏 yang
-	{5, 2, 8, 1}, // 小满 yang
-	{6, 3, 9, 1}, // 芒种 yang
-	{9, 3, 6, 0}, // 夏至 yin
-	{8, 2, 5, 0}, // 小暑 yin
-	{7, 1, 4, 0}, // 大暑 yin
-	{2, 5, 8, 0}, // 立秋 yin
-	{1, 4, 7, 0}, // 处暑 yin
-	{9, 3, 6, 0}, // 白露 yin
-	{7, 1, 4, 0}, // 秋分 yin
-	{6, 9, 3, 0}, // 寒露 yin
-	{5, 8, 2, 0}, // 霜降 yin
-	{6, 9, 3, 0}, // 立冬 yin
-	{5, 8, 2, 0}, // 小雪 yin
-	{4, 7, 1, 0}, // 大雪 yin
-}
+import (
+	"liki/internal/engine/ganzhi"
+	"liki/internal/engine/tianwen"
+)
 
 // determineJuShu computes the bureau number and yin/yang dun for a given date.
-// dayGan/dayZhi are the day pillar indices from bazi, avoiding redundant computation.
-func determineJuShu(year, month, day, dayGan, dayZhi int) juShu {
+func determineJuShu(year, month, day int, dayGan ganzhi.Gan, dayZhi ganzhi.Zhi) juShu {
 	idx := tianwen.SolarTermIndex(year, month, day)
 	entry := solarTermBureau[idx]
 
-	yuan := determineYuan(dayGan, dayZhi)
+	yuan := determineYuan(ganzhi.Zhu{Gan: dayGan, Zhi: dayZhi})
 
 	var ju int
 	var yuanName string
@@ -57,14 +31,8 @@ func determineJuShu(year, month, day, dayGan, dayZhi int) juShu {
 }
 
 // determineYuan returns 0=上元, 1=中元, 2=下元 based on the day pillar's position in the 60-cycle.
-func determineYuan(dayGan, dayZhi int) int {
-	dayIdx := dayGan*6 + dayZhi
-	if dayIdx >= 60 {
-		dayIdx -= 60
-	}
-	if dayIdx < 0 {
-		dayIdx += 60
-	}
+func determineYuan(dayZhu ganzhi.Zhu) int {
+	dayIdx := ganzhi.SixtyCycleName(dayZhu.Gan, dayZhu.Zhi)
 
 	for _, start := range []int{0, 15, 30, 45} {
 		if inCycleRange(dayIdx, start, 5) {

@@ -18,12 +18,12 @@
 
 | 函数 | 说明 |
 |------|------|
-| `QueryDate(date, event)` | 单日查询 |
-| `QueryMonth(yearMonth, event)` | 整月查询 |
-| `QueryYear(year)` | 年查询 |
-| `CrossDate(dm, dz, date, event)` | 合日查询 |
-| `CrossMonth(dm, dz, yearMonth, event)` | 合月查询 |
-| `CrossYear(dm, dz, year)` | 合年查询 |
+| `QueryDate(date string, event string) → (Day, error)` | 单日查询 |
+| `QueryMonth(yearMonth string, event string) → (Month, error)` | 整月查询 |
+| `ComputeBondDay(st SolarTime, eventType string, dateStr string) → (BondDay, error)` | 合日查询（编排入口，api.go） |
+| `ComputeBondMonth(st SolarTime, eventType string, yearMonth string) → (BondMonth, error)` | 合月查询（编排入口，api.go） |
+
+编排层 `api.go` 收 `SolarTime` → `ComputeBazi` → 引擎 `computeBondDay(bz Bazi, …)` / `computeBondMonth(bz Bazi, …)` 收精确实体。
 
 ### HTTP Routes
 

@@ -54,9 +54,9 @@ type ChatAgent struct {
 	llm           LLMClient
 	tools         ToolRegistry
 	prompt        string
+	Greeting      string
 	ReportPrompts map[Product]string
 	Amounts       map[Product]int
-	Greeting      string
 }
 
 // NewChatAgent creates a new ChatAgent with the given prompt and tools.

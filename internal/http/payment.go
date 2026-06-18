@@ -150,8 +150,8 @@ func handleWebhook(svc *payment.Service) http.HandlerFunc {
 	}
 }
 
-// redirectDownload redirects /api/orders/{id}/download to /report/{id} for browser print.
-func redirectDownload() http.HandlerFunc {
+// redirectReport redirects /api/orders/{id}/report to /report/{id} for browser print.
+func redirectReport() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		orderID := r.PathValue("id")
 		if orderID == "" {

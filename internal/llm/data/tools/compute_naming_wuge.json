@@ -1,0 +1,16 @@
+{
+  "name": "compute_naming_wuge",
+  "description": "根据姓氏和八字用神计算五格数据。返回：三才配置、五格组合、可用字库（按笔画分组）。起名流程第一步。",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "surname": {"type": "string", "description": "姓氏，1-2个汉字，如 陈"},
+      "yong_shen": {"type": "string", "enum": ["木", "火", "土", "金", "水"], "description": "八字用神五行，由 compute_chart 返回的 data.wuxing_count 或格局分析获得"},
+      "xi_shen": {
+        "type": "array", "items": {"type": "string"},
+        "description": "喜神五行列表，由 compute_chart 返回结果获得"
+      }
+    },
+    "required": ["surname", "yong_shen"]
+  }
+}

@@ -58,7 +58,7 @@ func main() {
 
 	// Chat tools call foundation packages (bazi, qiming) directly.
 	chatTools := agent.NewChatToolRegistry()
-	chatAgent := agent.NewChatAgent(llm.New(envOr("DEEPSEEK_API_KEY", "")), chatTools, "system prompt")
+	chatAgent := agent.NewChatAgent(llm.New(envOr("DEEPSEEK_API_KEY", "")), chatTools, doc.ChatPrompt)
 	// Single agent with unified prompt and all tools.
 	chatAgent.ReportPrompts = map[agent.Product]string{
 		agent.ProductChart:  doc.ChartReportPrompt,

@@ -1,6 +1,10 @@
 package qimen
 
-import "liki/internal/engine/ganzhi"
+import (
+	"strings"
+
+	"liki/internal/engine/ganzhi"
+)
 
 // YingQi holds timing prediction information.
 type YingQi struct {
@@ -15,21 +19,26 @@ func computeYingQi(pan pan) YingQi {
 	var yq YingQi
 
 	// 马星应期: 冲马星的地支年份/月份/时辰.
-	mataZhi := palaceZhi(pan.MaXing)
-	chongZhi := chongBranch(mataZhi)
-	yq.MaXing = "马星在" + ganzhi.ZhiName(mataZhi) + "，冲则动，应期在" + ganzhi.ZhiName(chongZhi) + "（年月日时）"
+	mataBranches := palaceBranches(pan.MaXing)
+	var chongStrs []string
+	for _, mz := range mataBranches {
+		chongStrs = append(chongStrs, ganzhi.ZhiName(chongBranch(mz)))
+	}
+	yq.MaXing = "马星在" + ganzhi.ZhiName(mataBranches[0]) + "，冲则动，应期在" + strings.Join(chongStrs, "、") + "（年月日时）"
 
 	// 空亡填实: 空亡宫被填实时应事.
+	var kwBranches []string
 	for _, kw := range pan.KongWang {
-		z := palaceZhi(kw)
-		yq.KongWang += ganzhi.ZhiName(z) + " "
+		for _, z := range palaceBranches(kw) {
+			kwBranches = append(kwBranches, ganzhi.ZhiName(z))
+		}
 	}
-	if yq.KongWang != "" {
-		yq.KongWang = "空亡在" + yq.KongWang + "，填实或冲空之时应事"
+	if len(kwBranches) > 0 {
+		yq.KongWang = "空亡在" + strings.Join(kwBranches, " ") + "，填实或冲空之时应事"
 	}
 
 	// 值符值使推动.
-	yq.DutyMove = "值符" + pan.DutyStar.String() + "加" + pan.DutyDoor.String() + "，以时干" + ganzhi.GanName(ganzhi.Gan(int(pan.DriveZhi)%10+1)) + "为应"
+	yq.DutyMove = "值符" + pan.DutyStar.String() + "加" + pan.DutyDoor.String() + "，以时干" + ganzhi.GanName(pan.DriveGan) + "为应"
 
 	yq.Summary = yq.MaXing + "；" + yq.KongWang
 
@@ -38,5 +47,5 @@ func computeYingQi(pan pan) YingQi {
 
 // chongBranch returns the opposing branch (冲).
 func chongBranch(z ganzhi.Zhi) ganzhi.Zhi {
-	return ganzhi.Zhi((int(z) + 6) % 12)
+	return ganzhi.Zhi((int(z)+5)%12 + 1)
 }

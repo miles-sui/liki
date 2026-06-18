@@ -71,19 +71,6 @@ type dirPattern struct {
 // Standard 八宅大游年 patterns per gua number.
 // Four auspicious: 生气, 天医, 延年, 伏位
 // Four inauspicious: 祸害, 五鬼, 六煞, 绝命
-var eightMansionPatterns = map[int]dirPattern{
-	1: {4, 3, 9, 1, 7, 8, 6, 2}, // 坎宫
-	2: {8, 7, 6, 2, 3, 4, 9, 1}, // 坤宫
-	3: {9, 1, 4, 3, 2, 6, 8, 7}, // 震宫
-	4: {1, 9, 3, 4, 2, 6, 7, 8}, // 巽宫
-	6: {7, 8, 2, 6, 3, 1, 4, 9}, // 乾宫
-	7: {6, 2, 8, 7, 1, 9, 4, 3}, // 兑宫
-	8: {2, 6, 7, 8, 9, 1, 3, 4}, // 艮宫
-	9: {3, 4, 1, 9, 8, 7, 2, 6}, // 离宫
-}
-
-var palaceDirs = [10]string{"", "北", "西南", "东", "东南", "中", "西北", "西", "东北", "南"}
-
 func eightMansionDirs(guaNum int) (auspicious [4]int, inauspicious [4]int) {
 	p, ok := eightMansionPatterns[guaNum]
 	if !ok {

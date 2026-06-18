@@ -1,0 +1,12 @@
+{
+  "name": "query_huangli_date",
+  "description": "查询指定日期的黄历宜忌。返回：当日宜忌事项、冲煞、吉神凶神等信息。",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "date": {"type": "string", "description": "日期，格式 YYYY-MM-DD，如 2026-06-17"},
+      "event": {"type": "string", "description": "要查询的事项，如 嫁娶、入宅、开业、出行"}
+    },
+    "required": ["date", "event"]
+  }
+}

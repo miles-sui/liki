@@ -6,70 +6,98 @@ import (
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 
 	"liki/internal/engine/huangli"
-	"liki/internal/engine/tianwen"
 )
 
-func queryHuangli(w http.ResponseWriter, r *http.Request) {
-	type params struct{ Event, Date, Month string }
-	p := params{
-		Event: r.URL.Query().Get("event"),
-		Date:  r.URL.Query().Get("date"),
-		Month: r.URL.Query().Get("month"),
-	}
-	if err := validation.ValidateStruct(&p,
-		validation.Field(&p.Event, validation.Required),
-		validation.Field(&p.Date, validation.When(p.Month == "", validation.Required)),
-	); err != nil {
-		respondValidationError(w, err)
+
+func huangliDate(w http.ResponseWriter, r *http.Request) {
+	date := r.URL.Query().Get("date")
+	event := r.URL.Query().Get("event")
+	if date == "" || event == "" {
+		respondInvalidRequest(w, "date and event query params are required")
 		return
 	}
-	if p.Date != "" {
-		entry, err := huangli.QueryDate(p.Date, p.Event)
-		if err != nil {
-			respondInvalidRequest(w, "invalid date format, use YYYY-MM-DD")
-			return
-		}
-		respondJSON(w, http.StatusOK, entry)
+	entry, err := huangli.QueryDate(date, event)
+	if err != nil {
+		respondInvalidRequest(w, "invalid date format, use YYYY-MM-DD")
 		return
 	}
-	entries, err := huangli.QueryMonth(p.Month, p.Event)
+	respondJSON(w, http.StatusOK, map[string]any{"entry": entry})
+}
+func huangliMonth(w http.ResponseWriter, r *http.Request) {
+	month := r.URL.Query().Get("month")
+	event := r.URL.Query().Get("event")
+	if month == "" || event == "" {
+		respondInvalidRequest(w, "month and event query params are required")
+		return
+	}
+	entries, err := huangli.QueryMonth(month, event)
 	if err != nil {
 		respondInvalidRequest(w, "invalid month format, use YYYY-MM")
 		return
 	}
-		respondJSON(w, http.StatusOK, entries)
+	respondJSON(w, http.StatusOK, map[string]any{"entries": entries})
 }
 
-type huangliBondRequest struct {
-	Birth     SolarTime `json:"birth_info"`
-	Month     string      `json:"month"`
-	Date      string      `json:"date"`
-	EventType string      `json:"event_type"`
+type huangliBondDateRequest struct {
+	Birth     timePoint `json:"birth"`
+	EventType string     `json:"event_type"`
+	Date      string     `json:"date"`
 }
 
-func (r huangliBondRequest) Validate() error {
+func (r huangliBondDateRequest) Validate() error {
 	return validation.ValidateStruct(&r,
+		validation.Field(&r.Birth, validation.By(validateTimePoint)),
 		validation.Field(&r.EventType, validation.Required),
-		validation.Field(&r.Month, validation.When(r.Date == "", validation.Required)),
+		validation.Field(&r.Date, validation.Required),
 	)
 }
 
-func bondHuangli(w http.ResponseWriter, r *http.Request) {
-	req, ok := decodeJSON[huangliBondRequest](w, r)
-	if !ok { return }
-	if err := validateSolarParams(&req.Birth); err != nil { respondValidationError(w, err); return }
-	if err := req.Validate(); err != nil { respondValidationError(w, err); return }
-
-	bt := tianwen.ComputeBirthTime(req.Birth.Year, req.Birth.Month, req.Birth.Day, req.Birth.Hour, req.Birth.Minute, req.Birth.Longitude, req.Birth.Timezone)
-	bz := tianwen.ComputeBazi(bt.Solar)
-
-	if req.Date != "" {
-		entry, err := huangli.CrossDate(bz.Ri.Gan, bz.Ri.Zhi, req.Date, req.EventType)
-		if err != nil { respondValidationError(w, err); return }
-		respondJSON(w, http.StatusOK, entry)
+func huangliBondDate(w http.ResponseWriter, r *http.Request) {
+	req, ok := decodeAndValidate[huangliBondDateRequest](w, r)
+	if !ok {
 		return
 	}
-	entries, err := huangli.CrossMonth(bz.Ri.Gan, bz.Ri.Zhi, req.Month, req.EventType)
-	if err != nil { respondValidationError(w, err); return }
-		respondJSON(w, http.StatusOK, entries)
+	ts, err := req.Birth.Timeset()
+	if err != nil {
+		respondInvalidRequest(w, err.Error())
+		return
+	}
+	entry, err := huangli.ComputeBondDay(ts.Solar, req.EventType, req.Date)
+	if err != nil {
+		respondValidationError(w, err)
+		return
+	}
+	respondJSON(w, http.StatusOK, map[string]any{"entry": entry})
+}
+
+type huangliBondMonthRequest struct {
+	Birth     timePoint `json:"birth"`
+	EventType string     `json:"event_type"`
+	Month     string     `json:"month"`
+}
+
+func (r huangliBondMonthRequest) Validate() error {
+	return validation.ValidateStruct(&r,
+		validation.Field(&r.Birth, validation.By(validateTimePoint)),
+		validation.Field(&r.EventType, validation.Required),
+		validation.Field(&r.Month, validation.Required),
+	)
+}
+
+func huangliBondMonth(w http.ResponseWriter, r *http.Request) {
+	req, ok := decodeAndValidate[huangliBondMonthRequest](w, r)
+	if !ok {
+		return
+	}
+	ts, err := req.Birth.Timeset()
+	if err != nil {
+		respondInvalidRequest(w, err.Error())
+		return
+	}
+	entries, err := huangli.ComputeBondMonth(ts.Solar, req.EventType, req.Month)
+	if err != nil {
+		respondValidationError(w, err)
+		return
+	}
+	respondJSON(w, http.StatusOK, map[string]any{"entries": entries})
 }

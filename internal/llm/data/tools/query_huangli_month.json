@@ -1,0 +1,12 @@
+{
+  "name": "query_huangli_month",
+  "description": "查询指定月份的黄历宜忌。返回：该月每日宜忌事项汇总。",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "month": {"type": "string", "description": "月份，格式 YYYY-MM，如 2026-06"},
+      "event": {"type": "string", "description": "要查询的事项，如 嫁娶、入宅、开业、出行"}
+    },
+    "required": ["month", "event"]
+  }
+}

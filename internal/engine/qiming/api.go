@@ -11,6 +11,6 @@
 // Functions
 //   PrepareWuGe(surname, yongShen, xiShen) → (WuGeData, error)
 //   ComposeNames(surname, combos, yongChars, xiChars) → []string
-//   DetailNames(surname, names) → []NameCandidate
+//   DetailNames(surname, names) → ([]NameCandidate, error)
 //   EvaluateName(surname, given, yong) → (Evaluation, error)
 package qiming

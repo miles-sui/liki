@@ -9,8 +9,8 @@ import (
 
 // --- Types ---
 
-// dayPillarInfo holds the stem-branch for a single day.
-type dayPillarInfo struct {
+// riZhuInfo holds the stem-branch for a single day.
+type riZhuInfo struct {
 	Gan   ganzhi.Gan    `json:"gan"`
 	Zhi   ganzhi.Zhi    `json:"zhi"`
 	NaYin string `json:"na_yin"`
@@ -49,18 +49,18 @@ func taiSui(year int) ganzhi.Zhi {
 	return ganzhi.Zhi(b)
 }
 
-// lookupDayPillar returns the stem-branch and na-yin for a given date.
-func lookupDayPillar(t time.Time) dayPillarInfo {
-	p := tianwen.DayPillar(t.Year(), int(t.Month()), t.Day())
-	return dayPillarInfo{Gan: p.Gan, Zhi: p.Zhi, NaYin: ganzhi.NaYinLabel(p.Gan, p.Zhi)}
+// lookupRiZhu returns the stem-branch and na-yin for a given date.
+func lookupRiZhu(t time.Time) riZhuInfo {
+	p := tianwen.RiZhu(tianwen.GregorianTime(t))
+	return riZhuInfo{Gan: p.Gan, Zhi: p.Zhi, NaYin: ganzhi.NaYinLabel(p.Gan, p.Zhi)}
 }
 
 // lookupJianChu returns the JianChu (建除) god for a given date.
 func lookupJianChu(t time.Time) string {
-	mp := monthPillarForDate(t)
+	mp := yueZhuForDate(t)
 	monthBranch := mp.Zhi
 
-	dp := tianwen.DayPillar(t.Year(), int(t.Month()), t.Day())
+	dp := tianwen.RiZhu(tianwen.GregorianTime(t))
 
 	jianIdx := int(monthBranch) - 1
 	dayIdx := int(dp.Zhi) - 1
@@ -115,8 +115,7 @@ func evaluateZhi(dayZhi, refZhi ganzhi.Zhi, label string) (relation string, mark
 	return "无", nil, nil
 }
 
-// monthPillarForDate returns the month pillar for a given date.
-func monthPillarForDate(t time.Time) ganzhi.Zhu {
-	yp := tianwen.YearPillar(t.Year(), int(t.Month()), t.Day())
-	return tianwen.MonthPillar(t, yp.Gan)
+// yueZhuForDate returns the month pillar for a given date.
+func yueZhuForDate(t time.Time) ganzhi.Zhu {
+	return tianwen.YueZhu(tianwen.GregorianTime(t))
 }

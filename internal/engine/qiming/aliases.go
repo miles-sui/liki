@@ -4,4 +4,4 @@ import "liki/internal/engine/ganzhi"
 
 type Wuxing = ganzhi.Wuxing
 
-func wuxingFromChinese(name string) Wuxing { return ganzhi.WuxingFromChinese(name) }
+func wuxingFromChinese(name string) Wuxing { wx, err := ganzhi.ParseWuxing(name); if err != nil { return 0 }; return wx }

@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"liki/internal/agent"
 )
 
 // openTestDBFile creates a file-based SQLite database for integration tests.

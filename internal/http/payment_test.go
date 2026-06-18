@@ -149,11 +149,11 @@ func TestHandlePaymentReturn_MissingStatus(t *testing.T) {
 	}
 }
 
-// -- redirectDownload --
+// -- redirectReport --
 
 func TestRedirectDownload_Valid(t *testing.T) {
-	h := redirectDownload()
-	r := httptest.NewRequest("GET", "/api/orders/order-1/download", nil)
+	h := redirectReport()
+	r := httptest.NewRequest("GET", "/api/orders/order-1/report", nil)
 	r.SetPathValue("id", "order-1")
 	w := httptest.NewRecorder()
 	h(w, r)
@@ -167,8 +167,8 @@ func TestRedirectDownload_Valid(t *testing.T) {
 }
 
 func TestRedirectDownload_MissingOrderID(t *testing.T) {
-	h := redirectDownload()
-	r := httptest.NewRequest("GET", "/api/orders//download", nil)
+	h := redirectReport()
+	r := httptest.NewRequest("GET", "/api/orders//report", nil)
 	r.SetPathValue("id", "")
 	w := httptest.NewRecorder()
 	h(w, r)
@@ -699,5 +699,57 @@ func TestHandleReport_PendingStatus(t *testing.T) {
 	}
 	if env.Data.LlmJSON != "" {
 		t.Errorf("pending order should not expose llm_json, got %q", env.Data.LlmJSON)
+	}
+}
+
+func TestEd3_Payment_ReturnNoStatus(t *testing.T) {
+	h := handlePaymentReturn()
+	r := httptest.NewRequest("GET", "/api/payments/return/order123", nil)
+	w := httptest.NewRecorder()
+	h(w, r)
+	// 无 status=succeeded → 重定向到 /
+	if w.Code != http.StatusFound {
+		t.Errorf("status=%d, want 302", w.Code)
+	}
+	loc := w.Header().Get("Location")
+	if loc != "/" {
+		t.Errorf("redirect location=%q, want /", loc)
+	}
+}
+
+func TestEd3_Payment_ReturnSucceeded(t *testing.T) {
+	h := handlePaymentReturn()
+	r := httptest.NewRequest("GET", "/api/payments/return/order123?status=succeeded", nil)
+	r.SetPathValue("id", "order123")
+	w := httptest.NewRecorder()
+	h(w, r)
+	if w.Code != http.StatusFound {
+		t.Errorf("status=%d, want 302", w.Code)
+	}
+	loc := w.Header().Get("Location")
+	if loc != "/report/order123" {
+		t.Errorf("redirect location=%q, want /report/order123", loc)
+	}
+}
+
+func TestEd3_Payment_ReturnEmptyID(t *testing.T) {
+	h := handlePaymentReturn()
+	r := httptest.NewRequest("GET", "/api/payments/return/?status=succeeded", nil)
+	w := httptest.NewRecorder()
+	h(w, r)
+	// 空 id + status=succeeded，redirect 到 /report/
+	if w.Code != http.StatusFound {
+		t.Errorf("status=%d, want 302", w.Code)
+	}
+}
+
+func TestEd3_Payment_RedirectReport_EmptyID(t *testing.T) {
+	h := redirectReport()
+	r := httptest.NewRequest("GET", "/api/orders//report", nil)
+	w := httptest.NewRecorder()
+	h(w, r)
+	// 空 id 应返回错误
+	if w.Code < 400 {
+		t.Errorf("status=%d, want >=400", w.Code)
 	}
 }

@@ -1,0 +1,23 @@
+{
+  "name": "compute_naming_compose",
+  "description": "根据五格组合和用字库生成候选名字列表。起名流程第二步，需先调用 compute_naming_wuge 获取 combos、yong_chars、xi_chars。",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "surname": {"type": "string", "description": "姓氏，1-2个汉字"},
+      "combos": {
+        "type": "array", "items": {"type": "object"},
+        "description": "五格笔画组合列表，从 compute_naming_wuge 返回的 data.combos 获取"
+      },
+      "yong_chars": {
+        "type": "object",
+        "description": "用神字库，按笔画数分组。从 compute_naming_wuge 返回的 data.yong_chars 中无需修改，直接传入 compute_naming_wuge 返回的对应字段"
+      },
+      "xi_chars": {
+        "type": "object",
+        "description": "喜神字库，按笔画数分组。从 compute_naming_wuge 返回的 data.xi_chars 中提取每个字的 char 字段"
+      }
+    },
+    "required": ["surname", "combos", "yong_chars", "xi_chars"]
+  }
+}

@@ -3,6 +3,8 @@ package tianwen
 import (
 	"math"
 	"time"
+
+	"liki/internal/engine/ganzhi"
 )
 
 var JieQiLongitudes = [24]float64{315,330,345,0,15,30,45,60,75,90,105,120,135,150,165,180,195,210,225,240,255,270,285,300}
@@ -13,13 +15,24 @@ var solarTermLongitudes = func() [12]float64 {
 	return a
 }()
 
-func SolarMonthIndex(t time.Time) int {
+// JianYue returns the solar-term month branch (建月) for a given date.
+// 寅=立春..丑=小寒.
+func JianYue(gt GregorianTime) ganzhi.Zhi {
+	t := gt.Time()
 	lon := solarLongitude(t)
 	for i := 0; i < 12; i++ {
 		cl, nl := solarTermLongitudes[i], solarTermLongitudes[(i+1)%12]
-		if cl <= nl { if lon >= cl && lon < nl { return i } } else { if lon >= cl || lon < nl { return i } }
+		if cl <= nl {
+			if lon >= cl && lon < nl {
+				return ganzhi.Zhi((i+2)%12 + 1)
+			}
+		} else {
+			if lon >= cl || lon < nl {
+				return ganzhi.Zhi((i+2)%12 + 1)
+			}
+		}
 	}
-	return 0
+	return ganzhi.ZhiYin
 }
 
 func julianDay(year, month, day int) int {
@@ -43,7 +56,12 @@ func solarLongitude(t time.Time) float64 {
 
 func SolarTermTime(year int, targetLon float64) time.Time {
 	ti := 0
-	for i, lon := range solarTermLongitudes { if math.Abs(lon-targetLon) < 0.01 { ti = i; break } }
+	for i, lon := range solarTermLongitudes {
+		if math.Abs(lon-targetLon) < 0.01 {
+			ti = i
+			break
+		}
+	}
 	t := time.Date(year, 1, 1, 12, 0, 0, 0, time.UTC).AddDate(0, 0, 35+ti*15)
 	for iter := 0; iter < 20; iter++ {
 		lon := solarLongitude(t)
@@ -53,6 +71,24 @@ func SolarTermTime(year int, targetLon float64) time.Time {
 		step := diff / 0.9856
 		if step > 15 { step = 15 } else if step < -15 { step = -15 }
 		t = t.Add(time.Duration(step*24*3600) * time.Second)
+	}
+
+	// For non-节 targets (ti=0), the initial guess at Feb 5 can cause
+	// backward convergence into the previous year (e.g. 处暑 150°, 秋分 180°).
+	// Advance one solar year and refine if we landed before the target year.
+	if t.Year() < year {
+		t = t.AddDate(0, 0, 365)
+		lon := solarLongitude(t)
+		diff := targetLon - lon
+		if diff > 180 {
+			diff -= 360
+		} else if diff < -180 {
+			diff += 360
+		}
+		step := diff / 0.9856
+		if step <= 15 && step >= -15 {
+			t = t.Add(time.Duration(step*24*3600) * time.Second)
+		}
 	}
 	return t
 }
@@ -66,7 +102,7 @@ func liChunDay(year int) (month, day int) { return solarTermDate(year, 315) }
 
 func SolarTermIndex(year, month, day int) int {
 	target := time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC)
-	terms := allSolarTerms(year)
+	terms := AllSolarTerms(year)
 	for i := 0; i < 24; i++ {
 		next := terms[(i+1)%24]
 		if next.Before(terms[i]) { next = next.AddDate(1, 0, 0) }
@@ -75,11 +111,13 @@ func SolarTermIndex(year, month, day int) int {
 	return 23
 }
 
-func allSolarTerms(year int) [24]time.Time {
+// AllSolarTerms returns all 24 solar term times for the given year, ordered
+// from冬至(0) through大雪(23).
+func AllSolarTerms(year int) [24]time.Time {
 	var terms [24]time.Time
 	terms[0] = SolarTermTime(year-1, JieQiLongitudes[21])
 	terms[1] = SolarTermTime(year-1, JieQiLongitudes[22])
-	terms[2] = SolarTermTime(year-1, JieQiLongitudes[23])
+	terms[2] = SolarTermTime(year, JieQiLongitudes[23])
 	for i := 3; i < 12; i++ { terms[i] = SolarTermTime(year, JieQiLongitudes[i-3]) }
 	for i := 12; i < 24; i++ { terms[i] = SolarTermTime(year, JieQiLongitudes[i-3]) }
 	return terms

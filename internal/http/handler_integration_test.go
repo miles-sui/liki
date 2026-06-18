@@ -287,8 +287,8 @@ func TestPaymentReturn_Failed_Integration(t *testing.T) {
 // ── Download redirect ──
 
 func TestDownloadRedirect_Integration(t *testing.T) {
-	handler := redirectDownload()
-	req := httptest.NewRequest("GET", "/api/orders/dl-1/download", nil)
+	handler := redirectReport()
+	req := httptest.NewRequest("GET", "/api/orders/dl-1/report", nil)
 	req.SetPathValue("id", "dl-1")
 	w := httptest.NewRecorder()
 	handler(w, req)

@@ -35,6 +35,8 @@ type emailClient interface {
 	SendReport(ctx context.Context, to, subject, htmlBody string) error
 }
 
+// Service handles the full payment lifecycle: checkout creation, webhook processing,
+// background report generation, and report retrieval.
 type Service struct {
 	Dodo        dodoClient
 	Email       emailClient
@@ -49,6 +51,7 @@ type Service struct {
 	generating   map[string]struct{}
 }
 
+// NewService creates a payment service with the given dependencies.
 func NewService(dodo dodoClient, email emailClient, store *Store, productIDs map[agent.Product]string, returnURL, adminEmail string, reportAgent ReportGenerator, bgCtx context.Context) *Service {
 	return &Service{
 		Dodo:        dodo,
@@ -63,6 +66,7 @@ func NewService(dodo dodoClient, email emailClient, store *Store, productIDs map
 	}
 }
 
+// CreateCheckout creates a Dodo Payments checkout session for an existing order.
 func (s *Service) CreateCheckout(ctx context.Context, orderID, userEmail string) (*dodo.CheckoutResult, error) {
 	order, err := s.Store.GetOrder(ctx, orderID)
 	if err != nil {
@@ -88,6 +92,7 @@ func (s *Service) CreateCheckout(ctx context.Context, orderID, userEmail string)
 	return result, nil
 }
 
+// HandleWebhook processes a Dodo Payments webhook event and triggers report generation.
 func (s *Service) HandleWebhook(ctx context.Context, body []byte, headers http.Header) error {
 	event, err := s.Dodo.VerifyWebhook(body, headers)
 	if err != nil {
@@ -95,11 +100,19 @@ func (s *Service) HandleWebhook(ctx context.Context, body []byte, headers http.H
 	}
 
 	if event.Type != "payment.succeeded" {
-		slog.Info("payment: non-payment webhook event", "type", event.Type)
+		level := slog.Info
+		if event.Type == "payment.refunded" || event.Type == "payment.disputed" {
+			level = slog.Error
+		}
+		level("payment: non-payment webhook event", "type", event.Type, "order_id", event.Data.OrderID)
 		return nil
 	}
 
 	orderID := event.Data.OrderID
+	if orderID == "" {
+		slog.Error("payment: webhook with empty order_id", "payment_id", event.Data.PaymentID)
+		return fmt.Errorf("payment: empty order_id in webhook event")
+	}
 	newPayment, email, product, chartJSON, err := s.Store.MarkPaidIdempotent(ctx, orderID, event.Data.PaymentID)
 	if err != nil {
 		return fmt.Errorf("payment: mark paid: %w", err)
@@ -139,6 +152,7 @@ func (s *Service) HandleWebhook(ctx context.Context, body []byte, headers http.H
 }
 
 // StartReportGeneration starts background LLM report generation if not already in progress.
+// StartReportGeneration starts background LLM report generation if not already in progress.
 func (s *Service) StartReportGeneration(orderID string, product agent.Product, chartJSON string) {
 	s.generatingMu.Lock()
 	if _, ok := s.generating[orderID]; ok {
@@ -168,7 +182,9 @@ func (s *Service) generateFullReport(orderID string, product agent.Product, char
 
 	order, err := s.Store.GetOrder(ctx, orderID)
 	var locale string
-	if err == nil {
+	if err != nil {
+		slog.Error("payment: get order for report generation", "orderID", orderID, "err", err)
+	} else {
 		locale = order.Locale
 	}
 	if locale == "" {
@@ -188,6 +204,7 @@ func (s *Service) generateFullReport(orderID string, product agent.Product, char
 	}
 }
 
+// ReportData holds the full report data for a paid order.
 type ReportData struct {
 	OrderID   string         `json:"order_id"`
 	Product   agent.Product `json:"product"`
@@ -198,6 +215,7 @@ type ReportData struct {
 }
 
 // OrderStatus returns the status and product of an order.
+// OrderStatus returns the payment status and product type of an order.
 func (s *Service) OrderStatus(ctx context.Context, orderID string) (status OrderStatus, product agent.Product, err error) {
 	order, err := s.Store.GetOrder(ctx, orderID)
 	if err != nil {
@@ -208,6 +226,7 @@ func (s *Service) OrderStatus(ctx context.Context, orderID string) (status Order
 
 // RetryReportGeneration checks order status and triggers LLM report generation
 // if the order is paid but has no cached llm_json (missed webhook recovery).
+// RetryReportGeneration triggers report generation for paid orders missing their LLM report.
 func (s *Service) RetryReportGeneration(ctx context.Context, orderID string) (OrderStatus, agent.Product, string, error) {
 	order, err := s.Store.GetOrder(ctx, orderID)
 	if err != nil {
@@ -219,6 +238,7 @@ func (s *Service) RetryReportGeneration(ctx context.Context, orderID string) (Or
 	return order.Status, order.Product, order.LlmJSON, nil
 }
 
+// GetReport returns the full report data for an order.
 func (s *Service) GetReport(ctx context.Context, orderID string) (*ReportData, error) {
 	order, err := s.Store.GetOrder(ctx, orderID)
 	if err != nil {

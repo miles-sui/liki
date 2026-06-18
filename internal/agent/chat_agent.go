@@ -177,6 +177,8 @@ func (a *ChatAgent) handlePurchase(ctx context.Context, tc llm.ToolCall, msgs []
 			if err != nil {
 				return nil, fmt.Errorf("agent: purchase: marshal chart+qa: %w", err)
 			}
+		} else {
+			slog.Warn("agent: purchase: chart JSON is not an object, QA not embedded", "err", err)
 		}
 	}
 
@@ -204,6 +206,9 @@ func (a *ChatAgent) handlePurchase(ctx context.Context, tc llm.ToolCall, msgs []
 }
 
 func (a *ChatAgent) ensureSystemPrompt(locale string, messages []llm.Message) []llm.Message {
+	if len(messages) > 0 && messages[0].Role == llm.RoleSystem {
+		return messages
+	}
 	return append([]llm.Message{{Role: llm.RoleSystem, Content: a.systemPrompt(locale)}}, messages...)
 }
 

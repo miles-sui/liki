@@ -1,5 +1,11 @@
 package ziwei
 
+import (
+	"time"
+
+	"liki/internal/engine/tianwen"
+)
+
 // LiuYue holds monthly fate analysis.
 type LiuYue struct {
 	MingGong     palaceIndex `json:"ming_gong"`
@@ -39,7 +45,7 @@ func ComputeLiuRi(liuYear, lunarMonth, lunarDay int, chart Chart) LiuRi {
 	liuNianMing := liuNianMingGong(liuYear, chart.BirthYear)
 	liuYueMing := liuYueMingGong(lunarMonth, liuNianMing)
 	ming := liuRiMingGong(lunarDay, liuYueMing)
-	dayGan := riGan(lunarDay, liuYear, lunarMonth)
+	dayGan := riGan(liuYear, lunarMonth, lunarDay)
 	return LiuRi{
 		MingGong:     ming,
 		MingGongName: PalaceNames[ming],
@@ -51,6 +57,22 @@ func liuRiMingGong(lunarDay int, liuYueMing palaceIndex) palaceIndex {
 	return (liuYueMing + palaceIndex(lunarDay-1)) % 12
 }
 
-func yearGan(year int) Gan { ys := (year - 4) % 60; return Gan((ys+9)%10 + 1) }
-func riGan(day, year, month int) Gan { return Gan(day) } // TODO: placeholder
+func yearGan(year int) Gan { return Gan(((year-4)%10+10)%10 + 1) }
+
+// riGan computes the day stem for a given lunar date within a Gregorian year.
+// It converts lunar→solar first, then uses the day-pillar formula.
+func riGan(liuYear, lunarMonth, lunarDay int) Gan {
+	// Try liuYear as the lunar year; fall back to liuYear-1 for months
+	// before Chinese New Year (when the lunar year hasn't caught up).
+	sy, sm, sd := tianwen.LunarToSolar(liuYear, lunarMonth, lunarDay, false)
+	if sy == 0 {
+		sy, sm, sd = tianwen.LunarToSolar(liuYear-1, lunarMonth, lunarDay, false)
+	}
+	if sy == 0 {
+		return 1 // fallback
+	}
+	dp := tianwen.RiZhu(tianwen.GregorianTime(time.Date(sy, time.Month(sm), sd, 0, 0, 0, 0, time.UTC)))
+	return dp.Gan
+}
+
 func liuRiSiHua(dayGan Gan) siHuaResult { return computeSiHua(dayGan) }

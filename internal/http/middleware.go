@@ -17,6 +17,7 @@ var devMode bool
 // SetDevMode enables localhost CORS origins for development.
 func SetDevMode(v bool) { devMode = v }
 
+// CORSMiddleware adds permissive CORS headers for allowed origins and handles OPTIONS preflight.
 func CORSMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		origin := r.Header.Get("Origin")
@@ -40,6 +41,7 @@ func CORSMiddleware(next http.Handler) http.Handler {
 	})
 }
 
+// SecurityHeaders adds X-Content-Type-Options: nosniff and X-Frame-Options: DENY.
 func SecurityHeaders(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// CSP is managed by Caddy for static assets; API responses are JSON only.
@@ -49,6 +51,7 @@ func SecurityHeaders(next http.Handler) http.Handler {
 	})
 }
 
+// BodyLimit limits request body size to 1 MB.
 func BodyLimit(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		r.Body = http.MaxBytesReader(w, r.Body, 1<<20) // 1 MB

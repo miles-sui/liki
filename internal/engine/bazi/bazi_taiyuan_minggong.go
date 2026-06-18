@@ -12,13 +12,13 @@ type TaiYuanMingGong struct {
 }
 
 // computeTaiYuanMingGong computes the 三垣 (three palaces): 胎元, 命宫, 身宫.
-func computeTaiYuanMingGong(monthPillar ganzhi.Zhu, yearStem ganzhi.Gan, birthMonth, birthHour int) TaiYuanMingGong {
+func computeTaiYuanMingGong(monthZhu ganzhi.Zhu, yearStem ganzhi.Gan, birthMonth, birthHour int) TaiYuanMingGong {
 	// 胎元: month stem+1 (mod 10), month branch+3 (mod 12)
-	tyStem := int(monthPillar.Gan) + 1
+	tyStem := int(monthZhu.Gan) + 1
 	if tyStem > 10 {
 		tyStem -= 10
 	}
-	tyBranch := int(monthPillar.Zhi) + 3
+	tyBranch := int(monthZhu.Zhi) + 3
 	if tyBranch > 12 {
 		tyBranch -= 12
 	}

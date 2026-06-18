@@ -80,10 +80,10 @@ func starName(s starIndex) string { return starNames[s] }
 type juShu int
 
 const (
-	JuWater juShu = 2
+	JuWater  juShu = 2 // 水二局
 	JuWood  juShu = 3
-	JuMetal juShu = 4
-	JuEarth juShu = 5
+	JuMetal  juShu = 4 // 金四局
+	JuEarth  juShu = 5 // 土五局
 	JuFire  juShu = 6
 )
 
@@ -178,6 +178,6 @@ type LiuNian struct {
 	MingGongName string                   `json:"ming_gong_name"`
 	SiHua        siHuaResult              `json:"si_hua"`
 	SiHuaPalace  map[starIndex]palaceIndex `json:"si_hua_palace"` // where each s化 star falls
-	MinorStars   map[starIndex]palaceIndex `json:"minor_stars"`
+	MinorStars   map[starIndex]int         `json:"minor_stars"` // zhi-1 values; convert via zhiToPalace
 }
 

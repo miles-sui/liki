@@ -26,17 +26,6 @@ func respondJSON(w http.ResponseWriter, status int, data any) {
 	}
 }
 
-func respondList(w http.ResponseWriter, items any, total int) {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(envelope{Data: map[string]any{
-		"items": items,
-		"total": total,
-	}}); err != nil {
-		slog.Warn("respondList encode", "err", err)
-	}
-}
-
 func respondError(w http.ResponseWriter, status int, code, message string) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(status)

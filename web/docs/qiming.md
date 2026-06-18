@@ -2,6 +2,8 @@
 
 Base: `POST /api/qiming/*`
 
+All responses wrapped in `{"data":{...}}`.
+
 ## WuGe
 
 `POST /api/qiming/wuge` — Enumerate auspicious stroke combinations and character candidates for a surname.
@@ -9,10 +11,8 @@ Base: `POST /api/qiming/*`
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | surname | string | yes | Surname, 1-2 Chinese characters |
-| yong_shen | string | yes | YongShen element (木/火/土/金/水) |
+| yong_shen | string | yes | YongShen element: 木/火/土/金/水 |
 | xi_shen | [string] | no | XiShen element array |
-
-Returns: `{surname, combos, yong_chars, xi_chars}`.
 
 ```bash
 curl -s -X POST https://liki.hk/api/qiming/wuge \
@@ -27,11 +27,11 @@ curl -s -X POST https://liki.hk/api/qiming/wuge \
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | surname | string | yes | Surname |
-| combos | [object] | yes | Stroke combos from wuge |
+| combos | [object] | yes | Stroke combos from wuge: `[{stroke1, stroke2}]` |
 | yong_chars | object | yes | Yong-shen chars `{stroke: [char]}` |
 | xi_chars | object | yes | Xi-shen chars `{stroke: [char]}` |
 
-Returns: `["李沐洪", "李沐涛", ...]`.
+Returns a string array of name candidates.
 
 ```bash
 curl -s -X POST https://liki.hk/api/qiming/compose \
@@ -48,7 +48,7 @@ curl -s -X POST https://liki.hk/api/qiming/compose \
 | surname | string | yes | Surname |
 | names | [string] | yes | Given names to query, 1-50 |
 
-Returns: `{results: [{name, characters, wu_ge, san_cai, phonetic}]}`.
+Returns an array of NameCandidate objects.
 
 ```bash
 curl -s -X POST https://liki.hk/api/qiming/detail \
@@ -64,7 +64,7 @@ curl -s -X POST https://liki.hk/api/qiming/detail \
 |-----------|------|----------|-------------|
 | surname | string | yes | Surname, 1-2 Chinese characters |
 | given_name | string | yes | Given name, 1-2 Chinese characters |
-| yong_shen | string | yes | YongShen element |
+| yong_shen | string | yes | YongShen element: 木/火/土/金/水 |
 
 ```bash
 curl -s -X POST https://liki.hk/api/qiming/evaluate \
