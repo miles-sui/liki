@@ -4,7 +4,7 @@
 
 ## 接口
 
-OpenAPI: /openapi.json
+OpenAPI: /api/openapi.json
 产品说明: /skills/liki.md
 
 ## 产品
