@@ -8,12 +8,12 @@ var OpenAPIJSON []byte
 //go:embed data/prompts/chat.txt
 var ChatPrompt string
 
-//go:embed data/prompts/chart-report.txt
+//go:embed web/skills/report-chart.md
 var ChartReportPrompt string
 
-//go:embed data/prompts/bond-report.txt
+//go:embed web/skills/report-bond.md
 var BondReportPrompt string
 
-//go:embed data/prompts/naming-report.txt
+//go:embed web/skills/report-naming.md
 var NamingReportPrompt string
 
