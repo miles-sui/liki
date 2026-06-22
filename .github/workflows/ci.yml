@@ -48,6 +48,12 @@ jobs:
     needs: go-check
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26'
+          cache: true
+      - name: Build binary
+        run: CGO_ENABLED=0 go build -o bin/lingji ./cmd/lingji/
       - uses: docker/setup-buildx-action@v3
       - name: Build Docker image
         run: docker build -f deploy/lingji/Dockerfile -t lingji:ci .
