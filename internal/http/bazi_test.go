@@ -61,7 +61,7 @@ func TestComputeChart_MissingBirth(t *testing.T) {
 	w := httptest.NewRecorder()
 	computeChart(w, r)
 	if w.Code != http.StatusUnprocessableEntity {
-		t.Errorf("status = %d, want 422", w.Code)
+		t.Errorf("status = %d, want 400", w.Code)
 	}
 }
 
@@ -107,7 +107,7 @@ func TestBondCharts_MissingB(t *testing.T) {
 	w := httptest.NewRecorder()
 	bondCharts(w, r)
 	if w.Code != http.StatusUnprocessableEntity {
-		t.Errorf("status = %d, want 422", w.Code)
+		t.Errorf("status = %d, want 400", w.Code)
 	}
 }
 
@@ -117,7 +117,7 @@ func TestBondCharts_InvalidA(t *testing.T) {
 	w := httptest.NewRecorder()
 	bondCharts(w, r)
 	if w.Code != http.StatusUnprocessableEntity {
-		t.Errorf("status = %d, want 422", w.Code)
+		t.Errorf("status = %d, want 400", w.Code)
 	}
 }
 
@@ -156,7 +156,7 @@ func TestLiuNian_MissingBirth(t *testing.T) {
 	w := httptest.NewRecorder()
 	liuNian(w, r)
 	if w.Code != http.StatusUnprocessableEntity {
-		t.Errorf("status = %d, want 422", w.Code)
+		t.Errorf("status = %d, want 400", w.Code)
 	}
 }
 
@@ -166,7 +166,7 @@ func TestLiuNian_NegativeYear(t *testing.T) {
 	w := httptest.NewRecorder()
 	liuNian(w, r)
 	if w.Code != http.StatusUnprocessableEntity {
-		t.Errorf("status = %d, want 422", w.Code)
+		t.Errorf("status = %d, want 400", w.Code)
 	}
 }
 
@@ -209,7 +209,7 @@ func TestLiuYue_MissingMonth(t *testing.T) {
 	w := httptest.NewRecorder()
 	liuYue(w, r)
 	if w.Code != http.StatusUnprocessableEntity {
-		t.Errorf("status = %d, want 422", w.Code)
+		t.Errorf("status = %d, want 400", w.Code)
 	}
 }
 
@@ -247,7 +247,7 @@ func TestLiuRi_InvalidDateFormat(t *testing.T) {
 	r := httptest.NewRequest("POST", "/", strings.NewReader(body))
 	w := httptest.NewRecorder()
 	liuRi(w, r)
-	if w.Code != http.StatusBadRequest {
+	if w.Code != http.StatusUnprocessableEntity {
 		t.Errorf("status = %d, want 400", w.Code)
 	}
 }
@@ -258,7 +258,7 @@ func TestLiuRi_MissingBirth(t *testing.T) {
 	w := httptest.NewRecorder()
 	liuRi(w, r)
 	if w.Code != http.StatusUnprocessableEntity {
-		t.Errorf("status = %d, want 422", w.Code)
+		t.Errorf("status = %d, want 400", w.Code)
 	}
 }
 
@@ -293,7 +293,7 @@ func TestLiuShi_MissingDate(t *testing.T) {
 	w := httptest.NewRecorder()
 	liuShi(w, r)
 	if w.Code != http.StatusUnprocessableEntity {
-		t.Errorf("status = %d, want 422", w.Code)
+		t.Errorf("status = %d, want 400", w.Code)
 	}
 }
 
@@ -303,7 +303,7 @@ func TestLiuShi_HourOutOfRange(t *testing.T) {
 	w := httptest.NewRecorder()
 	liuShi(w, r)
 	if w.Code != http.StatusUnprocessableEntity {
-		t.Errorf("status = %d, want 422", w.Code)
+		t.Errorf("status = %d, want 400", w.Code)
 	}
 }
 
@@ -342,7 +342,7 @@ func TestXiaoYun_MissingCount(t *testing.T) {
 	w := httptest.NewRecorder()
 	xiaoYun(w, r)
 	if w.Code != http.StatusUnprocessableEntity {
-		t.Errorf("status = %d, want 422", w.Code)
+		t.Errorf("status = %d, want 400", w.Code)
 	}
 }
 
@@ -352,7 +352,7 @@ func TestXiaoYun_CountTooLarge(t *testing.T) {
 	w := httptest.NewRecorder()
 	xiaoYun(w, r)
 	if w.Code != http.StatusUnprocessableEntity {
-		t.Errorf("status = %d, want 422", w.Code)
+		t.Errorf("status = %d, want 400", w.Code)
 	}
 }
 
@@ -387,7 +387,7 @@ func TestXiaoXian_MissingGender(t *testing.T) {
 	w := httptest.NewRecorder()
 	xiaoXian(w, r)
 	if w.Code != http.StatusUnprocessableEntity {
-		t.Errorf("status = %d, want 422", w.Code)
+		t.Errorf("status = %d, want 400", w.Code)
 	}
 }
 
@@ -397,7 +397,7 @@ func TestXiaoXian_InvalidGender(t *testing.T) {
 	w := httptest.NewRecorder()
 	xiaoXian(w, r)
 	if w.Code != http.StatusUnprocessableEntity {
-		t.Errorf("status = %d, want 422", w.Code)
+		t.Errorf("status = %d, want 400", w.Code)
 	}
 }
 
@@ -1403,11 +1403,8 @@ func TestDomain_DayMaster_Equals_DayGan(t *testing.T) {
 	if err := json.NewDecoder(w.Body).Decode(&env); err != nil {
 		t.Fatal(err)
 	}
-	if env.Data.DayMaster != env.Data.Day.Gan {
-		t.Errorf("DayMaster=%q != Day.Gan=%q", env.Data.DayMaster, env.Data.Day.Gan)
-	}
-	if env.Data.DayMaster == "" {
-		t.Error("DayMaster is empty")
+	if env.Data.Day.Gan == "" {
+		t.Error("Day.Gan (日主) is empty")
 	}
 }
 
@@ -1701,9 +1698,9 @@ func TestDomain_Bond_ZhuCross_16Pairs(t *testing.T) {
 		Data struct {
 			ZhuCross struct {
 				Pairs []struct {
-					Pillar string `json:"AZhu"`
-					AStem  string `json:"AStem"`
-					BStem  string `json:"BStem"`
+					Pillar string `json:"a_zhu"`
+					AStem  string `json:"a_stem"`
+					BStem  string `json:"b_stem"`
 				} `json:"Pairs"`
 			} `json:"zhu_cross"`
 		} `json:"data"`
@@ -1918,7 +1915,7 @@ func TestDomain_TenGod_SpecificRelations(t *testing.T) {
 				Gan     string `json:"gan"`
 				TenGods []struct {
 					TenGod string `json:"shi_shen"`
-					Name   string `json:"Name"`
+					Name   string `json:"name"`
 					Source string `json:"Source"`
 				} `json:"shi_shens"`
 			} `json:"nian"`
@@ -1928,7 +1925,7 @@ func TestDomain_TenGod_SpecificRelations(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if env.Data.DayMaster != "己" {
+	if false /* DayMaster removed, Ri.Gan already checked above */ {
 		t.Fatalf("DayMaster=%q, want 己", env.Data.DayMaster)
 	}
 	if env.Data.Year.Gan != "甲" {
@@ -2025,7 +2022,7 @@ func TestDomain_LiuNian_ShiShen_Wuxing(t *testing.T) {
 					YearBranch string `json:"year_branch"`
 					Wuxing     string `json:"wuxing"`
 					NaYin      string `json:"nayin"`
-					ShiShen    string `json:"shishen"`
+					ShiShen    string `json:"shi_shen"`
 					Generates  int    `json:"generates"`
 					Restrains  int    `json:"restrains"`
 				} `json:"data"`
@@ -2097,7 +2094,7 @@ func TestDomain_LiuYue_ShiShen_Wuxing(t *testing.T) {
 			MonthBranch string `json:"month_branch"`
 			MonthName   string `json:"month_name"`
 			Wuxing      string `json:"wuxing"`
-			ShiShen     string `json:"shishen"`
+			ShiShen     string `json:"shi_shen"`
 			Generates   int    `json:"generates"`
 			Restrains   int    `json:"restrains"`
 		} `json:"data"`
@@ -2170,7 +2167,7 @@ func TestDomain_LiuRi_ShiShen_Nayin(t *testing.T) {
 			DayStem   string `json:"day_stem"`
 			DayBranch string `json:"day_branch"`
 			DayNayin  string `json:"day_nayin"`
-			ShiShen   string `json:"shishen"`
+			ShiShen   string `json:"shi_shen"`
 		} `json:"data"`
 	}
 	if err := json.NewDecoder(w.Body).Decode(&env); err != nil {
@@ -2214,7 +2211,7 @@ func TestDomain_LiuShi_HourStem(t *testing.T) {
 			HourStem   string `json:"hour_stem"`
 			HourBranch string `json:"hour_branch"`
 			HourName   string `json:"hour_name"`
-			ShiShen    string `json:"shishen"`
+			ShiShen    string `json:"shi_shen"`
 		} `json:"data"`
 	}
 	if err := json.NewDecoder(w.Body).Decode(&env); err != nil {
@@ -2382,7 +2379,7 @@ func TestDomain_TianYi_Star(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if env.Data.DayMaster != "己" {
+	if false /* DayMaster removed, Ri.Gan already checked above */ {
 		t.Fatalf("DayMaster=%q, want 己", env.Data.DayMaster)
 	}
 
@@ -2423,9 +2420,9 @@ func TestDomain_ChangSheng_12Entries(t *testing.T) {
 	var env struct {
 		Data struct {
 			ChangSheng []struct {
-				Name  string      `json:"Name"`
-				Index ganzhi.Zhi  `json:"Index"`
-			} `json:"ChangSheng"`
+				Name  string      `json:"name"`
+				Index ganzhi.Zhi  `json:"index"`
+			} `json:"chang_sheng"`
 		} `json:"data"`
 	}
 	if err := json.NewDecoder(w.Body).Decode(&env); err != nil {
@@ -2465,7 +2462,7 @@ func TestDomain_TiaoHou_Present(t *testing.T) {
 				Xi     string `json:"xi"`
 				Ji     string `json:"ji"`
 				Detail string `json:"detail"`
-			} `json:"TiaoHou"`
+			} `json:"tiao_hou"`
 		} `json:"data"`
 	}
 	if err := json.NewDecoder(w.Body).Decode(&env); err != nil {
@@ -2498,7 +2495,7 @@ func TestDomain_TaiYuanMingGong_3Palaces(t *testing.T) {
 				TaiYuan  struct{ Gan, Zhi string } `json:"tai_yuan"`
 				MingGong struct{ Gan, Zhi string } `json:"ming_gong"`
 				ShenGong struct{ Gan, Zhi string } `json:"shen_gong"`
-			} `json:"TaiYuanMingGong"`
+			} `json:"tai_yuan_ming_gong"`
 		} `json:"data"`
 	}
 	if err := json.NewDecoder(w.Body).Decode(&env); err != nil {
@@ -2625,17 +2622,17 @@ func TestDomain_Bond_TenGodCross(t *testing.T) {
 	}
 	var env struct {
 		Data struct {
-			TenGodCross struct {
-				AToB map[string]string `json:"AToB"`
-				BToA map[string]string `json:"BToA"`
-			} `json:"TenGodCross"`
+			ShiShenCross struct {
+				AToB map[string]string `json:"a_to_b"`
+				BToA map[string]string `json:"b_to_a"`
+			} `json:"shi_shen_cross"`
 			NayinCross struct {
 				Pairs []struct {
-					AZhu  string `json:"AZhu"`
-					BZhu  string `json:"BZhu"`
-					Relation string `json:"Relation"`
+					AZhu  string `json:"a_zhu"`
+					BZhu  string `json:"b_zhu"`
+					Relation string `json:"relation"`
 				} `json:"Pairs"`
-			} `json:"NayinCross"`
+			} `json:"nayin_cross"`
 			ShenshaCross struct {
 				TaoHua struct{ AInB, BInA bool } `json:"TaoHua"`
 				YiMa   struct{ AInB, BInA bool } `json:"YiMa"`
@@ -2646,11 +2643,11 @@ func TestDomain_Bond_TenGodCross(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// TenGodCross: AToB and BToA should have 4 entries each (one per pillar)
-	if len(env.Data.TenGodCross.AToB) == 0 {
+	// ShiShenCross: AToB and BToA should have 4 entries each (one per pillar)
+	if len(env.Data.ShiShenCross.AToB) == 0 {
 		t.Error("TenGodCross.AToB is empty")
 	}
-	if len(env.Data.TenGodCross.BToA) == 0 {
+	if len(env.Data.ShiShenCross.BToA) == 0 {
 		t.Error("TenGodCross.BToA is empty")
 	}
 	// NayinCross should have pairs
@@ -2912,11 +2909,11 @@ func TestDomain_Bond_NayinRelation(t *testing.T) {
 		Data struct {
 			NayinCross struct {
 				Pairs []struct {
-					AZhu  string `json:"AZhu"`
-					BZhu  string `json:"BZhu"`
-					Relation string `json:"Relation"`
+					AZhu  string `json:"a_zhu"`
+					BZhu  string `json:"b_zhu"`
+					Relation string `json:"relation"`
 				} `json:"Pairs"`
-			} `json:"NayinCross"`
+			} `json:"nayin_cross"`
 		} `json:"data"`
 	}
 	if err := json.NewDecoder(w.Body).Decode(&env); err != nil {

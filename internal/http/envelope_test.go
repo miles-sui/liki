@@ -509,6 +509,7 @@ func TestEdge_Boundary_MonthEdges(t *testing.T) {
 		body, err := json.Marshal(map[string]any{
 			"year":  2025,
 			"month": m,
+			"gender": "male",
 			"birth": map[string]any{"time": "1984-02-15T08:00:00+08:00", "longitude": 116.4},
 		})
 		if err != nil {
