@@ -110,10 +110,4 @@ func timesetOrRespond(w http.ResponseWriter, tp timePoint) (tianwen.Timeset, boo
 	return ts, true
 }
 
-func validateNonZeroGregorianTime(value any) error {
-	if gt, ok := value.(tianwen.GregorianTime); ok && gt.Time().IsZero() {
-		return errors.New("required")
-	}
-	return nil
-}
 

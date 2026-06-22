@@ -989,7 +989,9 @@ func TestOpenApiParams_ComputeLiuRi(t *testing.T) {
 	}
 
 	var schema map[string]any
-	json.Unmarshal(params, &schema)
+	if err := json.Unmarshal(params, &schema); err != nil {
+		t.Fatal(err)
+	}
 
 	props := schema["properties"].(map[string]any)
 	keys := []string{"year", "month", "day", "birth", "gender"}

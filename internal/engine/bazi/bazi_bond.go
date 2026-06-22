@@ -152,25 +152,7 @@ func computeNayinCross(a, b ChartBase) nayinCross {
 	return nc
 }
 
-func countNayinElems(wc map[ganzhi.Wuxing]int) map[string]int {
-	m := make(map[string]int, 5)
-	for e, c := range wc {
-		m[e.String()] = c
-	}
-	return m
-}
 
-func makeyongShenEntry(yong, ji string, wc map[ganzhi.Wuxing]int) yongShenEntry {
-	ys, err := ganzhi.ParseWuxing(yong)
-	if err != nil {
-		ys = 0
-	}
-	js, err := ganzhi.ParseWuxing(ji)
-	if err != nil {
-		js = 0
-	}
-	return yongShenEntry{Yong: yong, Ji: ji, YongInOther: wc[ys], JiInOther: wc[js]}
-}
 
 func computeShenshaCross(a, b ChartBase) shenshaCross {
 	aBz, bBz := a.ToBazi(), b.ToBazi()

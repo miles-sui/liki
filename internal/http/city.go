@@ -67,8 +67,12 @@ func geocodeNominatim(ctx context.Context, query string) (cityCoordsResult, erro
 
 	r := results[0]
 	var lon, lat float64
-	json.Unmarshal([]byte(r.Lon), &lon)
-	json.Unmarshal([]byte(r.Lat), &lat)
+	if err := json.Unmarshal([]byte(r.Lon), &lon); err != nil {
+		return cityCoordsResult{}, fmt.Errorf("queryCity: invalid lon: %w", err)
+	}
+	if err := json.Unmarshal([]byte(r.Lat), &lat); err != nil {
+		return cityCoordsResult{}, fmt.Errorf("queryCity: invalid lat: %w", err)
+	}
 	return cityCoordsResult{
 		Name:      r.Name,
 		Longitude: lon,

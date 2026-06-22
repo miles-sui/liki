@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"time"
 
-	"liki/internal/engine/bazi"
 	"liki/internal/engine/ganzhi"
 	"liki/internal/engine/tianwen"
 	doc "liki"
@@ -52,7 +51,9 @@ func openapiParams(tool string) json.RawMessage {
 				required := []string{}
 				for _, p := range op.Parameters {
 					var ps map[string]any
-					json.Unmarshal(p.Schema, &ps)
+					if err := json.Unmarshal(p.Schema, &ps); err != nil {
+						panic("openapiParams: invalid param schema for " + p.Name + ": " + err.Error())
+					}
 					props[p.Name] = ps
 					if p.Required {
 						required = append(required, p.Name)
@@ -63,7 +64,10 @@ func openapiParams(tool string) json.RawMessage {
 					"properties": props,
 					"required":   required,
 				}
-				b, _ := json.Marshal(schema)
+				b, err := json.Marshal(schema)
+				if err != nil {
+					panic("openapiParams: marshal schema: " + err.Error())
+				}
 				return json.RawMessage(b)
 			}
 			return nil
@@ -196,37 +200,4 @@ func wrapResult(product string, data any) (json.RawMessage, error) {
 		Data    any    `json:"data"`
 	}{Product: product, Data: data})
 }
-func parseDaYunZhu(raw json.RawMessage) *bazi.DaYunZhu {
-	if len(raw) == 0 || string(raw) == "null" {
-		return nil
-	}
-	var di struct {
-		CurrentZhuIndex int `json:"CurrentZhuIndex"`
-		Zhu            []struct {
-			Gan int `json:"Gan"`
-			Zhi int `json:"Zhi"`
-		} `json:"Zhu"`
-	}
-	if err := json.Unmarshal(raw, &di); err != nil {
-		return nil
-	}
-	if di.CurrentZhuIndex < 0 || di.CurrentZhuIndex >= len(di.Zhu) {
-		return nil
-	}
-	dp := di.Zhu[di.CurrentZhuIndex]
-	return &bazi.DaYunZhu{Gan: ganzhi.Gan(dp.Gan), Zhi: ganzhi.Zhi(dp.Zhi)}
-}
 
-func parseZhu(raw json.RawMessage) *ganzhi.Zhu {
-	if len(raw) == 0 || string(raw) == "null" {
-		return nil
-	}
-	var z struct {
-		Gan int `json:"Gan"`
-		Zhi int `json:"Zhi"`
-	}
-	if err := json.Unmarshal(raw, &z); err != nil {
-		return nil
-	}
-	return &ganzhi.Zhu{Gan: ganzhi.Gan(z.Gan), Zhi: ganzhi.Zhi(z.Zhi)}
-}

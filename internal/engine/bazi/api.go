@@ -22,6 +22,8 @@
 package bazi
 
 import (
+	"fmt"
+
 	"liki/internal/engine/ganzhi"
 	"liki/internal/engine/tianwen"
 )
@@ -49,7 +51,10 @@ func ComputeLiuRi(cb ChartBase, year, month, day int) (*LiuRi, error) {
 	if dz != nil {
 		dzZhu = &ganzhi.Zhu{Gan: dz.Gan, Zhi: dz.Zhi}
 	}
-	ln, _ := ComputeLiuNian(cb, year)
+	ln, err := ComputeLiuNian(cb, year)
+	if err != nil {
+		return nil, fmt.Errorf("computeLiuRi: liunian: %w", err)
+	}
 	var lnZhu *ganzhi.Zhu
 	if ln != nil {
 		lnZhu = &ganzhi.Zhu{Gan: ln.YearGan, Zhi: ln.YearZhi}

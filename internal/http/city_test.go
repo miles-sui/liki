@@ -17,7 +17,9 @@ func TestHandleCity_MissingName(t *testing.T) {
 	}
 
 	var env envelope
-	json.NewDecoder(w.Body).Decode(&env)
+	if err := json.NewDecoder(w.Body).Decode(&env); err != nil {
+		t.Fatal(err)
+	}
 	if env.Error == nil || env.Error.Message == "" {
 		t.Error("error response missing message")
 	}
@@ -45,8 +47,13 @@ func TestHandleCity_ValidRequest(t *testing.T) {
 		Longitude float64 `json:"longitude"`
 		Latitude  float64 `json:"latitude"`
 	}
-	b, _ := json.Marshal(env.Data)
-	json.Unmarshal(b, &result)
+	b, err := json.Marshal(env.Data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := json.Unmarshal(b, &result); err != nil {
+		t.Fatal(err)
+	}
 
 	if result.Name == "" {
 		t.Error("name is empty")
