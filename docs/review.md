@@ -43,7 +43,7 @@ qiming/     # 起名
 - **Free API**：直接调引擎 → 返回 JSON（无 LLM、无持久化、无支付）
 
 Form 流和 Free API 的 HTTP handler 都在 `internal/http`（bazi.go, qiming_handler.go 等），
-直接调用 `engine.Service`，没有独立的 chart/bond/naming 包。
+直接调用 `bazi.ComputeChart()` 等 engine 函数，没有独立的 chart/bond/naming 包。
 
 ---
 
@@ -224,7 +224,7 @@ pending ──(webhook)──→ paid
 | P1 | error code 标准化（validation_error / invalid_request 区分） | `handler_helpers.go`, `agent.go`, `bazi.go` | ✅ 完成 |
 | P1 | `liuyaoRequest.Fixed` 加校验、`validateEmail` 换标准库、`qiming_handler` 命名 struct | `liuyao.go`, `payment.go`, `qiming_handler.go` | ✅ 完成 |
 | P2 | Timeset 转换 14 处重复提取为 `timesetOrRespond` helper | `handler_helpers.go` + 6 个 handler 文件 | ✅ 完成 |
-| P2 | LLM tool schema 去 lunar 字段 | `internal/llm/data/tools/*.json` | ✅ 完成 |
+| P2 | LLM tool schema 去 lunar 字段 | `openapi.json` x-agent-tools + path schema | ✅ 完成 |
 | P2 | shishen→shi_shen / sancai→san_cai 命名统一 | `bazi_liunian.go` 等 5 文件, `qiming_types.go` | ✅ 完成 |
 | P1 | error code 残余修正（server_error→internal_error, session_closed/invalid_surname→invalid_request） | `agent.go`, `qiming_handler.go` | ✅ 完成 |
 | P1 | huangli bond 错误分类修正（422 validation_error → 400 invalid_request） | `huangli_handler.go` | ✅ 完成 |
