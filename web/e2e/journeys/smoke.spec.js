@@ -77,7 +77,7 @@ const PAGES = [
 const I18N_KEY_RE = /\b[a-z]{2,}\.[a-z]{2,}\.[a-z]+\b|\b[a-z]{2,}\.[a-z]{2,}\b/;
 
 test.describe('Smoke — all pages render without errors or warnings', () => {
-  for (const { path, marker, name, checks, resource } of PAGES) {
+  for (const { path, marker, name, checks, resource, skipI18nCheck } of PAGES) {
     test(`${name}: ${path}`, async ({ page }) => {
       const consoleProblems = [];
       page.on('console', msg => {
