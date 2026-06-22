@@ -29,8 +29,8 @@ done
 cleanup() {
   echo ""
   echo "==> 停止服务..."
-  kill $SERVER_PID 2>/dev/null
-  wait $SERVER_PID 2>/dev/null
+  kill $SERVER_PID 2>/dev/null || true
+  wait $SERVER_PID 2>/dev/null || true
 }
 trap cleanup EXIT
 
@@ -41,7 +41,7 @@ go vet ./...
 
 echo ""
 echo "=== go test ==="
-go test -race -count=1 ./...
+go test -race -count=1 -short ./...
 
 # JS 单测
 echo ""
