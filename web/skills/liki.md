@@ -46,10 +46,10 @@ API 参数：
 
 - `POST /api/bazi/chart` — 排盘。参数 `{birth, gender}`。返回四柱、十神、藏干、纳音、神煞、用神（扶抑+调候）、格局、身强身弱、大运。
 - `POST /api/bazi/bond` — 合盘。参数 `{a: {birth, gender}, b: {birth, gender}}`。返回双方日主、天干关系（合/生/克）、地支关系（六合/三合/六冲）、纳音配合、五行互补。
-- `POST /api/bazi/liunian` — 流年运势。参数 `{year, birth, dayun?}`。year 为目标年份，dayun 可选（提供后加入大运层面分析）。返回流年干支与命局的十神、神煞、伏吟反吟。
-- `POST /api/bazi/liuyue` — 流月运势。参数 `{year, month, birth}`。year/month 为目标年月。
-- `POST /api/bazi/liuri` — 流日运势。参数 `{date, birth, dayun?, liunian?}`。date 格式 YYYY-MM-DD。dayun 和 liunian 可选。
-- `POST /api/bazi/liushi` — 流时运势。参数 `{date, hour, birth}`。hour 为时辰。
+- `POST /api/bazi/liunian` — 流年运势。参数 `{year, birth, gender}`。year 为目标年份。返回流年干支与命局的十神、神煞、伏吟反吟。
+- `POST /api/bazi/liuyue` — 流月运势。参数 `{year, month, birth, gender}`。year/month 为目标年月。
+- `POST /api/bazi/liuri` — 流日运势。参数 `{year, month, day, birth, gender}`。year/month/day 为目标年月日。
+- `POST /api/bazi/liushi` — 流时运势。参数 `{year, month, day, hour, birth, gender}`。hour 为时辰（0-23）。
 - `POST /api/bazi/xiaoyun` — 小运。参数 `{birth, gender, count?}`。count 默认 5。
 - `POST /api/bazi/xiaoxian` — 小限。参数 `{birth, gender, count?}`。count 默认 16。
 
