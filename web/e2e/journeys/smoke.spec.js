@@ -108,13 +108,11 @@ test.describe('Smoke — all pages render without errors or warnings', () => {
         await expect(page.locator(selector).first()).toContainText(text, { timeout: 5000 });
       }
 
-      // No unresolved i18n keys leaked to the page body (skip for Web Component pages).
-      if (!noI18nCheck) {
-        const bodyText = await page.locator('body').innerText();
-        const leakedKeys = bodyText.split('\n').filter(line => I18N_KEY_RE.test(line.trim()));
-        if (leakedKeys.length > 0) {
-          throw new Error(`Unresolved i18n keys on ${path}:\n  ${leakedKeys.join('\n  ')}`);
-        }
+      // No unresolved i18n keys leaked to the page body.
+      const bodyText = await page.locator('body').innerText();
+      const leakedKeys = bodyText.split('\n').filter(line => I18N_KEY_RE.test(line.trim()));
+      if (leakedKeys.length > 0) {
+        throw new Error(`Unresolved i18n keys on ${path}:\n  ${leakedKeys.join('\n  ')}`);
       }
 
       if (consoleProblems.length > 0) {
