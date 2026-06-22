@@ -81,7 +81,7 @@ const PAGES = [
   // Static resources
   { path: '/skills/liki.md',   marker: null,             name: 'skills',   resource: true },
   { path: '/llms.txt',         marker: null,             name: 'llms.txt', resource: true },
-  { path: '/openapi.json',     marker: null,             name: 'openapi',  resource: true },
+  { path: '/api/openapi.json',     marker: null,             name: 'openapi',  resource: true },
 ];
 
 // i18n key pattern: if a raw key like "site.name" or "index.hero.subtitle" appears
