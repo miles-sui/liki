@@ -108,9 +108,6 @@ test.describe('Smoke — all pages render without errors or warnings', () => {
         await expect(page.locator(selector).first()).toContainText(text, { timeout: 5000 });
       }
 
-      // Ensure Web Components have finished rendering (connectedCallback may be async in test env).
-      await page.waitForTimeout(200);
-
       // No unresolved i18n keys leaked to the page body.
       const bodyText = await page.locator('body').innerText();
       const leakedKeys = bodyText.split('\n').filter(line => I18N_KEY_RE.test(line.trim()));
