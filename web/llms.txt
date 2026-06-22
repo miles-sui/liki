@@ -10,9 +10,7 @@
 
 ## 接口
 
-- OpenAPI: /api/openapi.json
 - 产品说明: /skills/liki.md
-- 报告模板: /skills/report-chart.md, /skills/report-bond.md, /skills/report-naming.md
 
 ## 产品
 
