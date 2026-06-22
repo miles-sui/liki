@@ -16,11 +16,11 @@ import (
 //go:embed data/gsc_pinyin_with_tone.csv
 var gscCSV []byte
 
-//go:embed data/sancai_numbers.yaml
-var sancaiNumbersYAML []byte
+//go:embed data/san_cai_numbers.yaml
+var sanCaiNumbersYAML []byte
 
-//go:embed data/sancai_configs.yaml
-var sancaiConfigsYAML []byte
+//go:embed data/san_cai_configs.yaml
+var sanCaiConfigsYAML []byte
 
 //go:embed data/negative_chars.txt
 var negativeCharsTxt []byte
@@ -142,7 +142,7 @@ func loadNaming() error {
 				Desc    string `yaml:"desc"`
 			} `yaml:"numbers"`
 		}
-		if err := yaml.Unmarshal(sancaiNumbersYAML, &raw); err != nil {
+		if err := yaml.Unmarshal(sanCaiNumbersYAML, &raw); err != nil {
 			return err
 		}
 		sanCaiNums = make(map[int]sanCaiNum)
@@ -162,7 +162,7 @@ func loadNaming() error {
 				Desc    string `yaml:"desc"`
 			} `yaml:"configs"`
 		}
-		if err := yaml.Unmarshal(sancaiConfigsYAML, &raw); err != nil {
+		if err := yaml.Unmarshal(sanCaiConfigsYAML, &raw); err != nil {
 			return err
 		}
 		sanCaiCfg = make(map[string]sanCaiCfgEntry)

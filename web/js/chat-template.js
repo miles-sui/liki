@@ -19,9 +19,15 @@ const _hoisted_8 = ["textContent"]
 const _hoisted_9 = ["textContent"]
 const _hoisted_10 = ["innerHTML"]
 const _hoisted_11 = ["textContent"]
-const _hoisted_12 = { class: "msg msg-asst" }
+const _hoisted_12 = {
+  key: 4,
+  class: "msg msg-asst"
+}
 const _hoisted_13 = ["textContent"]
-const _hoisted_14 = { class: "buy-card" }
+const _hoisted_14 = {
+  key: 5,
+  class: "buy-card"
+}
 const _hoisted_15 = ["onClick"]
 const _hoisted_16 = { class: "bc-price" }
 const _hoisted_17 = ["textContent"]
@@ -110,76 +116,80 @@ return function render(_ctx, _cache) {
         (_openBlock(true), _createElementBlock(_Fragment, null, _renderList(_ctx.messages, (m, i) => {
           return (_openBlock(), _createElementBlock("div", { key: i }, [
             _createCommentVNode(" User bubble "),
-            _withDirectives(_createElementVNode("div", {
-              class: "msg msg-user",
-              textContent: _toDisplayString(m.content)
-            }, null, 8 /* PROPS */, _hoisted_8), [
-              [_vShow, m.role === 'user']
-            ]),
-            _withDirectives(_createElementVNode("div", {
-              class: "msg-time msg-time-user",
-              textContent: _toDisplayString(_ctx.formatTime(m.time))
-            }, null, 8 /* PROPS */, _hoisted_9), [
-              [_vShow, m.role === 'user' && m.time]
-            ]),
+            (m.role === 'user')
+              ? (_openBlock(), _createElementBlock("div", {
+                  key: 0,
+                  class: "msg msg-user",
+                  textContent: _toDisplayString(m.content)
+                }, null, 8 /* PROPS */, _hoisted_8))
+              : _createCommentVNode("v-if", true),
+            (m.role === 'user' && m.time)
+              ? (_openBlock(), _createElementBlock("div", {
+                  key: 1,
+                  class: "msg-time msg-time-user",
+                  textContent: _toDisplayString(_ctx.formatTime(m.time))
+                }, null, 8 /* PROPS */, _hoisted_9))
+              : _createCommentVNode("v-if", true),
             _createCommentVNode(" Assistant bubble "),
-            _withDirectives(_createElementVNode("div", {
-              class: "msg msg-asst",
-              innerHTML: m.html
-            }, null, 8 /* PROPS */, _hoisted_10), [
-              [_vShow, m.role === 'assistant' && m.html]
-            ]),
-            _withDirectives(_createElementVNode("div", {
-              class: "msg-time msg-time-asst",
-              textContent: _toDisplayString(_ctx.formatTime(m.time))
-            }, null, 8 /* PROPS */, _hoisted_11), [
-              [_vShow, m.role === 'assistant' && m.html && m.time]
-            ]),
+            (m.role === 'assistant' && m.html)
+              ? (_openBlock(), _createElementBlock("div", {
+                  key: 2,
+                  class: "msg msg-asst",
+                  innerHTML: m.html
+                }, null, 8 /* PROPS */, _hoisted_10))
+              : _createCommentVNode("v-if", true),
+            (m.role === 'assistant' && m.html && m.time)
+              ? (_openBlock(), _createElementBlock("div", {
+                  key: 3,
+                  class: "msg-time msg-time-asst",
+                  textContent: _toDisplayString(_ctx.formatTime(m.time))
+                }, null, 8 /* PROPS */, _hoisted_11))
+              : _createCommentVNode("v-if", true),
             _createCommentVNode(" Loading dots in assistant bubble "),
-            _withDirectives(_createElementVNode("div", _hoisted_12, [
-              _withDirectives(_createElementVNode("div", {
-                class: "phase-status",
-                textContent: _toDisplayString(_ctx.phaseStatus)
-              }, null, 8 /* PROPS */, _hoisted_13), [
-                [_vShow, _ctx.phaseStatus]
-              ]),
-              _cache[2] || (_cache[2] = _createElementVNode("div", { class: "typing-dots" }, [
-                _createElementVNode("span"),
-                _createElementVNode("span"),
-                _createElementVNode("span")
-              ], -1 /* CACHED */))
-            ], 512 /* NEED_PATCH */), [
-              [_vShow, m.role === 'assistant' && !m.html && _ctx.ui.substate === 'loading']
-            ]),
+            (m.role === 'assistant' && !m.html && _ctx.ui.substate === 'loading')
+              ? (_openBlock(), _createElementBlock("div", _hoisted_12, [
+                  _withDirectives(_createElementVNode("div", {
+                    class: "phase-status",
+                    textContent: _toDisplayString(_ctx.phaseStatus)
+                  }, null, 8 /* PROPS */, _hoisted_13), [
+                    [_vShow, _ctx.phaseStatus]
+                  ]),
+                  _cache[2] || (_cache[2] = _createElementVNode("div", { class: "typing-dots" }, [
+                    _createElementVNode("span"),
+                    _createElementVNode("span"),
+                    _createElementVNode("span")
+                  ], -1 /* CACHED */))
+                ]))
+              : _createCommentVNode("v-if", true),
             _createCommentVNode(" Buy card "),
-            _withDirectives(_createElementVNode("div", _hoisted_14, [
-              _createElementVNode("button", {
-                class: "bc-dismiss",
-                onClick: $event => (_ctx.dismissBuy(m)),
-                "aria-label": "关闭"
-              }, "×", 8 /* PROPS */, _hoisted_15),
-              _createElementVNode("div", _hoisted_16, [
-                _createElementVNode("span", {
-                  textContent: _toDisplayString(m.currency)
-                }, null, 8 /* PROPS */, _hoisted_17),
-                _createTextVNode(_toDisplayString((m.displayAmount / 100).toFixed(2)) + " ", 1 /* TEXT */),
-                _createElementVNode("small", null, _toDisplayString(_ctx.t('chat.unlockLabel')), 1 /* TEXT */)
-              ]),
-              _createElementVNode("button", {
-                class: "btn-buy",
-                onClick: $event => (_ctx.goPayment()),
-                disabled: _ctx.buyLoading
-              }, [
-                _withDirectives(_createElementVNode("span", null, _toDisplayString(_ctx.t('chat.viewReport')), 513 /* TEXT, NEED_PATCH */), [
-                  [_vShow, !_ctx.buyLoading]
-                ]),
-                _withDirectives(_createElementVNode("span", null, _toDisplayString(_ctx.t('chat.creatingPayment')), 513 /* TEXT, NEED_PATCH */), [
-                  [_vShow, _ctx.buyLoading]
-                ])
-              ], 8 /* PROPS */, _hoisted_18)
-            ], 512 /* NEED_PATCH */), [
-              [_vShow, m.role === 'buy' && !m._dismissed]
-            ])
+            (m.role === 'buy' && !m._dismissed)
+              ? (_openBlock(), _createElementBlock("div", _hoisted_14, [
+                  _createElementVNode("button", {
+                    class: "bc-dismiss",
+                    onClick: $event => (_ctx.dismissBuy(m)),
+                    "aria-label": "关闭"
+                  }, "×", 8 /* PROPS */, _hoisted_15),
+                  _createElementVNode("div", _hoisted_16, [
+                    _createElementVNode("span", {
+                      textContent: _toDisplayString(m.currency)
+                    }, null, 8 /* PROPS */, _hoisted_17),
+                    _createTextVNode(_toDisplayString((m.displayAmount / 100).toFixed(2)) + " ", 1 /* TEXT */),
+                    _createElementVNode("small", null, _toDisplayString(_ctx.t('chat.unlockLabel')), 1 /* TEXT */)
+                  ]),
+                  _createElementVNode("button", {
+                    class: "btn-buy",
+                    onClick: $event => (_ctx.goPayment()),
+                    disabled: _ctx.buyLoading
+                  }, [
+                    _withDirectives(_createElementVNode("span", null, _toDisplayString(_ctx.t('chat.viewReport')), 513 /* TEXT, NEED_PATCH */), [
+                      [_vShow, !_ctx.buyLoading]
+                    ]),
+                    _withDirectives(_createElementVNode("span", null, _toDisplayString(_ctx.t('chat.creatingPayment')), 513 /* TEXT, NEED_PATCH */), [
+                      [_vShow, _ctx.buyLoading]
+                    ])
+                  ], 8 /* PROPS */, _hoisted_18)
+                ]))
+              : _createCommentVNode("v-if", true)
           ]))
         }), 128 /* KEYED_FRAGMENT */)),
         _createCommentVNode(" Chips below greeting "),

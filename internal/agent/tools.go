@@ -102,44 +102,26 @@ func (r *ChatToolRegistry) Schemas() []llm.ToolDef {
 
 // --- shared types ---
 
-// LunarDate holds a lunar calendar date.
-type LunarDate struct {
-	Year   int  `json:"year"`
-	Month  int  `json:"month"`
-	Day    int  `json:"day"`
-	Hour   int  `json:"hour"`
-	Minute int  `json:"minute"`
-	Leap   bool `json:"leap"`
-}
-
-// TimePoint is a point in time with optional longitude for solar time correction.
+// TimePoint is a gregorian time with longitude for solar time correction.
 type TimePoint struct {
-	Time      string       `json:"time"`
-	Lunar     *LunarDate `json:"lunar"`
-	Longitude float64      `json:"longitude"`
+	Time      string  `json:"time"`
+	Longitude float64 `json:"longitude"`
 }
 
 // Timeset converts TimePoint to a tianwen.Timeset for engine computation.
 func (b TimePoint) Timeset() (tianwen.Timeset, error) {
-	if b.Lunar != nil {
-		ly, lm, ld := tianwen.LunarToSolar(b.Lunar.Year, b.Lunar.Month, b.Lunar.Day, b.Lunar.Leap)
-		lon, tz := NormGeo(b.Longitude, 0)
-		return tianwen.ComputeTime(ly, lm, ld, b.Lunar.Hour, b.Lunar.Minute, lon, tz), nil
-	}
-
 	t, err := time.Parse(time.RFC3339, b.Time)
 	if err != nil {
 		return tianwen.Timeset{}, fmt.Errorf("invalid time: %w", err)
 	}
 	_, offset := t.Zone()
 	tz := float64(offset) / 3600
-	lon, _ := NormGeo(b.Longitude, 0) // only normalize lon; tz from timestamp
-	return tianwen.ComputeTime(t.Year(), int(t.Month()), t.Day(), t.Hour(), t.Minute(), lon, tz), nil
+	return tianwen.ComputeTimeset(tianwen.GregorianTime(t.In(time.FixedZone("", int(tz*3600)))), b.Longitude), nil
 }
 
 type Person struct {
-	Birth  TimePoint `json:"birth"`
-	Gender string     `json:"gender"`
+	Birth  TimePoint     `json:"birth"`
+	Gender ganzhi.Gender `json:"gender"`
 }
 
 // --- helpers ---
@@ -150,37 +132,24 @@ func wrapResult(product string, data any) (json.RawMessage, error) {
 		Data    any    `json:"data"`
 	}{Product: product, Data: data})
 }
-
-// NormGeo normalizes longitude and timezone defaults.
-// Defaults: longitude 120 (Beijing), timezone UTC+8.
-func NormGeo(lon, tz float64) (float64, float64) {
-	if lon == 0 {
-		lon = 120
-	}
-	if tz == 0 {
-		tz = 8
-	}
-	return lon, tz
-}
-
 func parseDaYunZhu(raw json.RawMessage) *bazi.DaYunZhu {
 	if len(raw) == 0 || string(raw) == "null" {
 		return nil
 	}
 	var di struct {
 		CurrentZhuIndex int `json:"CurrentZhuIndex"`
-		Zhus            []struct {
+		Zhu            []struct {
 			Gan int `json:"Gan"`
 			Zhi int `json:"Zhi"`
-		} `json:"Zhus"`
+		} `json:"Zhu"`
 	}
 	if err := json.Unmarshal(raw, &di); err != nil {
 		return nil
 	}
-	if di.CurrentZhuIndex < 0 || di.CurrentZhuIndex >= len(di.Zhus) {
+	if di.CurrentZhuIndex < 0 || di.CurrentZhuIndex >= len(di.Zhu) {
 		return nil
 	}
-	dp := di.Zhus[di.CurrentZhuIndex]
+	dp := di.Zhu[di.CurrentZhuIndex]
 	return &bazi.DaYunZhu{Gan: ganzhi.Gan(dp.Gan), Zhi: ganzhi.Zhi(dp.Zhi)}
 }
 

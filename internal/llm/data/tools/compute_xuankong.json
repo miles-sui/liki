@@ -6,27 +6,35 @@
     "properties": {
       "birth": {
         "type": "object",
-        "description": "出生信息。time（公历）和lunar（农历）二选一",
+        "description": "出生信息",
         "properties": {
-          "time": {"type": "string", "description": "公历出生时间，RFC3339格式。与lunar二选一"},
-          "lunar": {
-            "type": "object",
-            "properties": {
-              "year": {"type": "integer"}, "month": {"type": "integer"}, "day": {"type": "integer"},
-              "hour": {"type": "integer"}, "minute": {"type": "integer"}, "leap": {"type": "boolean"}
-            },
-            "required": ["year", "month", "day", "hour"]
+          "time": {
+            "type": "string",
+            "description": "公历出生时间，RFC3339格式。与lunar二选一"
           },
-          "longitude": {"type": "number", "description": "出生地经度"}
+          "longitude": {
+            "type": "number",
+            "description": "出生地经度"
+          }
         },
-        "anyOf": [
-          {"required": ["time", "longitude"]},
-          {"required": ["lunar", "longitude"]}
+        "required": [
+          "time",
+          "longitude"
         ]
       },
-      "sit_mountain": {"type": "integer", "description": "坐山索引 0-23，对应二十四山"},
-      "face_mountain": {"type": "integer", "description": "朝向索引 0-23，对应二十四山"}
+      "sit_mountain": {
+        "type": "integer",
+        "description": "坐山索引 0-23，对应二十四山"
+      },
+      "face_mountain": {
+        "type": "integer",
+        "description": "朝向索引 0-23，对应二十四山"
+      }
     },
-    "required": ["birth", "sit_mountain", "face_mountain"]
+    "required": [
+      "birth",
+      "sit_mountain",
+      "face_mountain"
+    ]
   }
 }

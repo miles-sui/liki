@@ -1,7 +1,6 @@
 package bazi
 
 import (
-	"fmt"
 	"time"
 
 	"liki/internal/engine/ganzhi"
@@ -15,7 +14,7 @@ type LiuShi struct {
 	HourGan  ganzhi.Gan           `json:"hour_stem"`
 	HourZhi  ganzhi.Zhi           `json:"hour_branch"`
 	HourName string        `json:"hour_name"`
-	TenGod   string        `json:"shishen"`
+	ShiShen   string        `json:"shi_shen"`
 	GanRels  []GanRelation `json:"gan_rels"`
 	ZhiRels  []ZhiRelation `json:"branch_rels"`
 }
@@ -33,14 +32,10 @@ func hourBranchIndex(hour int) int {
 
 // ComputeLiuShi computes the hour pillar for the given day and hour, and its
 // interactions with the bazi chart.
-func computeLiuShi(bz ganzhi.Bazi, date string, hour int) (*LiuShi, error) {
-	dayMaster := bz.Ri.Gan
-	y, m, d := 0, 0, 0
-	if n, _ := fmt.Sscanf(date, "%d-%d-%d", &y, &m, &d); n != 3 { //nolint:errcheck
-		return nil, fmt.Errorf("compute liushi: invalid date %q", date)
-	}
+func computeLiuShi(bz ganzhi.Bazi, year, month, day, hour int) (*LiuShi, error) {
+	riYuan := bz.Ri.Gan
 
-	dp := tianwen.RiZhu(tianwen.GregorianTime(time.Date(y, time.Month(m), d, 0, 0, 0, 0, time.UTC)))
+	dp := tianwen.RiZhu(tianwen.GregorianTime(time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC)))
 	hbi := hourBranchIndex(hour)
 	hourBranch := ganzhi.Zhi(hbi + 1)
 	hourStem := ganzhi.Gan(((int(dp.Gan)*2 + int(hourBranch) - 2) % 10))
@@ -48,7 +43,7 @@ func computeLiuShi(bz ganzhi.Bazi, date string, hour int) (*LiuShi, error) {
 		hourStem = 10
 	}
 
-	tgName := ganzhi.TenGodFromGan(dayMaster, hourStem)
+	tgName := ganzhi.ShiShenFromGan(riYuan, hourStem)
 
 	hourName := ganzhi.GanName(hourStem) + ganzhi.ZhiName(hourBranch)
 
@@ -60,7 +55,7 @@ func computeLiuShi(bz ganzhi.Bazi, date string, hour int) (*LiuShi, error) {
 		HourGan:  hourStem,
 		HourZhi:  hourBranch,
 		HourName: hourName,
-		TenGod:   tgName.String(),
+		ShiShen:   tgName.String(),
 		GanRels:  stemRels,
 		ZhiRels:  branchRels,
 	}, nil

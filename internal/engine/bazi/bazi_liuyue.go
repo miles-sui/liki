@@ -16,7 +16,7 @@ type LiuYue struct {
 	MonthZhi  ganzhi.Zhi            `json:"month_branch"`
 	MonthName string         `json:"month_name"`
 	Element   string         `json:"wuxing"`
-	TenGod    string         `json:"shishen"`
+	ShiShen    string         `json:"shi_shen"`
 	Generates int            `json:"generates"`
 	Restrains int            `json:"restrains"`
 	GanRels   []GanRelation  `json:"gan_rels"`
@@ -30,24 +30,24 @@ func computeLiuYue(bz ganzhi.Bazi, year, month int) (*LiuYue, error) {
 	if month < 1 || month > 12 {
 		return nil, fmt.Errorf("compute liuyue: invalid month %d", month)
 	}
-	dayMaster := bz.Ri.Gan
+	riYuan := bz.Ri.Gan
 	bazi := bz.Slice()
 	// Use mid-month (15th) for stable solar term calculation.
 	birthTime := time.Date(year, time.Month(month), 15, 12, 0, 0, 0, time.UTC)
 
 	mp := tianwen.YueZhu(tianwen.GregorianTime(birthTime))
 
-	dmElem := ganzhi.GanWuxing(dayMaster)
+	dmElem := ganzhi.GanWuxing(riYuan)
 	monthElem := ganzhi.GanWuxing(mp.Gan)
 
-	tgName := ganzhi.TenGodFromGan(dayMaster, mp.Gan)
+	tgName := ganzhi.ShiShenFromGan(riYuan, mp.Gan)
 
 	gen, rest := countGenRest(monthElem, dmElem)
 
 	// Month vs bazi: all 4 pillars, consistent with liunian.
 	stemRels, branchRels := analyzeZhuWithBazi(mp, bz)
 
-	shensha := computeDynamicShenSha(mp.Zhi, bazi[0].Zhi, dayMaster)
+	shensha := computeDynamicShenSha(mp.Zhi, bazi[0].Zhi, riYuan)
 
 	monthElemStr := monthElem.String()
 
@@ -58,7 +58,7 @@ func computeLiuYue(bz ganzhi.Bazi, year, month int) (*LiuYue, error) {
 		MonthZhi:  mp.Zhi,
 		MonthName: ganzhi.ZhiName(mp.Zhi) + "月",
 		Element:   monthElemStr,
-		TenGod:    tgName.String(),
+		ShiShen:    tgName.String(),
 		Generates: gen,
 		Restrains: rest,
 		GanRels:   stemRels,

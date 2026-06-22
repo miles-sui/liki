@@ -4,25 +4,26 @@
   "parameters": {
     "type": "object",
     "properties": {
-      "year": {"type": "integer", "description": "要分析的流年年份，如 2026"},
+      "year": {
+        "type": "integer",
+        "description": "要分析的流年年份，如 2026"
+      },
       "birth": {
         "type": "object",
-        "description": "出生信息，与 compute_chart 的 birth 参数一致。time（公历）和lunar（农历）二选一",
+        "description": "出生信息，与 compute_chart 的 birth 参数一致",
         "properties": {
-          "time": {"type": "string", "description": "公历出生时间，RFC3339格式。与lunar二选一"},
-          "lunar": {
-            "type": "object",
-            "properties": {
-              "year": {"type": "integer"}, "month": {"type": "integer"}, "day": {"type": "integer"},
-              "hour": {"type": "integer"}, "minute": {"type": "integer"}, "leap": {"type": "boolean"}
-            },
-            "required": ["year", "month", "day", "hour"]
+          "time": {
+            "type": "string",
+            "description": "公历出生时间，RFC3339格式。与lunar二选一"
           },
-          "longitude": {"type": "number", "description": "出生地经度"}
+          "longitude": {
+            "type": "number",
+            "description": "出生地经度"
+          }
         },
-        "anyOf": [
-          {"required": ["time", "longitude"]},
-          {"required": ["lunar", "longitude"]}
+        "required": [
+          "time",
+          "longitude"
         ]
       },
       "dayun": {
@@ -30,6 +31,9 @@
         "description": "大运数据，直接传入 compute_chart 返回结果中的 data.dayun 对象。可选，提供后可获得大运层面的交互分析。"
       }
     },
-    "required": ["year", "birth"]
+    "required": [
+      "year",
+      "birth"
+    ]
   }
 }

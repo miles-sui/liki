@@ -233,7 +233,7 @@ func TestComputeJieQiDepth_Consistency(t *testing.T) {
 // =============================================================================
 
 func TestComputeRenYuanSiLingForDate_Phases(t *testing.T) {
-	phases := ganzhi.RenYuanPhasesForBranch(ganzhi.ZhiYin)
+	phases := ganzhi.RenYuanSiLingFenYeForZhi(ganzhi.ZhiYin)
 	if len(phases) == 0 {
 		t.Skip("RenYuan phases not available for 寅")
 	}
@@ -258,8 +258,8 @@ func TestComputeRenYuanSiLingForDate_Phases(t *testing.T) {
 	}
 }
 
-func TestFindCurrentRenYuanPhase_Empty(t *testing.T) {
-	got := findCurrentRenYuanPhase(nil, 5)
+func TestFindCurrentRenYuanSiLingFenYe_Empty(t *testing.T) {
+	got := findCurrentRenYuanSiLingFenYe(nil, 5)
 	if got != nil {
 		t.Error("expected nil for nil phases")
 	}

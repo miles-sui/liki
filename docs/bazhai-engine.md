@@ -9,10 +9,10 @@
 
 | 函数 | 说明 |
 |------|------|
-| `ComputeMingGua(gender Gender, birthYear int)` | 命卦 |
-| `ComputeChart(st SolarTime, gender Gender) → Chart` | 八宅合参（编排入口，api.go） |
+| `ComputeMingGua(gender ganzhi.Gender, birthYear int)` | 命卦 |
+| `ComputeChart(st tianwen.SolarTime, gender ganzhi.Gender) → Chart` | 八宅合参（编排入口，api.go） |
 
-编排层 `api.go` 收 `SolarTime` → `ComputeBazi` → 引擎 `computeChart(bz Bazi, gender Gender, year int)` 收精确实体。
+编排层 `api.go` 收 `tianwen.SolarTime` → `ComputeBazi` → 引擎 `computeChart(bz ganzhi.Bazi, gender ganzhi.Gender, year int)` 收精确实体。
 
 ### HTTP Routes
 

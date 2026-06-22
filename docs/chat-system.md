@@ -76,8 +76,8 @@ session 创建即进入 COLLECTING。没有独立的 NEW 状态——首条 POST
 | 转换 | 触发条件 | 位置 |
 |---|---|---|
 | (创建) → COLLECTING | 首条用户消息，session 创建 | `http/agent.go` handler |
-| COLLECTING → COLLECTING | LLM 追问/teaser/Q&A | `orchestrator/orchestrator.go` Run() |
-| COLLECTING → CLOSED | purchase tool + CreateOrder + done 事件 | `orchestrator/orchestrator.go` Run() |
+| COLLECTING → COLLECTING | LLM 追问/teaser/Q&A | `agent/chat_agent.go` Chat() |
+| COLLECTING → CLOSED | purchase tool + CreateOrder + done 事件 | `agent/chat_agent.go` Chat() |
 
 **并发保护：**
 
@@ -269,16 +269,16 @@ data: {"type":"error","content":"会话已过期，请重新开始"}
 ### 每轮对话详细时序
 
 ```
-Browser                    http/agent.go              orchestrator.Run()       ChatAgent           LLM
-  │                             │                         │                      │                  │
-  │─ POST /api/agent/chat ─────→│                         │                      │                  │
-  │  {session_id, message, lang}│                         │                      │                  │
-  │                             │─ load/create session    │                      │                  │
-  │                             │─ sess.AppendMessage(user msg)                  │                  │
-  │                             │─ orch.Run(messages, sink) →                    │                  │
-  │  ←══ SSE: thinking ════════│←══ sink(event) ════════│─ agent.Chat(messages, tools, orders, amounts) →│
-  │  ←══ SSE: text-delta ══════│←══ sink(event) ════════│  ← text-delta ────────│─ ChatStreamWithTools() →│
-  │  ←══ SSE: phase ═══════════│←══ sink(event) ════════│  ← phase ─────────────│  get_city_coords      │
+Browser                    http/agent.go                 agent.Chat()            LLM
+  │                             │                         │                      │
+  │─ POST /api/agent/chat ─────→│                         │                      │
+  │  {session_id, message, lang}│                         │                      │
+  │                             │─ load/create session    │                      │
+  │                             │─ sess.AppendMessage(user msg)                  │
+  │                             │─ chat.Chat(ctx, locale, msgs, onEvent, …) →    │
+  │  ←══ SSE: thinking ════════│←══ onEvent(ev) ════════│─ ChatStreamWithTools() →│
+  │  ←══ SSE: text-delta ══════│←══ onEvent(ev) ════════│  ← text-delta ────────│
+  │  ←══ SSE: phase ═══════════│←══ onEvent(ev) ════════│  ← phase ─────────────│  get_city_coords
   │                             │                         │                      │                  │
   │                             │                         │  no tool call:       │                  │
   │                             │─ sess.SetMessages(msgs) │  return, no purchase │                  │
@@ -288,19 +288,19 @@ Browser                    http/agent.go              orchestrator.Run()       C
   │                             │                         │                      │                  │
   │─ POST /api/agent/chat ─────→│                         │                      │                  │
   │  {same session_id, answer}  │                         │                      │                  │
-  │                             │─ orch.Run(messages, sink) →                    │                  │
-  │  ←══ SSE: text-delta ══════│←══ sink(event) ════════│  ← text-delta ────────│─ ChatStreamWithTools() →│
-  │  ←══ SSE: phase ═══════════│←══ sink(event) ════════│  ← phase ─────────────│  compute_* tool → engine│
-  │  ←══ SSE: text-delta ══════│←══ sink(event) ════════│  ← text-delta ────────│─ ChatStreamWithTools() →│
+  │                             │─ chat.Chat(ctx, locale, msgs, onEvent, …) →    │                  │
+  │  ←══ SSE: text-delta ══════│←══ onEvent(ev) ════════│  ← text-delta ────────│  compute_* tool → engine│
+  │  ←══ SSE: phase ═══════════│←══ onEvent(ev) ════════│  ← phase ─────────────│─ ChatStreamWithTools() →│
+  │  ←══ SSE: text-delta ══════│←══ onEvent(ev) ════════│  ← text-delta ────────│  teaser 报告流
   │  [前端节流渲染: 80ms/20字窗口]                        │                      │  teaser 报告流        │
   │                             │                         │                      │                  │
   │  [用户追问 Q&A, 继续对话...]│                         │                      │                  │
   │                             │                         │                      │                  │
   │─ POST /api/agent/chat ─────→│  (purchase intent)      │                      │                  │
-  │  ←══ SSE: text-delta ══════│←══ sink(event) ════════│  ← text-delta ────────│  purchase tool       │
+  │  ←══ SSE: text-delta ══════│←══ onEvent(ev) ════════│  ← text-delta ────────│  purchase tool       │
   │                             │                         │─ handlePurchase      │                  │
   │                             │                         │─ CreateOrder(chartJSON + Q&A)              │
-  │  ←══ SSE: done ════════════│←══ sink(event) ════════│─ done {order_id, amount, product}          │
+  │  ←══ SSE: done ════════════│←══ onEvent(ev) ════════│─ done {order_id, amount, product}          │
   │                             │─ sess.SetPhase(PhaseClosed)                   │                  │
   │                             │─ return 200              │                      │                  │
   │  [用户看到购买栏，点击支付]  │                         │                      │                  │
@@ -495,7 +495,7 @@ Session 在内存，不落盘。原因：
 | **P0** | 流式渲染节流 | `web/js/chat.js`（80ms/20 字窗口） | ✅ 完成 |
 | **P0** | Agent 流式 tool-calling | `internal/agent/chat_agent.go`（ChatStreamWithTools），`internal/llm/client.go` | ✅ 完成 |
 | **P1** | Phase 进度事件统一 | `internal/agent/chat_agent.go`（phase 事件替代 tool-progress/computing） | ✅ 完成 |
-| **P1** | sess.Phase 驱动 + 流程编排 | `internal/http/agent.go`（收集 → orchestrator → closed） | ✅ 完成 |
+| **P1** | sess.Phase 驱动 + 流程编排 | `internal/http/agent.go`（收集 → agent → closed） | ✅ 完成 |
 | **P1** | 滚动锚定 | `web/js/chat.js`（scrollDown 加 isNearBottom） | ✅ 完成 |
 | **P1** | 防重复发送 | `web/js/chat.js`（sendMessage 加同步 pending 标记） | ✅ 完成 |
 | **P1** | 异步 greeting 生成 | `cmd/lingji/main.go`（goroutine + fallback） | ✅ 完成 |

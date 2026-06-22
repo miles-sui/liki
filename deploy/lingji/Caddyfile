@@ -22,7 +22,27 @@
 		format json
 	}
 
-	handle /api/* {
+	handle /api/agent/* {
+			@external {
+				header Origin *
+				not header Origin https://{$DOMAIN:localhost}
+			}
+			respond @external 403
+			reverse_proxy lingji:8080 {
+				flush_interval -1
+			}
+		}
+
+		handle /api/orders/*/retry {
+			@external {
+				header Origin *
+				not header Origin https://{$DOMAIN:localhost}
+			}
+			respond @external 403
+			reverse_proxy lingji:8080
+		}
+
+		handle /api/* {
 		reverse_proxy lingji:8080 {
 			flush_interval -1
 			health_uri /api/health

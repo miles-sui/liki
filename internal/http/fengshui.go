@@ -46,26 +46,13 @@ func bazhaiMingGua(w http.ResponseWriter, r *http.Request) {
 	respondJSON(w, http.StatusOK, result)
 }
 
-type bazhaiChartRequest struct {
-	Birth  timePoint     `json:"birth"`
-	Gender ganzhi.Gender `json:"gender"`
-}
-
-func (r bazhaiChartRequest) Validate() error {
-	return validation.ValidateStruct(&r,
-		validation.Field(&r.Birth, validation.By(validateTimePoint)),
-		validation.Field(&r.Gender, validation.Required, validation.In(validGenders...)),
-	)
-}
-
 func bazhaiChart(w http.ResponseWriter, r *http.Request) {
-	q, ok := decodeAndValidate[bazhaiChartRequest](w, r)
+	q, ok := decodeAndValidate[BirthRequest](w, r)
 	if !ok {
 		return
 	}
-	ts, err := q.Birth.Timeset()
-	if err != nil {
-		respondInvalidRequest(w, err.Error())
+	ts, ok := timesetOrRespond(w, q.Birth)
+	if !ok {
 		return
 	}
 	result := bazhai.ComputeChart(ts.Solar, q.Gender)
@@ -101,9 +88,8 @@ func xuankongChart(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	ts, err := q.Birth.Timeset()
-	if err != nil {
-		respondInvalidRequest(w, err.Error())
+	ts, ok := timesetOrRespond(w, q.Birth)
+	if !ok {
 		return
 	}
 	result := xuankong.ComputeChart(ts.Solar, *q.SitMountain, *q.FaceMountain)

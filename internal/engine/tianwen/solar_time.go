@@ -59,10 +59,12 @@ func (s *SolarTime) UnmarshalJSON(b []byte) error {
 
 // computeSolarTime returns true solar time in minutes and day offset.
 // timezone is in hours (e.g. 8 for UTC+8).
-func computeSolarTime(year, month, day, hour, minute int, longitude, timezone float64) (float64, int) {
+func computeSolarTime(t time.Time, longitude, timezone float64) (float64, int) {
+	year, month, day := t.Date()
+	hour, minute := t.Hour(), t.Minute()
 	lst := float64(hour*60 + minute)
 	lonOffset := 4.0 * (longitude - timezone*15)
-	n := dayOfYear(year, month, day)
+	n := dayOfYear(year, int(month), day)
 	B := 360.0 * float64(n-81) / 365.0
 	BRad := B * math.Pi / 180.0
 	eot := 9.87*math.Sin(2*BRad) - 7.53*math.Cos(BRad) - 1.5*math.Sin(BRad)
@@ -80,19 +82,18 @@ func computeSolarTime(year, month, day, hour, minute int, longitude, timezone fl
 	return ast, dayOffset
 }
 
-// ComputeSolarTime returns the absolute true solar time as SolarTime.
+// GregorianToSolar returns the absolute true solar time as SolarTime.
 // timezone is in hours (e.g. 8 for UTC+8), longitude is in degrees.
-func ComputeSolarTime(year, month, day, hour, minute int, longitude, timezone float64) SolarTime {
-	ast, dayOffset := computeSolarTime(year, month, day, hour, minute, longitude, timezone)
+func GregorianToSolar(t time.Time, longitude, timezone float64) SolarTime {
+	ast, dayOffset := computeSolarTime(t, longitude, timezone)
 	loc := time.FixedZone("birth", int(timezone*3600))
-	base := time.Date(year, time.Month(month), day, hour, minute, 0, 0, loc)
 	astHour := int(ast) / 60
 	astMin := int(ast) % 60
-	return SolarTime(time.Date(base.Year(), base.Month(), base.Day()+dayOffset, astHour, astMin, 0, 0, loc))
+	return SolarTime(time.Date(t.Year(), t.Month(), t.Day()+dayOffset, astHour, astMin, 0, 0, loc))
 }
 
 // HourBranchFromSolarTime converts solar time (minutes) to the earthly branch of the hour.
-func hourBranchFromSolarTime(astMinutes float64) ganzhi.Zhi {
+func hourZhiFromSolarTime(astMinutes float64) ganzhi.Zhi {
 	idx := (int(astMinutes+60) / 120) % 12
 	return ganzhi.Zhi(idx + 1)
 }

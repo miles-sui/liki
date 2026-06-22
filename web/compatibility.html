@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
     <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-<meta name="description" content="合盘示例 | 查看完整八字配对 Compatibility 分析报告样例，含双方日主、天干地支关系、纳音配合与缘分解读。灵机（Liki）AI命理助手。">
+<meta name="description" content="合盘示例 | 查看完整八字配对 He Pan 分析报告样例，含双方日主、天干地支关系、纳音配合与缘分解读。灵机（Liki）AI命理助手。">
 <meta property="og:title" content="合盘示例 | 灵机 Liki">
 <meta property="og:description" content="查看完整八字配对分析报告样例，含双方日主、天干地支关系、纳音配合与缘分解读。">
 <meta property="og:url" content="https://liki.hk/compatibility.html">
@@ -17,14 +17,10 @@
 	<meta name="twitter:image" content="https://liki.hk/img/og-image.png">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>合盘示例 | 灵机 Liki</title>
-<script src="/js/i18next.min.js"></script>
-<script src="/js/i18nextHttpBackend.min.js"></script>
-<script src="/js/i18nextBrowserLanguageDetector.min.js"></script>
-<script src="/js/i18n.js"></script>
-<script src="/js/components.js"></script>
 <script defer src="/js/api.js"></script>
 <script defer src="/js/demo-utils.js"></script>
 <link rel="stylesheet" href="/css/app.css">
+<script src="/js/common.js"></script>
 </head>
 <body class="bg-stone-50 min-h-screen">
 
@@ -45,14 +41,14 @@
 
   <!-- Day masters -->
   <div class="section-card">
-    <h2 data-i18n="bond.dayMasters">双方日主</h2>
+    <h2 data-i18n="bond.riYuan">双方日主</h2>
     <div class="summary-grid">
       <div class="summary-card">
-        <div class="label" data-i18n="bond.dayMasterA">甲方日主</div>
+        <div class="label" data-i18n="bond.riYuanA">甲方日主</div>
         <div class="value">戊土（身旺）</div>
       </div>
       <div class="summary-card">
-        <div class="label" data-i18n="bond.dayMasterB">乙方日主</div>
+        <div class="label" data-i18n="bond.riYuanB">乙方日主</div>
         <div class="value">癸水（身弱）</div>
       </div>
     </div>
@@ -60,7 +56,7 @@
 
   <!-- Gan relations -->
   <div class="section-card">
-    <h2 data-i18n="bond.ganRelation">天干关系</h2>
+    <h2 data-i18n="bond.tianGanGuanXi">天干关系</h2>
     <div class="rel-row">
       <span class="text-sm">甲 (甲方年干) → 乙 (乙方月干)</span>
       <div>
@@ -93,7 +89,7 @@
 
   <!-- Zhi relations -->
   <div class="section-card">
-    <h2 data-i18n="bond.zhiRelation">地支关系</h2>
+    <h2 data-i18n="bond.diZhiGuanXi">地支关系</h2>
     <div class="rel-row">
       <span class="text-sm">子 (甲方年支) → 丑 (乙方日支)</span>
       <span class="tag tag-green">六合</span>
@@ -110,7 +106,7 @@
 
   <!-- Key hints -->
   <div class="bg-amber-50 border border-amber-100 rounded-xl p-6 mb-3">
-    <h2 class="text-lg font-semibold mb-3 text-amber-800" data-i18n="bond.keyHints">关键提示</h2>
+    <h2 class="text-lg font-semibold mb-3 text-amber-800" data-i18n="bond.guanJianTiShi">关键提示</h2>
     <div class="flex items-start gap-2 mb-1">
       <span class="text-amber-500 mt-1">•</span>
       <span class="text-sm text-amber-800">戊癸合为"无情之合"：中年男女易生情愫，但需注意现实基础，不可仅凭感性冲动。</span>
@@ -159,6 +155,5 @@
 
 <liki-footer></liki-footer>
 
-<script defer src="/js/analytics.js"></script>
 </body>
 </html>

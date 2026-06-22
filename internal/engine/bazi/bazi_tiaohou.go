@@ -15,8 +15,8 @@ type tiaohouKey struct {
 // computeTiaohou returns the 穷通宝鉴 climate-adjustment result for a given
 // day-master and month-branch. Returns (TiaoHou, true) on match, or
 // (zero, false) if no entry exists.
-func computeTiaohou(dayMaster ganzhi.Gan, monthBranch ganzhi.Zhi) (TiaoHou, bool) {
-	e, ok := lookupTiaohou[tiaohouKey{int(dayMaster), int(monthBranch)}]
+func computeTiaohou(riYuan ganzhi.Gan, monthBranch ganzhi.Zhi) (TiaoHou, bool) {
+	e, ok := lookupTiaohou[tiaohouKey{int(riYuan), int(monthBranch)}]
 	if !ok {
 		return TiaoHou{}, false
 	}
@@ -24,12 +24,12 @@ func computeTiaohou(dayMaster ganzhi.Gan, monthBranch ganzhi.Zhi) (TiaoHou, bool
 	yongElem := ganzhi.GanWuxing(e.primary)
 	xiElem := ganzhi.GanWuxing(e.secondary)
 
-	jiElem := pickJiElement(ganzhi.GanWuxing(dayMaster), e.primary, e.secondary)
+	jiElem := pickJiElement(ganzhi.GanWuxing(riYuan), e.primary, e.secondary)
 
 	season := ganzhi.ZhiSeasonLabel(monthBranch)
 	detail := fmt.Sprintf("%s月%s，用%s调候，%s辅之",
 		ganzhi.ZhiName(monthBranch)+"月",
-		ganzhi.GanName(dayMaster)+ganzhi.GanWuxing(dayMaster).String(),
+		ganzhi.GanName(riYuan)+ganzhi.GanWuxing(riYuan).String(),
 		ganzhi.GanName(e.primary),
 		ganzhi.GanName(e.secondary),
 	)

@@ -148,10 +148,10 @@ func TestNaYinLabel_All60HaveName(t *testing.T) {
 }
 
 // =============================================================================
-// HiddenStemsForBranch — 藏干
+// CangGanForZhi — 藏干
 // =============================================================================
 
-func TestHiddenStemsForBranch_All(t *testing.T) {
+func TestCangGanForZhi_All(t *testing.T) {
 	tests := []struct {
 		name     string
 		z        Zhi
@@ -175,7 +175,7 @@ func TestHiddenStemsForBranch_All(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			hs := HiddenStemsForBranch(tt.z)
+			hs := CangGanForZhi(tt.z)
 			if hs.Main == nil || *hs.Main != tt.mainGan {
 				t.Errorf("%s main: got %v, want %d", ZhiName(tt.z), hs.Main, int(tt.mainGan))
 			}
@@ -201,15 +201,15 @@ func TestHiddenStemsForBranch_All(t *testing.T) {
 	}
 }
 
-func TestHiddenStemsForBranch_Invalid(t *testing.T) {
-	hs := HiddenStemsForBranch(0)
+func TestCangGanForZhi_Invalid(t *testing.T) {
+	hs := CangGanForZhi(0)
 	if hs.Main != nil {
-		t.Error("HiddenStemsForBranch(0) should have nil Main")
+		t.Error("CangGanForZhi(0) should have nil Main")
 	}
 }
 
 func TestHiddenStems_Slice(t *testing.T) {
-	hs := HiddenStemsForBranch(ZhiChou)
+	hs := CangGanForZhi(ZhiChou)
 	s := hs.Slice()
 	if len(s) != 3 {
 		t.Fatalf("Slice() len=%d, want 3", len(s))
@@ -220,15 +220,15 @@ func TestHiddenStems_Slice(t *testing.T) {
 }
 
 // =============================================================================
-// RenYuanPhasesForBranch — 人元司令分野
+// RenYuanSiLingFenYeForZhi — 人元司令分野
 // =============================================================================
 
-func TestRenYuanPhasesForBranch_All(t *testing.T) {
+func TestRenYuanSiLingFenYeForZhi_All(t *testing.T) {
 	// Verify each month branch has phases totaling ~30 days
 	for z := ZhiZi; z <= ZhiHai; z++ {
-		phases := RenYuanPhasesForBranch(z)
+		phases := RenYuanSiLingFenYeForZhi(z)
 		if len(phases) == 0 {
-			t.Errorf("RenYuanPhasesForBranch(%s) empty", ZhiName(z))
+			t.Errorf("RenYuanSiLingFenYeForZhi(%s) empty", ZhiName(z))
 			continue
 		}
 		totalDays := 0
@@ -248,9 +248,9 @@ func TestRenYuanPhasesForBranch_All(t *testing.T) {
 	}
 }
 
-func TestRenYuanPhasesForBranch_Known(t *testing.T) {
+func TestRenYuanSiLingFenYeForZhi_Known(t *testing.T) {
 	// 寅月: 戊7→丙7→甲16 = 30天
-	phases := RenYuanPhasesForBranch(ZhiYin)
+	phases := RenYuanSiLingFenYeForZhi(ZhiYin)
 	if len(phases) != 3 {
 		t.Fatalf("寅月 phases len=%d, want 3", len(phases))
 	}
@@ -265,18 +265,18 @@ func TestRenYuanPhasesForBranch_Known(t *testing.T) {
 	}
 }
 
-func TestRenYuanPhasesForBranch_Invalid(t *testing.T) {
-	phases := RenYuanPhasesForBranch(0)
+func TestRenYuanSiLingFenYeForZhi_Invalid(t *testing.T) {
+	phases := RenYuanSiLingFenYeForZhi(0)
 	if phases != nil {
-		t.Error("RenYuanPhasesForBranch(0) should be nil")
+		t.Error("RenYuanSiLingFenYeForZhi(0) should be nil")
 	}
 }
 
 // =============================================================================
-// TenGod — 十神
+// ShiShen — 十神
 // =============================================================================
 
-func TestTenGodType_AllRelations(t *testing.T) {
+func TestShiShenType_AllRelations(t *testing.T) {
 	dmElem := GanWuxing(GanJia)
 	dmYY := GanYinYang(GanJia)
 
@@ -301,8 +301,8 @@ func TestTenGodType_AllRelations(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			otherElem := GanWuxing(tt.other)
 			otherYY := GanYinYang(tt.other)
-			tgType := TenGodType(dmElem, dmYY, otherElem, otherYY)
-			gotName := TenGodName(tgType)
+			tgType := ShiShenType(dmElem, dmYY, otherElem, otherYY)
+			gotName := ShiShenName(tgType)
 			if gotName != tt.typeName {
 				t.Errorf("甲→%s: got %s, want %s", GanName(tt.other), gotName, tt.typeName)
 			}
@@ -310,50 +310,50 @@ func TestTenGodType_AllRelations(t *testing.T) {
 	}
 }
 
-func TestTenGodFromGan_All(t *testing.T) {
+func TestShiShenFromGan_All(t *testing.T) {
 	tests := []struct {
 		name  string
 		other Gan
-		want  TenGod
+		want  ShiShen
 	}{
-		{"甲→甲-比肩", GanJia, TenGodBiJian},
-		{"甲→乙-劫财", GanYi, TenGodJieCai},
-		{"甲→丙-食神", GanBing, TenGodShiShen},
-		{"甲→丁-伤官", GanDing, TenGodShangGuan},
-		{"甲→戊-偏财", GanWu, TenGodPianCai},
-		{"甲→己-正财", GanJi, TenGodZhengCai},
-		{"甲→庚-七杀", GanGeng, TenGodQiSha},
-		{"甲→辛-正官", GanXin, TenGodZhengGuan},
-		{"甲→壬-偏印", GanRen, TenGodPianYin},
-		{"甲→癸-正印", GanGui, TenGodZhengYin},
+		{"甲→甲-比肩", GanJia, ShiShenBiJian},
+		{"甲→乙-劫财", GanYi, ShiShenJieCai},
+		{"甲→丙-食神", GanBing, ShiShenShiShen},
+		{"甲→丁-伤官", GanDing, ShiShenShangGuan},
+		{"甲→戊-偏财", GanWu, ShiShenPianCai},
+		{"甲→己-正财", GanJi, ShiShenZhengCai},
+		{"甲→庚-七杀", GanGeng, ShiShenQiSha},
+		{"甲→辛-正官", GanXin, ShiShenZhengGuan},
+		{"甲→壬-偏印", GanRen, ShiShenPianYin},
+		{"甲→癸-正印", GanGui, ShiShenZhengYin},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := TenGodFromGan(GanJia, tt.other)
+			got := ShiShenFromGan(GanJia, tt.other)
 			if got != tt.want {
-				t.Errorf("TenGodFromGan(甲,%s)=%s, want %s",
+				t.Errorf("ShiShenFromGan(甲,%s)=%s, want %s",
 					GanName(tt.other), got, tt.want)
 			}
 		})
 	}
 }
 
-func TestTenGodFromGan_DifferentDayMasters(t *testing.T) {
+func TestShiShenFromGan_DifferentDayMasters(t *testing.T) {
 	// 丙(火阳)日主 → 庚(金阳)=偏财, 辛(金阴)=正财
-	if got := TenGodFromGan(GanBing, GanGeng); got != TenGodPianCai {
-		t.Errorf("TenGodFromGan(丙,庚)=%s, want 偏财", got)
+	if got := ShiShenFromGan(GanBing, GanGeng); got != ShiShenPianCai {
+		t.Errorf("ShiShenFromGan(丙,庚)=%s, want 偏财", got)
 	}
-	if got := TenGodFromGan(GanBing, GanXin); got != TenGodZhengCai {
-		t.Errorf("TenGodFromGan(丙,辛)=%s, want 正财", got)
+	if got := ShiShenFromGan(GanBing, GanXin); got != ShiShenZhengCai {
+		t.Errorf("ShiShenFromGan(丙,辛)=%s, want 正财", got)
 	}
 }
 
-func TestTenGodName_Invalid(t *testing.T) {
-	if got := TenGodName(-1); got != "" {
-		t.Errorf("TenGodName(-1)=%s, want empty", got)
+func TestShiShenName_Invalid(t *testing.T) {
+	if got := ShiShenName(-1); got != "" {
+		t.Errorf("ShiShenName(-1)=%s, want empty", got)
 	}
-	if got := TenGodName(10); got != "" {
-		t.Errorf("TenGodName(10)=%s, want empty", got)
+	if got := ShiShenName(10); got != "" {
+		t.Errorf("ShiShenName(10)=%s, want empty", got)
 	}
 }
 

@@ -1,8 +1,6 @@
 package ziwei
 
 import (
-	"time"
-
 	"liki/internal/engine/tianwen"
 )
 
@@ -64,14 +62,14 @@ func yearGan(year int) Gan { return Gan(((year-4)%10+10)%10 + 1) }
 func riGan(liuYear, lunarMonth, lunarDay int) Gan {
 	// Try liuYear as the lunar year; fall back to liuYear-1 for months
 	// before Chinese New Year (when the lunar year hasn't caught up).
-	sy, sm, sd := tianwen.LunarToSolar(liuYear, lunarMonth, lunarDay, false)
-	if sy == 0 {
-		sy, sm, sd = tianwen.LunarToSolar(liuYear-1, lunarMonth, lunarDay, false)
+	gt := tianwen.LunarToGregorian(tianwen.LunarTime{Year: liuYear, Month: lunarMonth, Day: lunarDay})
+	if gt.Time().IsZero() {
+		gt = tianwen.LunarToGregorian(tianwen.LunarTime{Year: liuYear - 1, Month: lunarMonth, Day: lunarDay})
 	}
-	if sy == 0 {
+	if gt.Time().IsZero() {
 		return 1 // fallback
 	}
-	dp := tianwen.RiZhu(tianwen.GregorianTime(time.Date(sy, time.Month(sm), sd, 0, 0, 0, 0, time.UTC)))
+	dp := tianwen.RiZhu(gt)
 	return dp.Gan
 }
 

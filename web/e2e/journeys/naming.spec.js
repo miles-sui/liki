@@ -20,8 +20,8 @@ test.describe('Naming demo page', () => {
     await page.goto('/zh/naming.html');
     await page.waitForSelector('[data-i18n]', { timeout: 10000 });
 
-    // Header.
-    await expect(page.locator('h1')).toContainText('起名报告');
+    // Header — use h1[data-i18n] to avoid strict-mode conflict with <liki-header> brand h1.
+    await expect(page.locator('h1[data-i18n]')).toContainText('起名报告');
 
     // Summary cards.
     await expect(page.locator('.summary-grid')).toBeVisible();
@@ -38,7 +38,7 @@ test.describe('Naming demo page', () => {
     await page.goto('/en/naming.html');
     await page.waitForSelector('[data-i18n]', { timeout: 10000 });
 
-    await expect(page.locator('h1')).toContainText('Naming');
+    await expect(page.locator('h1[data-i18n]')).toContainText('Naming');
   });
 
   // ── name candidate cards ──

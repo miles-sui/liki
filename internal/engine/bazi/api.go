@@ -32,23 +32,42 @@ func ComputeChart(st tianwen.SolarTime, gender ganzhi.Gender) Chart {
 }
 
 // ComputeLiuNian computes the year pillar and its interactions with the bazi chart.
-func ComputeLiuNian(st tianwen.SolarTime, year int, currentDaYun *DaYunZhu) (*LiuNian, error) {
-	return computeLiuNian(tianwen.ComputeBazi(st), year, currentDaYun)
+func ComputeLiuNian(cb ChartBase, year int) (*LiuNian, error) {
+	cd := currentDaYunZhu(cb.DaYun)
+	return computeLiuNian(cb.ToBazi(), year, cd)
 }
 
 // ComputeLiuYue computes the month pillar and its interactions with the bazi chart.
-func ComputeLiuYue(st tianwen.SolarTime, year, month int) (*LiuYue, error) {
-	return computeLiuYue(tianwen.ComputeBazi(st), year, month)
+func ComputeLiuYue(cb ChartBase, year, month int) (*LiuYue, error) {
+	return computeLiuYue(cb.ToBazi(), year, month)
 }
 
 // ComputeLiuRi computes the day pillar and its interactions with the bazi chart.
-func ComputeLiuRi(st tianwen.SolarTime, date string, daYunZhu *ganzhi.Zhu, liuNianZhu *ganzhi.Zhu) (*LiuRi, error) {
-	return computeLiuRi(tianwen.ComputeBazi(st), date, daYunZhu, liuNianZhu)
+func ComputeLiuRi(cb ChartBase, year, month, day int) (*LiuRi, error) {
+	dz := currentDaYunZhu(cb.DaYun)
+	var dzZhu *ganzhi.Zhu
+	if dz != nil {
+		dzZhu = &ganzhi.Zhu{Gan: dz.Gan, Zhi: dz.Zhi}
+	}
+	ln, _ := ComputeLiuNian(cb, year)
+	var lnZhu *ganzhi.Zhu
+	if ln != nil {
+		lnZhu = &ganzhi.Zhu{Gan: ln.YearGan, Zhi: ln.YearZhi}
+	}
+	return computeLiuRi(cb.ToBazi(), year, month, day, dzZhu, lnZhu)
 }
 
 // ComputeLiuShi computes the hour pillar and its interactions with the bazi chart.
-func ComputeLiuShi(st tianwen.SolarTime, date string, hour int) (*LiuShi, error) {
-	return computeLiuShi(tianwen.ComputeBazi(st), date, hour)
+func ComputeLiuShi(cb ChartBase, year, month, day, hour int) (*LiuShi, error) {
+	return computeLiuShi(cb.ToBazi(), year, month, day, hour)
+}
+
+// currentDaYunZhu returns the current DaYun Zhu or nil.
+func currentDaYunZhu(dy *DaYun) *DaYunZhu {
+	if dy == nil || dy.CurrentZhuIndex < 0 || dy.CurrentZhuIndex >= len(dy.Zhu) {
+		return nil
+	}
+	return &dy.Zhu[dy.CurrentZhuIndex]
 }
 
 // ComputeXiaoYun computes the minor fortune (小运) pillars.

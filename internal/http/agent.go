@@ -27,11 +27,11 @@ func chatHandler(chat *agent.ChatAgent, orders agent.OrderCreator, store *sessio
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req chatRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			respondError(w, http.StatusBadRequest, "bad_request", "invalid request body")
+			respondError(w, http.StatusBadRequest, "invalid_request", "invalid request body")
 			return
 		}
 		if req.Message == "" {
-			respondError(w, http.StatusBadRequest, "bad_request", "message is required")
+			respondError(w, http.StatusBadRequest, "invalid_request", "message is required")
 			return
 		}
 
@@ -45,14 +45,14 @@ func chatHandler(chat *agent.ChatAgent, orders agent.OrderCreator, store *sessio
 				return
 			}
 			if sess.IsClosed() {
-				respondError(w, http.StatusBadRequest, "session_closed", "session is closed")
+				respondError(w, http.StatusBadRequest, "invalid_request", "session is closed")
 				return
 			}
 			store.Touch(sess.ID)
 		} else {
 			sess = store.NewSession()
 			if sess == nil {
-				respondError(w, http.StatusServiceUnavailable, "server_error", "service is busy, please try again")
+				respondError(w, http.StatusServiceUnavailable, "internal_error", "service is busy, please try again")
 				return
 			}
 			if req.Country != "" {
@@ -78,7 +78,7 @@ func chatHandler(chat *agent.ChatAgent, orders agent.OrderCreator, store *sessio
 
 		flusher, ok := w.(http.Flusher)
 		if !ok {
-			respondError(w, http.StatusInternalServerError, "server_error", "streaming not supported")
+			respondError(w, http.StatusInternalServerError, "internal_error", "streaming not supported")
 			return
 		}
 
@@ -138,7 +138,7 @@ func sessionRestoreHandler(store *session.Store) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		sid := r.URL.Query().Get("session_id")
 		if sid == "" {
-			respondError(w, http.StatusBadRequest, "bad_request", "session_id is required")
+			respondError(w, http.StatusBadRequest, "invalid_request", "session_id is required")
 			return
 		}
 		sess, ok := store.Get(sid)

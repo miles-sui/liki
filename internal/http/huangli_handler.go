@@ -57,14 +57,13 @@ func huangliBondDate(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	ts, err := req.Birth.Timeset()
-	if err != nil {
-		respondInvalidRequest(w, err.Error())
+	ts, ok := timesetOrRespond(w, req.Birth)
+	if !ok {
 		return
 	}
 	entry, err := huangli.ComputeBondDay(ts.Solar, req.EventType, req.Date)
 	if err != nil {
-		respondValidationError(w, err)
+		respondInvalidRequest(w, err.Error())
 		return
 	}
 	respondJSON(w, http.StatusOK, map[string]any{"entry": entry})
@@ -89,14 +88,13 @@ func huangliBondMonth(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	ts, err := req.Birth.Timeset()
-	if err != nil {
-		respondInvalidRequest(w, err.Error())
+	ts, ok := timesetOrRespond(w, req.Birth)
+	if !ok {
 		return
 	}
 	entries, err := huangli.ComputeBondMonth(ts.Solar, req.EventType, req.Month)
 	if err != nil {
-		respondValidationError(w, err)
+		respondInvalidRequest(w, err.Error())
 		return
 	}
 	respondJSON(w, http.StatusOK, map[string]any{"entries": entries})

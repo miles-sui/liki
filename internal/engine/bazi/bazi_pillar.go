@@ -7,11 +7,11 @@ import (
 
 func computeChart(bz ganzhi.Bazi, st tianwen.SolarTime, gender ganzhi.Gender) Chart {
 	dm := bz.Ri.Gan
-	hs := computeHiddenStems(bz)
+	hs := computeCangGan(bz)
 	ny := computeNaYin(bz)
 	ls := computeChangSheng(dm)
 	ec := computeElementCount(bz, hs)
-	tgTable := computeTenGodsTable(bz, hs)
+	tgTable := computeShiShensTable(bz, hs)
 	lsTable := computeChangShengTable(bz, hs)
 	shensha := computeShenSha(bz)
 	voidHits := computeKongWang(bz)
@@ -26,7 +26,7 @@ func computeChart(bz ganzhi.Bazi, st tianwen.SolarTime, gender ganzhi.Gender) Ch
 			}
 		}
 		pz := ganzhi.Zhu{Gan: ps[i].Gan, Zhi: ps[i].Zhi}
-		pi := zhuInfo{Gan: ps[i].Gan, Zhi: ps[i].Zhi, NaYin: ny[i], HiddenStems: hs[i], TenGods: tgTable[i], ChangSheng: lsTable[i], ShenSha: shensha[i], IsVoid: isVoid}
+		pi := zhuInfo{Gan: ps[i].Gan, Zhi: ps[i].Zhi, NaYin: ny[i], CangGan: hs[i], ShiShens: tgTable[i], ChangSheng: lsTable[i], ShenSha: shensha[i], IsVoid: isVoid}
 		pi.IsSelfHe = isSelfHe(pz)
 		if pi.IsSelfHe {
 			pi.SelfHeName = selfHeName(pz)
@@ -37,11 +37,11 @@ func computeChart(bz ganzhi.Bazi, st tianwen.SolarTime, gender ganzhi.Gender) Ch
 
 	cr := Chart{
 		ChartBase: ChartBase{
-			Year: makePI(0), Month: makePI(1), Day: makePI(2), Hour: makePI(3),
-			SolarTime: st, DayMaster: dm,
-			ChangSheng:  ls,
-			WuxingCount: ec,
+			Nian: makePI(0), Yue: makePI(1), Ri: makePI(2), Shi: makePI(3),
 		},
+		SolarTime:  st,
+		ChangSheng: ls,
+		WuxingCount: ec,
 		HeHui:     computeFullTripleHeHui(bz),
 		GongJia:   computeGongJia(bz),
 		NayinRel:  computeNaYinRelations(ny),
@@ -55,24 +55,24 @@ func computeChart(bz ganzhi.Bazi, st tianwen.SolarTime, gender ganzhi.Gender) Ch
 		},
 	}
 	cr.FuYi = computeFuYi(cr)
-	cr.TiaoHou, _ = computeTiaohou(cr.DayMaster, cr.Month.Zhi)
+	cr.TiaoHou, _ = computeTiaohou(cr.Ri.Gan, cr.Yue.Zhi)
 	cr.DaYun = computeDaYun(st, bz.Yue, bz.Nian.Gan, bz.Ri.Gan, gender)
 	birthMonth := (int(bz.Yue.Zhi) + 9) % 12 + 1
 	cr.TaiYuanMingGong = computeTaiYuanMingGong(bz.Yue, bz.Nian.Gan, birthMonth, int(bz.Shi.Zhi))
 	return cr
 }
 
-func computeHiddenStems(bz ganzhi.Bazi) [4]hiddenStemsOut {
-	var hs [4]hiddenStemsOut
+func computeCangGan(bz ganzhi.Bazi) [4]cangGanOut {
+	var hs [4]cangGanOut
 	for i, z := range bz.Slice() {
-		qi := ganzhi.HiddenStemsForBranch(z.Zhi)
-		hs[i] = hiddenStemsOut{Main: ganzhi.Gan(*qi.Main)}
+		qi := ganzhi.CangGanForZhi(z.Zhi)
+		hs[i] = cangGanOut{Main: *qi.Main}
 		if qi.Mid != nil {
-			mid := ganzhi.Gan(*qi.Mid)
+			mid := *qi.Mid
 			hs[i].Mid = &mid
 		}
 		if qi.Minor != nil {
-			minor := ganzhi.Gan(*qi.Minor)
+			minor := *qi.Minor
 			hs[i].Minor = &minor
 		}
 	}
@@ -99,7 +99,7 @@ func computeChangSheng(dm ganzhi.Gan) [12]stageOut {
 	return out
 }
 
-func computeElementCount(bz ganzhi.Bazi, hs [4]hiddenStemsOut) map[ganzhi.Wuxing]int {
+func computeElementCount(bz ganzhi.Bazi, hs [4]cangGanOut) map[ganzhi.Wuxing]int {
 	wc := make(map[ganzhi.Wuxing]int)
 	for _, z := range bz.Slice() {
 		wc[ganzhi.GanWuxing(z.Gan)]++
@@ -116,35 +116,35 @@ func computeElementCount(bz ganzhi.Bazi, hs [4]hiddenStemsOut) map[ganzhi.Wuxing
 	return wc
 }
 
-func computeTenGodsTable(bz ganzhi.Bazi, hs [4]hiddenStemsOut) [4][]tenGodEntry {
+func computeShiShensTable(bz ganzhi.Bazi, hs [4]cangGanOut) [4][]shiShenEntry {
 	dm := bz.Ri.Gan
-	var table [4][]tenGodEntry
+	var table [4][]shiShenEntry
 	ps := bz.Slice()
 	for i := range ps {
-		var entries []tenGodEntry
-		entries = append(entries, tenGodEntry{
-			TenGod: ganzhi.TenGodFromGan(dm, ps[i].Gan),
+		var entries []shiShenEntry
+		entries = append(entries, shiShenEntry{
+			ShiShen: ganzhi.ShiShenFromGan(dm, ps[i].Gan),
 			Name:   ganzhi.GanName(ps[i].Gan),
 			Source: sourceGan,
 			Gan:    ps[i].Gan,
 		})
-		entries = append(entries, tenGodEntry{
-			TenGod: ganzhi.TenGodFromGan(dm, hs[i].Main),
+		entries = append(entries, shiShenEntry{
+			ShiShen: ganzhi.ShiShenFromGan(dm, hs[i].Main),
 			Name:   ganzhi.GanName(hs[i].Main),
 			Source: sourceMainQi,
 			Gan:    hs[i].Main,
 		})
 		if hs[i].Mid != nil {
-			entries = append(entries, tenGodEntry{
-				TenGod: ganzhi.TenGodFromGan(dm, *hs[i].Mid),
+			entries = append(entries, shiShenEntry{
+				ShiShen: ganzhi.ShiShenFromGan(dm, *hs[i].Mid),
 				Name:   ganzhi.GanName(*hs[i].Mid),
 				Source: sourceMidQi,
 				Gan:    *hs[i].Mid,
 			})
 		}
 		if hs[i].Minor != nil {
-			entries = append(entries, tenGodEntry{
-				TenGod: ganzhi.TenGodFromGan(dm, *hs[i].Minor),
+			entries = append(entries, shiShenEntry{
+				ShiShen: ganzhi.ShiShenFromGan(dm, *hs[i].Minor),
 				Name:   ganzhi.GanName(*hs[i].Minor),
 				Source: sourceMinQi,
 				Gan:    *hs[i].Minor,
@@ -155,7 +155,7 @@ func computeTenGodsTable(bz ganzhi.Bazi, hs [4]hiddenStemsOut) [4][]tenGodEntry 
 	return table
 }
 
-func computeChangShengTable(bz ganzhi.Bazi, hs [4]hiddenStemsOut) [4][]changShengEntry {
+func computeChangShengTable(bz ganzhi.Bazi, hs [4]cangGanOut) [4][]changShengEntry {
 	var table [4][]changShengEntry
 	for i, z := range bz.Slice() {
 		stages, ok := ganzhi.ChangShengTable[z.Gan]
@@ -175,8 +175,8 @@ func computeChangShengTable(bz ganzhi.Bazi, hs [4]hiddenStemsOut) [4][]changShen
 	return table
 }
 
-func computeNaYinRelations(nayins [4]string) []naYinRelation {
-	var rels []naYinRelation
+func computeNaYinRelations(nayins [4]string) []naYinGuanXi {
+	var rels []naYinGuanXi
 	for i := 0; i < 4; i++ {
 		for j := i + 1; j < 4; j++ {
 			ae := ganzhi.NaYinWuxing(nayins[i])
@@ -189,7 +189,7 @@ func computeNaYinRelations(nayins [4]string) []naYinRelation {
 					rel = "相克"
 				}
 			}
-			rels = append(rels, naYinRelation{A: zhuNames[i], B: zhuNames[j], Relation: rel})
+			rels = append(rels, naYinGuanXi{A: zhuNames[i], B: zhuNames[j], Relation: rel})
 		}
 	}
 	return rels

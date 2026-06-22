@@ -8,7 +8,7 @@ type XiaoYunZhu struct {
 	Gan ganzhi.Gan    `json:"gan"`
 	Zhi ganzhi.Zhi    `json:"zhi"`
 	Name   string `json:"name"`
-	TenGod string `json:"shishen"`
+	ShiShen string `json:"shi_shen"`
 }
 
 // ComputeXiaoYun computes the minor fortune (小运) zhus for each age starting from 1.
@@ -16,7 +16,7 @@ type XiaoYunZhu struct {
 // ganzhi.Female: start from 壬申 (stem=9, branch=9) and go backward.
 // Returns up to maxAge zhus (typically up to 12 for childhood).
 func computeXiaoYun(bz ganzhi.Bazi, gender ganzhi.Gender, maxAge int) []XiaoYunZhu {
-	dayMaster := bz.Ri.Gan
+	riYuan := bz.Ri.Gan
 	if maxAge <= 0 {
 		maxAge = 12
 	}
@@ -39,14 +39,14 @@ func computeXiaoYun(bz ganzhi.Bazi, gender ganzhi.Gender, maxAge int) []XiaoYunZ
 		zhu := ganzhi.SixtyToZhu(idx)
 		name := ganzhi.GanName(zhu.Gan) + ganzhi.ZhiName(zhu.Zhi)
 
-		tg := ganzhi.TenGodFromGan(dayMaster, zhu.Gan)
+		tg := ganzhi.ShiShenFromGan(riYuan, zhu.Gan)
 
 		zhus = append(zhus, XiaoYunZhu{
 			Age:    age,
 			Gan:    zhu.Gan,
 			Zhi:    zhu.Zhi,
 			Name:   name,
-			TenGod: tg.String(),
+			ShiShen: tg.String(),
 		})
 	}
 	return zhus

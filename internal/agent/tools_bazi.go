@@ -18,7 +18,7 @@ func computeChartHandler(ctx context.Context, raw json.RawMessage) (json.RawMess
 	if err != nil {
 		return nil, fmt.Errorf("compute_chart: %w", err)
 	}
-	result := bazi.ComputeChart(ts.Solar, ganzhi.Gender(p.Gender))
+	result := bazi.ComputeChart(ts.Solar, p.Gender)
 	return wrapResult("chart", result)
 }
 
@@ -34,31 +34,31 @@ func computeBondHandler(ctx context.Context, raw json.RawMessage) (json.RawMessa
 	if err != nil {
 		return nil, fmt.Errorf("compute_bond: %w", err)
 	}
-	chartA := bazi.ComputeChart(tsA.Solar, ganzhi.Gender(p.A.Gender))
+	chartA := bazi.ComputeChart(tsA.Solar, p.A.Gender)
 	tsB, err := p.B.Birth.Timeset()
 	if err != nil {
 		return nil, fmt.Errorf("compute_bond: %w", err)
 	}
-	chartB := bazi.ComputeChart(tsB.Solar, ganzhi.Gender(p.B.Gender))
+	chartB := bazi.ComputeChart(tsB.Solar, p.B.Gender)
 	result := bazi.ComputeBond(chartA.ChartBase, chartB.ChartBase)
 	return wrapResult("bond", result)
 }
 
 func computeLiunianHandler(ctx context.Context, raw json.RawMessage) (json.RawMessage, error) {
 	var p struct {
-		Year  int             `json:"year"`
-		Birth TimePoint      `json:"birth"`
-		Dayun json.RawMessage `json:"dayun"`
+		Year   int             `json:"year"`
+		Birth  TimePoint       `json:"birth"`
+		Gender ganzhi.Gender   `json:"gender"`
 	}
 	if err := json.Unmarshal(raw, &p); err != nil {
 		return nil, fmt.Errorf("compute_liunian: %w", err)
 	}
-	cdu := parseDaYunZhu(p.Dayun)
 	ts, err := p.Birth.Timeset()
 	if err != nil {
 		return nil, fmt.Errorf("compute_liunian: %w", err)
 	}
-	result, err := bazi.ComputeLiuNian(ts.Solar, p.Year, cdu)
+	chart := bazi.ComputeChart(ts.Solar, p.Gender)
+	result, err := bazi.ComputeLiuNian(chart.ChartBase, p.Year)
 	if err != nil {
 		return nil, fmt.Errorf("compute_liunian: %w", err)
 	}
@@ -67,9 +67,10 @@ func computeLiunianHandler(ctx context.Context, raw json.RawMessage) (json.RawMe
 
 func computeLiuyueHandler(ctx context.Context, raw json.RawMessage) (json.RawMessage, error) {
 	var p struct {
-		Year  int        `json:"year"`
-		Month int        `json:"month"`
-		Birth TimePoint `json:"birth"`
+		Year   int             `json:"year"`
+		Month  int             `json:"month"`
+		Birth  TimePoint       `json:"birth"`
+		Gender ganzhi.Gender   `json:"gender"`
 	}
 	if err := json.Unmarshal(raw, &p); err != nil {
 		return nil, fmt.Errorf("compute_liuyue: %w", err)
@@ -78,7 +79,8 @@ func computeLiuyueHandler(ctx context.Context, raw json.RawMessage) (json.RawMes
 	if err != nil {
 		return nil, fmt.Errorf("compute_liuyue: %w", err)
 	}
-	result, err := bazi.ComputeLiuYue(ts.Solar, p.Year, p.Month)
+	chart := bazi.ComputeChart(ts.Solar, p.Gender)
+	result, err := bazi.ComputeLiuYue(chart.ChartBase, p.Year, p.Month)
 	if err != nil {
 		return nil, fmt.Errorf("compute_liuyue: %w", err)
 	}
@@ -87,21 +89,21 @@ func computeLiuyueHandler(ctx context.Context, raw json.RawMessage) (json.RawMes
 
 func computeLiuriHandler(ctx context.Context, raw json.RawMessage) (json.RawMessage, error) {
 	var p struct {
-		Date    string          `json:"date"`
-		Birth   TimePoint      `json:"birth"`
-		Dayun   json.RawMessage `json:"dayun"`
-		LiuNian json.RawMessage `json:"liunian"`
+		Year   int             `json:"year"`
+		Month  int             `json:"month"`
+		Day    int             `json:"day"`
+		Birth  TimePoint       `json:"birth"`
+		Gender ganzhi.Gender   `json:"gender"`
 	}
 	if err := json.Unmarshal(raw, &p); err != nil {
 		return nil, fmt.Errorf("compute_liuri: %w", err)
 	}
-	dp := parseZhu(p.Dayun)
-	lp := parseZhu(p.LiuNian)
 	ts, err := p.Birth.Timeset()
 	if err != nil {
 		return nil, fmt.Errorf("compute_liuri: %w", err)
 	}
-	result, err := bazi.ComputeLiuRi(ts.Solar, p.Date, dp, lp)
+	chart := bazi.ComputeChart(ts.Solar, p.Gender)
+	result, err := bazi.ComputeLiuRi(chart.ChartBase, p.Year, p.Month, p.Day)
 	if err != nil {
 		return nil, fmt.Errorf("compute_liuri: %w", err)
 	}
@@ -110,9 +112,12 @@ func computeLiuriHandler(ctx context.Context, raw json.RawMessage) (json.RawMess
 
 func computeLiushiHandler(ctx context.Context, raw json.RawMessage) (json.RawMessage, error) {
 	var p struct {
-		Date  string     `json:"date"`
-		Hour  int        `json:"hour"`
-		Birth TimePoint `json:"birth"`
+		Year   int             `json:"year"`
+		Month  int             `json:"month"`
+		Day    int             `json:"day"`
+		Hour   int             `json:"hour"`
+		Birth  TimePoint       `json:"birth"`
+		Gender ganzhi.Gender   `json:"gender"`
 	}
 	if err := json.Unmarshal(raw, &p); err != nil {
 		return nil, fmt.Errorf("compute_liushi: %w", err)
@@ -121,7 +126,8 @@ func computeLiushiHandler(ctx context.Context, raw json.RawMessage) (json.RawMes
 	if err != nil {
 		return nil, fmt.Errorf("compute_liushi: %w", err)
 	}
-	result, err := bazi.ComputeLiuShi(ts.Solar, p.Date, p.Hour)
+	chart := bazi.ComputeChart(ts.Solar, p.Gender)
+	result, err := bazi.ComputeLiuShi(chart.ChartBase, p.Year, p.Month, p.Day, p.Hour)
 	if err != nil {
 		return nil, fmt.Errorf("compute_liushi: %w", err)
 	}
@@ -130,9 +136,9 @@ func computeLiushiHandler(ctx context.Context, raw json.RawMessage) (json.RawMes
 
 func computeXiaoYunHandler(ctx context.Context, raw json.RawMessage) (json.RawMessage, error) {
 	var p struct {
-		Birth  TimePoint `json:"birth"`
-		Gender string     `json:"gender"`
-		Count  int        `json:"count"`
+		Birth  TimePoint     `json:"birth"`
+		Gender ganzhi.Gender `json:"gender"`
+		Count  int            `json:"count"`
 	}
 	if err := json.Unmarshal(raw, &p); err != nil {
 		return nil, fmt.Errorf("compute_xiaoyun: %w", err)
@@ -141,18 +147,18 @@ func computeXiaoYunHandler(ctx context.Context, raw json.RawMessage) (json.RawMe
 	if err != nil {
 		return nil, fmt.Errorf("compute_xiaoyun: %w", err)
 	}
-	result := bazi.ComputeXiaoYun(ts.Solar, ganzhi.Gender(p.Gender), p.Count)
+	result := bazi.ComputeXiaoYun(ts.Solar, p.Gender, p.Count)
 	return wrapResult("xiaoyun", result)
 }
 
 func computeXiaoXianHandler(ctx context.Context, raw json.RawMessage) (json.RawMessage, error) {
 	var p struct {
-		Gender string `json:"gender"`
-		Count  int    `json:"count"`
+		Gender ganzhi.Gender `json:"gender"`
+		Count  int            `json:"count"`
 	}
 	if err := json.Unmarshal(raw, &p); err != nil {
 		return nil, fmt.Errorf("compute_xiaoxian: %w", err)
 	}
-	result := bazi.ComputeXiaoXian(ganzhi.Gender(p.Gender), p.Count)
+	result := bazi.ComputeXiaoXian(p.Gender, p.Count)
 	return wrapResult("xiaoxian", result)
 }

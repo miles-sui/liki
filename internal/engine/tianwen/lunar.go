@@ -2,6 +2,7 @@ package tianwen
 
 import (
 	"math"
+	"time"
 
 	"liki/internal/engine/ganzhi"
 )
@@ -324,14 +325,14 @@ func SolarToLunar(gt GregorianTime) LunarTime {
 	return LunarTime{Year: lunarYear, Month: lunarMonth, Day: day, Leap: leap}
 }
 
-// LunarToSolar converts a Chinese lunar date to Gregorian date.
+// LunarToGregorian converts a Chinese lunar date to Gregorian date.
 // The result is in UTC+8 local time.
-func LunarToSolar(lunarYear, lunarMonth, lunarDay int, leap bool) (int, int, int) {
+func LunarToGregorian(lt LunarTime) GregorianTime {
 	tz := defaultTZ
 
-	targetK, ok := findLunarMonthK(lunarYear, lunarMonth, leap, tz)
+	targetK, ok := findLunarMonthK(lt.Year, lt.Month, lt.Leap, tz)
 	if !ok {
-		return 0, 0, 0
+		return GregorianTime(time.Time{})
 	}
 
 	// Validate day is within the month.
@@ -345,12 +346,13 @@ func LunarToSolar(lunarYear, lunarMonth, lunarDay int, leap bool) (int, int, int
 	nextMidnightJD := gregorianToJD(ny, nm, nd, tz)
 	monthSize := int(nextMidnightJD - midnightJD)
 
-	if lunarDay < 1 || lunarDay > monthSize {
-		return 0, 0, 0
+	if lt.Day < 1 || lt.Day > monthSize {
+		return GregorianTime(time.Time{})
 	}
 
-	targetJD := midnightJD + float64(lunarDay-1)
-	return jdToGregorian(targetJD, tz)
+	targetJD := midnightJD + float64(lt.Day-1)
+	gy, gm, gd := jdToGregorian(targetJD, tz)
+	return GregorianTime(time.Date(gy, time.Month(gm), gd, 0, 0, 0, 0, time.FixedZone("CST", int(defaultTZ*3600))))
 }
 
 // findLunarMonthK searches for the lunation number k that corresponds to

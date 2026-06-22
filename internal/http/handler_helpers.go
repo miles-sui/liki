@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"time"
 
+	validation "github.com/go-ozzo/ozzo-validation/v4"
+
 	"liki/internal/agent"
 	"liki/internal/engine/ganzhi"
 	"liki/internal/engine/tianwen"
@@ -16,7 +18,20 @@ import (
 // The actual type and conversion logic live in the agent package.
 type timePoint = agent.TimePoint
 
+// BirthRequest is the common HTTP body for chart endpoints that accept
+// birth time + gender. The handler converts timePoint to tianwen.Timeset,
+// then passes SolarTime + Gender to the engine.
+type BirthRequest struct {
+	Birth  timePoint     `json:"birth"`
+	Gender ganzhi.Gender `json:"gender"`
+}
 
+func (r BirthRequest) Validate() error {
+	return validation.ValidateStruct(&r,
+		validation.Field(&r.Birth, validation.By(validateTimePoint)),
+		validation.Field(&r.Gender, validation.Required, validation.In(validGenders...)),
+	)
+}
 
 var validGenders = []any{ganzhi.Male, ganzhi.Female}
 
@@ -55,23 +70,7 @@ func decodeAndValidate[T validator](w http.ResponseWriter, r *http.Request) (T, 
 		return req, false
 	}
 	if err := req.Validate(); err != nil {
-		slog.Warn("validation failed", "err", err)
-		respondError(w, http.StatusUnprocessableEntity, "invalid_request", "Invalid request")
-		return req, false
-	}
-	return req, true
-}
-
-// decodeAndValidate decodes JSON body and calls the provided validate function.
-// Use this when the request type is an anonymous struct that can't have methods.
-func decodeWith[T any](w http.ResponseWriter, r *http.Request, validate func(T) error) (T, bool) {
-	req, ok := decodeJSON[T](w, r)
-	if !ok {
-		return req, false
-	}
-	if err := validate(req); err != nil {
-		slog.Warn("validation failed", "err", err)
-		respondError(w, http.StatusUnprocessableEntity, "invalid_request", "Invalid request")
+		respondValidationError(w, err)
 		return req, false
 	}
 	return req, true
@@ -83,7 +82,7 @@ func respondInvalidRequest(w http.ResponseWriter, msg string) {
 
 func respondValidationError(w http.ResponseWriter, err error) {
 	slog.Warn("validation failed", "err", err)
-	respondError(w, http.StatusUnprocessableEntity, "invalid_request", "Invalid request")
+	respondError(w, http.StatusUnprocessableEntity, "validation_error", err.Error())
 }
 
 func validateTimePoint(value any) error {
@@ -91,28 +90,24 @@ func validateTimePoint(value any) error {
 	if !ok {
 		return errors.New("required")
 	}
-	if tp.Lunar != nil {
-		if tp.Lunar.Year < 1900 || tp.Lunar.Year > 2100 {
-			return errors.New("lunar year must be 1900-2100")
-		}
-		if tp.Lunar.Month < 1 || tp.Lunar.Month > 12 {
-			return errors.New("lunar month must be 1-12")
-		}
-		if tp.Lunar.Day < 1 || tp.Lunar.Day > 30 {
-			return errors.New("lunar day must be 1-30")
-		}
-		if tp.Lunar.Hour < 0 || tp.Lunar.Hour > 23 {
-			return errors.New("lunar hour must be 0-23")
-		}
-		return nil
-	}
 	if tp.Time == "" {
-		return errors.New("time or lunar is required")
+		return errors.New("time is required")
 	}
 	if _, err := time.Parse(time.RFC3339, tp.Time); err != nil {
 		return errors.New("time must be RFC3339 format")
 	}
 	return nil
+}
+
+// timesetOrRespond converts timePoint to tianwen.Timeset, writing an error
+// response and returning false on failure. Callers should return immediately.
+func timesetOrRespond(w http.ResponseWriter, tp timePoint) (tianwen.Timeset, bool) {
+	ts, err := tp.Timeset()
+	if err != nil {
+		respondInvalidRequest(w, err.Error())
+		return tianwen.Timeset{}, false
+	}
+	return ts, true
 }
 
 func validateNonZeroGregorianTime(value any) error {

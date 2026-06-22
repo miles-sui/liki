@@ -61,8 +61,8 @@ test.describe('Static pages — no render errors', () => {
         throw new Error(`Raw template syntax '{{ }}' found on ${path}`);
       }
       // Raw i18n keys follow a dotted pattern; catch any that leaked through.
-      if (/\babout\.\w+|privacy\.\w+|terms\.\w+|site\.\w+|index\.\w+|chart\.\w+|report\.\w+|chat\.\w+|naming\.\w+|bond\.\w+|pillar\.\w+|footer\.\w+|form\.\w+|disclaimer\.\w+|compatibility\.\w+|nav\.\w+\b/i.test(bodyText)) {
-        throw new Error(`Unresolved i18n key found on ${path}: ${bodyText.match(/\babout\.\w+|privacy\.\w+|terms\.\w+|site\.\w+|index\.\w+|chart\.\w+|report\.\w+|chat\.\w+|naming\.\w+|bond\.\w+|pillar\.\w+|footer\.\w+|form\.\w+|disclaimer\.\w+|compatibility\.\w+|nav\.\w+\b/gi)}`);
+      if (/\babout\.\w+|privacy\.\w+|terms\.\w+|site\.\w+|index\.\w+|chart\.\w+|report\.\w+|chat\.\w+|naming\.\w+|bond\.\w+|zhu\.\w+|footer\.\w+|form\.\w+|disclaimer\.\w+|compatibility\.\w+|nav\.\w+\b/i.test(bodyText)) {
+        throw new Error(`Unresolved i18n key found on ${path}: ${bodyText.match(/\babout\.\w+|privacy\.\w+|terms\.\w+|site\.\w+|index\.\w+|chart\.\w+|report\.\w+|chat\.\w+|naming\.\w+|bond\.\w+|zhu\.\w+|footer\.\w+|form\.\w+|disclaimer\.\w+|compatibility\.\w+|nav\.\w+\b/gi)}`);
       }
 
       if (consoleProblems.length > 0) {
@@ -97,7 +97,7 @@ test.describe('Vue pages — no render errors', () => {
       if (/\{\{/.test(bodyText)) {
         throw new Error(`Raw template syntax '{{ }}' found on ${path}`);
       }
-      if (/\babout\.\w+|privacy\.\w+|terms\.\w+|site\.\w+|index\.\w+|chart\.\w+|report\.\w+|chat\.\w+|naming\.\w+|bond\.\w+|pillar\.\w+|footer\.\w+|form\.\w+|disclaimer\.\w+|compatibility\.\w+|nav\.\w+\b/i.test(bodyText)) {
+      if (/\babout\.\w+|privacy\.\w+|terms\.\w+|site\.\w+|index\.\w+|chart\.\w+|report\.\w+|chat\.\w+|naming\.\w+|bond\.\w+|zhu\.\w+|footer\.\w+|form\.\w+|disclaimer\.\w+|compatibility\.\w+|nav\.\w+\b/i.test(bodyText)) {
         throw new Error(`Unresolved i18n key found on ${path}`);
       }
 
@@ -126,7 +126,7 @@ test.describe('Async pages — no console errors on load', () => {
 
       // Check for unresolved i18n keys.
       const bodyText = await page.locator('body').innerText();
-      if (/\babout\.\w+|privacy\.\w+|terms\.\w+|site\.\w+|index\.\w+|chart\.\w+|report\.\w+|chat\.\w+|naming\.\w+|bond\.\w+|pillar\.\w+|footer\.\w+|form\.\w+|disclaimer\.\w+|compatibility\.\w+|nav\.\w+\b/i.test(bodyText)) {
+      if (/\babout\.\w+|privacy\.\w+|terms\.\w+|site\.\w+|index\.\w+|chart\.\w+|report\.\w+|chat\.\w+|naming\.\w+|bond\.\w+|zhu\.\w+|footer\.\w+|form\.\w+|disclaimer\.\w+|compatibility\.\w+|nav\.\w+\b/i.test(bodyText)) {
         throw new Error(`Unresolved i18n key found on ${path}`);
       }
 

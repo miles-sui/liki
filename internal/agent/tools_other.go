@@ -41,19 +41,19 @@ func computeBazhaiHandler(ctx context.Context, raw json.RawMessage) (json.RawMes
 	if err != nil {
 		return nil, fmt.Errorf("compute_bazhai: %w", err)
 	}
-	result := bazhai.ComputeChart(ts.Solar, ganzhi.Gender(p.Gender))
+	result := bazhai.ComputeChart(ts.Solar, p.Gender)
 	return wrapResult("bazhai", result)
 }
 
 func computeMingGuaHandler(ctx context.Context, raw json.RawMessage) (json.RawMessage, error) {
 	var p struct {
-		Gender    string `json:"gender"`
-		BirthYear int    `json:"birth_year"`
+		Gender    ganzhi.Gender `json:"gender"`
+		BirthYear int            `json:"birth_year"`
 	}
 	if err := json.Unmarshal(raw, &p); err != nil {
 		return nil, fmt.Errorf("compute_minggua: %w", err)
 	}
-	result := bazhai.ComputeMingGua(ganzhi.Gender(p.Gender), p.BirthYear)
+	result := bazhai.ComputeMingGua(p.Gender, p.BirthYear)
 	return wrapResult("minggua", result)
 }
 

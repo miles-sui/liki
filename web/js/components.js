@@ -3,22 +3,6 @@
   var LOCALES = ['zh', 'hk', 'en'];
   var LANG_NAME = { zh: '简体中文', hk: '繁體中文', en: 'English' };
 
-  // Per-product per-locale display prices (cents). Backend always uses USD for Dodo;
-  // these are the pre-checkout display amounts shown to users in their local currency.
-  // USD: $9.90 / $19.90 / $29.90
-  // CNY: ¥69  / ¥139  / ¥209  (≈ USD × 7)
-  // HKD: HK$78 / HK$158 / HK$238 (≈ USD × 7.85)
-  var PRICE_MAP = {
-    chart:  { zh: 6900, hk: 7800, en: 990 },
-    bond:   { zh: 13900, hk: 15800, en: 1990 },
-    naming: { zh: 20900, hk: 23800, en: 2990 },
-  };
-  var CURRENCY = { zh: '≈¥', hk: '≈HK$', en: '$' };
-
-  // Expose for other scripts (chat.js, etc.)
-  window.__PRICE_MAP = PRICE_MAP;
-  window.__CURRENCY = CURRENCY;
-
   var SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><title>Language</title><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>';
 
   function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }

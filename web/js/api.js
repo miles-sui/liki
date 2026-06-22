@@ -1,6 +1,34 @@
 const API_BASE = '/api';
 const DEFAULT_TIMEOUT = 30000;
 const TOAST_DURATION = 4000;
+const MAX_RETRIES = 2;
+const RETRY_DELAY = 1000;
+
+// Per-product per-locale display prices (cents).
+const PRICE_MAP = {
+  chart:  { zh: 6900, hk: 7800, en: 990 },
+  bond:   { zh: 13900, hk: 15800, en: 1990 },
+  naming: { zh: 20900, hk: 23800, en: 2990 },
+};
+const CURRENCY = { zh: '≈¥', hk: '≈HK$', en: '$' };
+window.__PRICE_MAP = PRICE_MAP;
+window.__CURRENCY = CURRENCY;
+
+// ── connectivity ──
+
+let online = navigator.onLine;
+let offlineToast = null;
+
+window.addEventListener('online', () => {
+  online = true;
+  if (offlineToast) { offlineToast.remove(); offlineToast = null; }
+  showToast(i18next.t('error.backOnline'), 'info');
+});
+
+window.addEventListener('offline', () => {
+  online = false;
+  offlineToast = showToast(i18next.t('error.offline'), 'error');
+});
 
 // ── response helpers ──
 
@@ -15,24 +43,50 @@ async function handleResponse(resp) {
   return data.data;
 }
 
+function isRetryable(err) {
+  return err.name === 'TypeError' || err.name === 'AbortError' && err.message !== 'TimeoutError';
+}
+
 // ── public API ──
 
 async function apiGet(path, opts = {}) {
   const timeout = opts.timeout ?? DEFAULT_TIMEOUT;
-  const init = {};
-  if (timeout > 0) init.signal = AbortSignal.timeout(timeout);
-  return handleResponse(await fetch(API_BASE + path, init));
+  const retries = opts.retries ?? MAX_RETRIES;
+  let lastErr;
+  for (let i = 0; i <= retries; i++) {
+    try {
+      const init = {};
+      if (timeout > 0) init.signal = AbortSignal.timeout(timeout);
+      return handleResponse(await fetch(API_BASE + path, init));
+    } catch (err) {
+      lastErr = err;
+      if (!isRetryable(err) || i >= retries) throw err;
+      await new Promise(r => setTimeout(r, RETRY_DELAY * (i + 1)));
+    }
+  }
+  throw lastErr;
 }
 
 async function apiPost(path, body, opts = {}) {
   const timeout = opts.timeout ?? DEFAULT_TIMEOUT;
-  const init = {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  };
-  if (timeout > 0) init.signal = AbortSignal.timeout(timeout);
-  return handleResponse(await fetch(API_BASE + path, init));
+  const retries = opts.retries ?? 0; // POST not idempotent by default
+  let lastErr;
+  for (let i = 0; i <= retries; i++) {
+    try {
+      const init = {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      };
+      if (timeout > 0) init.signal = AbortSignal.timeout(timeout);
+      return handleResponse(await fetch(API_BASE + path, init));
+    } catch (err) {
+      lastErr = err;
+      if (!isRetryable(err) || i >= retries) throw err;
+      await new Promise(r => setTimeout(r, RETRY_DELAY * (i + 1)));
+    }
+  }
+  throw lastErr;
 }
 
 async function goPay(orderID) {
@@ -64,7 +118,9 @@ function showToast(msg, type = 'error') {
   el.textContent = msg;
   document.body.appendChild(el);
   setTimeout(() => el.remove(), TOAST_DURATION);
+  return el;
 }
 
 // ── namespace ──
-window.Liki = { apiGet, apiPost, goPay, escapeHTML, renderMD, showToast };
+const t = (key) => i18next.t(key);
+window.Liki = { apiGet, apiPost, goPay, escapeHTML, renderMD, showToast, t, get isOnline() { return online; } };

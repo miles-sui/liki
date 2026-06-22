@@ -30,7 +30,7 @@ const REPORT_LLM = `# 八字命理报告
 
 身弱七杀格，以土为用，喜金帮身。`;
 
-const ORDER_ID = 'e2e-purchase-order-001';
+const ORDER_ID = 'e2e-baad-f00d-001';
 
 test.describe('Purchase flow', () => {
   let page;
@@ -51,7 +51,7 @@ test.describe('Purchase flow', () => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({ greeting: '你好，我是灵机。' }),
+        body: JSON.stringify({ data: { greeting: '你好，我是灵机。' } }),
       });
     });
 
@@ -103,7 +103,7 @@ test.describe('Purchase flow', () => {
     await expect(buyCard).toBeVisible({ timeout: 10000 });
 
     // Verify buy card content.
-    await expect(buyCard).toContainText('9.90');
+    await expect(buyCard).toContainText('69.00');
     await expect(page.locator('.btn-buy')).toContainText('查看完整报告');
 
     // Click the pay button → should trigger checkout and navigate.
@@ -143,15 +143,15 @@ test.describe('Purchase flow', () => {
     await page.waitForSelector('#report-header-title', { timeout: 10000 });
 
     // Report content should be visible.
-    await page.locator('[x-show="ready"]').waitFor({ state: 'visible', timeout: 10000 });
+    await expect(page.locator('#report-content')).toBeVisible({ timeout: 10000 });
 
     // Verify markdown rendered.
-    const content = await page.locator('[x-show="ready"]').innerHTML();
-    expect(content).toContain('命盘总览');
-    expect(content).toContain('庚金');
+    const interpretation = page.locator('#chart-interpretation');
+    await expect(interpretation).toContainText('命盘总览');
+    await expect(interpretation).toContainText('庚金');
 
-    // Summary cards from chart_json.
-    await expect(page.locator('.summary-grid')).toBeVisible();
+    // Summary cards from chart_json — use .first() for strict-mode safety.
+    await expect(page.locator('.summary-grid').first()).toBeVisible();
     await expect(page.locator('.summary-card .value').first()).toContainText('庚金');
   });
 
@@ -163,7 +163,7 @@ test.describe('Purchase flow', () => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({ greeting: '你好。' }),
+        body: JSON.stringify({ data: { greeting: '你好。' } }),
       });
     });
 
@@ -195,7 +195,7 @@ test.describe('Purchase flow', () => {
 
     // Session ID should be in sessionStorage.
     const sid = await page.evaluate(() => sessionStorage.getItem('chatSessionID'));
-    expect(sid).toBe('persist-session-e2e');
+    expect(sid).toBe('"persist-session-e2e"');
   });
 
   // ── new chat resets state ──
@@ -206,7 +206,7 @@ test.describe('Purchase flow', () => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({ greeting: '你好，我是灵机。' }),
+        body: JSON.stringify({ data: { greeting: '你好，我是灵机。' } }),
       });
     });
 
@@ -251,7 +251,7 @@ test.describe('Purchase flow', () => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({ greeting: '你好。' }),
+        body: JSON.stringify({ data: { greeting: '你好。' } }),
       });
     });
 

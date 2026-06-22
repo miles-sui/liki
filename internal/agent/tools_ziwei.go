@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"liki/internal/engine/ganzhi"
 	"liki/internal/engine/ziwei"
 )
 
@@ -18,7 +17,7 @@ func computeZiweiHandler(ctx context.Context, raw json.RawMessage) (json.RawMess
 	if err != nil {
 		return nil, fmt.Errorf("compute_ziwei: %w", err)
 	}
-	result := ziwei.ComputeChart(ts.Solar, ganzhi.Gender(p.Gender))
+	result := ziwei.ComputeChart(ts.Solar, p.Gender)
 	return wrapResult("ziwei", result)
 }
 

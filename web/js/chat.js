@@ -80,7 +80,7 @@ function mountApp() {
     const sessionID = useSessionStorage('chatSessionID', '');
 
     // ── i18n ──
-    const t = (key) => i18next.t(key);
+    const t = window.Liki.t;
 
     const sse = useSSE(t);
 
@@ -171,7 +171,7 @@ function mountApp() {
       const _thinkingHTML = () => {
         if (!asst.thinking) return '';
         const open = (!asst.content && !asst._thinkingDismissed) ? ' open' : '';
-        return '<details class="thinking-block"' + open + '><summary>' + t('chat.thinking') + '</summary><div>' + escapeHTML(asst.thinking) + '</div></details>';
+        return '<details class="thinking-block"' + open + '><summary>' + t('chat.thinking') + '</summary><div>' + window.Liki.escapeHTML(asst.thinking) + '</div></details>';
       };
 
       const doRender = () => {
@@ -392,7 +392,6 @@ function mountApp() {
       if (!orderID.value || buyLoading.value) return;
       buyLoading.value = true;
       try {
-        sessionStorage.setItem('orderID', orderID.value);
         await goPay(orderID.value);
       } catch (e) {
         ui.error = e.message;

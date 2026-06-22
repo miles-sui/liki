@@ -7,11 +7,12 @@ import (
 	"liki/internal/engine/ganzhi"
 )
 
-func TestLunarToSolar_BaseDate(t *testing.T) {
+func TestLunarToGregorian_BaseDate(t *testing.T) {
 	// 代码内置基准: 农历 1900-01-01 = 公历 1900-01-31
-	y, m, d := LunarToSolar(1900, 1, 1, false)
+	gt := LunarToGregorian(LunarTime{Year: 1900, Month: 1, Day: 1, Leap: false})
+	y, m, d := gt.Time().Year(), int(gt.Time().Month()), gt.Time().Day()
 	if y != 1900 || m != 1 || d != 31 {
-		t.Errorf("LunarToSolar(1900,1,1) = (%d,%d,%d), want (1900,1,31)", y, m, d)
+		t.Errorf("LunarToGregorian(1900,1,1) = (%d,%d,%d), want (1900,1,31)", y, m, d)
 	}
 }
 
@@ -34,9 +35,10 @@ func TestLunarRoundTrip(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gy, gm, gd := LunarToSolar(tt.lunarY, tt.lunarM, tt.lunarD, tt.leap)
-			if gy == 0 {
-				t.Fatal("LunarToSolar returned 0")
+			gt := LunarToGregorian(LunarTime{Year: tt.lunarY, Month: tt.lunarM, Day: tt.lunarD, Leap: tt.leap})
+			gy, gm, gd := gt.Time().Year(), int(gt.Time().Month()), gt.Time().Day()
+			if gt.Time().IsZero() {
+				t.Fatal("LunarToGregorian returned zero time")
 			}
 			lt := SolarToLunar(GregorianTime(time.Date(gy, time.Month(gm), gd, 0, 0, 0, 0, time.UTC)))
 			if lt.Year != tt.lunarY || lt.Month != tt.lunarM || lt.Day != tt.lunarD || lt.Leap != tt.leap {
@@ -67,7 +69,8 @@ func TestSolarRoundTrip(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			lt := SolarToLunar(GregorianTime(time.Date(tt.solarY, time.Month(tt.solarM), tt.solarD, 0, 0, 0, 0, time.UTC)))
-			gy, gm, gd := LunarToSolar(lt.Year, lt.Month, lt.Day, lt.Leap)
+			gt := LunarToGregorian(LunarTime{Year: lt.Year, Month: lt.Month, Day: lt.Day, Leap: lt.Leap})
+			gy, gm, gd := gt.Time().Year(), int(gt.Time().Month()), gt.Time().Day()
 			if gy != tt.solarY || gm != tt.solarM || gd != tt.solarD {
 				t.Errorf("reverse round-trip broken: solar(%d,%d,%d) → lunar(%d,%d,%d,%v) → solar(%d,%d,%d)",
 					tt.solarY, tt.solarM, tt.solarD,
@@ -103,9 +106,10 @@ func TestLunarToSolar_LeapMonthRoundTrip(t *testing.T) {
 		}
 
 		// 测试闰月第一天
-		sy, sm, sd := LunarToSolar(lunarYear, lunarMonth, 1, true)
-		if sy == 0 {
-			t.Errorf("LunarToSolar(%d,%d,1,true) returned 0 for leap month (gy=%d, leapK=%.0f)",
+		gt := LunarToGregorian(LunarTime{Year: lunarYear, Month: lunarMonth, Day: 1, Leap: true})
+		sy, sm, sd := gt.Time().Year(), int(gt.Time().Month()), gt.Time().Day()
+		if gt.Time().IsZero() {
+			t.Errorf("LunarToGregorian(%d,%d,1,true) returned zero for leap month (gy=%d, leapK=%.0f)",
 				lunarYear, lunarMonth, gy, leapK)
 			continue
 		}
@@ -137,7 +141,7 @@ func TestEoT_KnownValues(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ast, _ := computeSolarTime(tt.date[0], tt.date[1], tt.date[2], 12, 0, 120, 8)
+			ast, _ := computeSolarTime(time.Date(tt.date[0], time.Month(tt.date[1]), tt.date[2], 12, 0, 0, 0, time.FixedZone("", 8*3600)), 120, 8)
 			eot := ast - 720
 			if eot > 720 {
 				eot -= 1440
@@ -161,8 +165,8 @@ func TestEoT_KnownValues(t *testing.T) {
 
 func TestSolarTime_LongitudeOffset(t *testing.T) {
 	// 经度修正: 4*(116.4-120) = -14.4 min
-	ast120, _ := computeSolarTime(2024, 6, 21, 12, 0, 120, 8)
-	ast116, _ := computeSolarTime(2024, 6, 21, 12, 0, 116.4, 8)
+	ast120, _ := computeSolarTime(time.Date(2024, 6, 21, 12, 0, 0, 0, time.FixedZone("", 8*3600)), 120, 8)
+	ast116, _ := computeSolarTime(time.Date(2024, 6, 21, 12, 0, 0, 0, time.FixedZone("", 8*3600)), 116.4, 8)
 	diff := ast116 - ast120
 	if diff > 720 {
 		diff -= 1440
@@ -199,9 +203,9 @@ func TestHourBranch_Boundaries(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := hourBranchFromSolarTime(tt.minutes)
+			got := hourZhiFromSolarTime(tt.minutes)
 			if int(got) != tt.want {
-				t.Errorf("hourBranchFromSolarTime(%.0f) = %d, want %d", tt.minutes, int(got), tt.want)
+				t.Errorf("hourZhiFromSolarTime(%.0f) = %d, want %d", tt.minutes, int(got), tt.want)
 			}
 		})
 	}
@@ -214,7 +218,7 @@ func TestComputeTime_MidnightAdjustment(t *testing.T) {
 	// 喀什(75.9°E)用北京时间(UTC+8), 凌晨3点
 	// lonOffset = 4*(75.9-120) = -176.4, EoT(Jan1) ≈ -3.7
 	// raw = 180 - 176.4 - 3.7 = -0.1 → dayOffset=-1, 太阳时在前一天
-	ts := ComputeTime(2025, 1, 1, 3, 0, 75.9, 8)
+	ts := ComputeTimeset(GregorianTime(time.Date(2025, time.Month(1), 1, 3, 0, 0, 0, time.FixedZone("", int(8*3600)))), 75.9)
 
 	solarY, solarM, solarD := ts.Solar.Time().Date()
 	if solarY != 2024 || solarM != 12 || solarD != 31 {
@@ -264,8 +268,8 @@ func TestNianZhu_StemBranch(t *testing.T) {
 // ── 月柱五虎遁公式验证 ──
 // 五虎遁: year stem → first month (寅月) stem.
 // 甲己→丙, 乙庚→戊, 丙辛→庚, 丁壬→壬, 戊癸→甲
-func wuhudun(yearGan ganzhi.Gan) ganzhi.Gan {
-	g := (int(yearGan)*2 + 1) % 10
+func wuhudun(nianGan ganzhi.Gan) ganzhi.Gan {
+	g := (int(nianGan)*2 + 1) % 10
 	if g == 0 {
 		g = 10
 	}
@@ -274,7 +278,7 @@ func wuhudun(yearGan ganzhi.Gan) ganzhi.Gan {
 
 func TestYueZhu_WuHuDun(t *testing.T) {
 	// 用五虎遁独立验证月柱。不同年份年干不同，寅月天干随之变化。
-	// 1984甲子, 1985乙丑, …, 1993癸酉 → yearGan=1..10
+	// 1984甲子, 1985乙丑, …, 1993癸酉 → nianGan=1..10
 	// 用2月10日确保在立春后、惊蛰前的寅月。
 	tests := []struct {
 		name    string
@@ -307,7 +311,7 @@ func TestYueZhu_WuHuDun(t *testing.T) {
 func TestShiZhu_WuShuDun(t *testing.T) {
 	tests := []struct {
 		name    string
-		dayGan  int
+		riGan  int
 		wantGan int // 子时天干
 	}{
 		{"甲日→甲子", 1, 1},
@@ -325,9 +329,9 @@ func TestShiZhu_WuShuDun(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// 子时: minutes 0
-			hp := ShiZhu(SolarTime(time.Date(1900, 1, tt.dayGan, 0, 0, 0, 0, time.UTC)))
+			hp := ShiZhu(SolarTime(time.Date(1900, 1, tt.riGan, 0, 0, 0, 0, time.UTC)))
 			if int(hp.Gan) != tt.wantGan {
-				t.Errorf("ShiZhu(子时,dayGan=%d).Gan = %d, want %d", tt.dayGan, int(hp.Gan), tt.wantGan)
+				t.Errorf("ShiZhu(子时,riGan=%d).Gan = %d, want %d", tt.riGan, int(hp.Gan), tt.wantGan)
 			}
 		})
 	}
@@ -337,7 +341,7 @@ func TestShiZhu_WuShuDun(t *testing.T) {
 // 命理核心: 真太阳时决定日柱。经度修正±4min/度, EoT ±16min。
 // 东经>120°时真太阳时更早，西经<120°更晚。跨日影响日柱和农历日期。
 
-func TestSolarTime_CrossDaySystematic(t *testing.T) {
+func TestSolarTime_JiaoChaDaySystematic(t *testing.T) {
 	tests := []struct {
 		name       string
 		y, m, d    int
@@ -400,7 +404,7 @@ func TestSolarTime_CrossDaySystematic(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			st := ComputeSolarTime(tt.y, tt.m, tt.d, tt.hour, tt.min, tt.longitude, tt.tz)
+			st := GregorianToSolar(time.Date(tt.y, time.Month(tt.m), tt.d, tt.hour, tt.min, 0, 0, time.FixedZone("", int(tt.tz*3600))), tt.longitude, tt.tz)
 			solarDay := st.Time().Day()
 			solarHour := st.Time().Hour()
 
@@ -504,7 +508,7 @@ func TestYueZhu_JieQiBoundaries(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			st := ComputeSolarTime(tt.y, tt.m, tt.d, 12, 0, 120, 8)
+			st := GregorianToSolar(time.Date(tt.y, time.Month(tt.m), tt.d, 12, 0, 0, 0, time.FixedZone("", int(8*3600))), 120, 8)
 			bz := ComputeBazi(st)
 			if bz.Yue.Zhi != tt.wantZhi {
 				t.Errorf("YueZhi = %s(%d), want %s(%d)",
@@ -557,7 +561,7 @@ func TestComputeBazi_ComplexBoundaries(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			st := ComputeSolarTime(tt.y, tt.m, tt.d, tt.hour, tt.min, tt.longitude, tt.tz)
+			st := GregorianToSolar(time.Date(tt.y, time.Month(tt.m), tt.d, tt.hour, tt.min, 0, 0, time.FixedZone("", int(tt.tz*3600))), tt.longitude, tt.tz)
 			bz := ComputeBazi(st)
 
 			if bz.Ri.Gan != tt.wantDayGan || bz.Ri.Zhi != tt.wantDayZhi {
@@ -613,7 +617,7 @@ func TestEoT_AnnualVariation(t *testing.T) {
 	// EoT 在一年中在约 -14min 到 +16min 之间变化
 	// 每月15号在120°E, UTC+8的正午测量
 	for m := 1; m <= 12; m++ {
-		ast, _ := computeSolarTime(2024, m, 15, 12, 0, 120, 8)
+		ast, _ := computeSolarTime(time.Date(2024, time.Month(m), 15, 12, 0, 0, 0, time.FixedZone("", 8*3600)), 120, 8)
 		eot := ast - 720 // 与平太阳时12:00的偏差
 		if eot > 720 {
 			eot -= 1440
@@ -635,7 +639,8 @@ func TestLunarLeapMonth_Consistency(t *testing.T) {
 		for gm := 1; gm <= 12; gm++ {
 			for gd := 1; gd <= 28; gd += 7 { // 每周取样
 				lt := SolarToLunar(GregorianTime(time.Date(gy, time.Month(gm), gd, 0, 0, 0, 0, time.UTC)))
-				sy, sm, sd := LunarToSolar(lt.Year, lt.Month, lt.Day, lt.Leap)
+				gt := LunarToGregorian(LunarTime{Year: lt.Year, Month: lt.Month, Day: lt.Day, Leap: lt.Leap})
+	sy, sm, sd := gt.Time().Year(), int(gt.Time().Month()), gt.Time().Day()
 				if sy != gy || sm != gm || sd != gd {
 					t.Errorf("round-trip failed: solar(%d,%d,%d) → lunar(%d,%d,%d,%v) → solar(%d,%d,%d)",
 						gy, gm, gd, lt.Year, lt.Month, lt.Day, lt.Leap, sy, sm, sd)

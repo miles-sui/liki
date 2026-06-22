@@ -29,26 +29,13 @@ func validateZiweiChart(value any) error {
 	return nil
 }
 
-type ziweiChartRequest struct {
-	Birth  timePoint     `json:"birth"`
-	Gender ganzhi.Gender `json:"gender"`
-}
-
-func (r ziweiChartRequest) Validate() error {
-	return validation.ValidateStruct(&r,
-		validation.Field(&r.Birth, validation.By(validateTimePoint)),
-		validation.Field(&r.Gender, validation.Required, validation.In(validGenders...)),
-	)
-}
-
 func computeZiweiChart(w http.ResponseWriter, r *http.Request) {
-	req, ok := decodeAndValidate[ziweiChartRequest](w, r)
+	req, ok := decodeAndValidate[BirthRequest](w, r)
 	if !ok {
 		return
 	}
-	ts, err := req.Birth.Timeset()
-	if err != nil {
-		respondInvalidRequest(w, err.Error())
+	ts, ok := timesetOrRespond(w, req.Birth)
+	if !ok {
 		return
 	}
 	result := ziwei.ComputeChart(ts.Solar, req.Gender)

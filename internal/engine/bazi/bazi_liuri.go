@@ -16,7 +16,7 @@ type LiuRi struct {
 	DayZhi      ganzhi.Zhi            `json:"day_branch"`
 	DayName     string         `json:"day_name"`
 	DayNaYin    string         `json:"day_nayin"`
-	TenGod      string         `json:"shishen"`
+	ShiShen      string         `json:"shi_shen"`
 	GanRels     []GanRelation  `json:"gan_rels"`
 	ZhiRels     []ZhiRelation  `json:"branch_rels"`
 	DaYunRels   []ZhiRelation  `json:"dayun_rels"`
@@ -26,16 +26,12 @@ type LiuRi struct {
 
 // ComputeLiuRi computes the day pillar for the given date and its full
 // interactions with the bazi chart, current dayun, and current liunian.
-func computeLiuRi(bz ganzhi.Bazi, date string, daYunZhu *ganzhi.Zhu, liuNianZhu *ganzhi.Zhu) (*LiuRi, error) {
-	dayMaster := bz.Ri.Gan
+func computeLiuRi(bz ganzhi.Bazi, year, month, day int, daYunZhu *ganzhi.Zhu, liuNianZhu *ganzhi.Zhu) (*LiuRi, error) {
+	riYuan := bz.Ri.Gan
 	bazi := bz.Slice()
-	y, m, d := 0, 0, 0
-	if n, _ := fmt.Sscanf(date, "%d-%d-%d", &y, &m, &d); n != 3 { //nolint:errcheck
-		return nil, fmt.Errorf("compute liuri: invalid date %q", date)
-	}
 
-	dp := tianwen.RiZhu(tianwen.GregorianTime(time.Date(y, time.Month(m), d, 0, 0, 0, 0, time.UTC)))
-	tgName := ganzhi.TenGodFromGan(dayMaster, dp.Gan)
+	dp := tianwen.RiZhu(tianwen.GregorianTime(time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC)))
+	tgName := ganzhi.ShiShenFromGan(riYuan, dp.Gan)
 
 	dayName := ganzhi.GanName(dp.Gan) + ganzhi.ZhiName(dp.Zhi)
 
@@ -98,12 +94,12 @@ func computeLiuRi(bz ganzhi.Bazi, date string, daYunZhu *ganzhi.Zhu, liuNianZhu 
 	}
 
 	return &LiuRi{
-		Date:        date,
+		Date:        fmt.Sprintf("%04d-%02d-%02d", year, month, day),
 		DayGan:      dp.Gan,
 		DayZhi:      dp.Zhi,
 		DayName:     dayName,
 		DayNaYin:    naYin,
-		TenGod:      tgName.String(),
+		ShiShen:      tgName.String(),
 		GanRels:     stemRels,
 		ZhiRels:     branchRels,
 		DaYunRels:   DaYunRels,

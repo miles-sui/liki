@@ -1,7 +1,8 @@
 // Report page tests — GET /api/reports/:orderID per report.js.
 // orderIDFromURL() regex: /\/report\/([a-f0-9-]+)/i — extracts UUID from path.
 // States: loading → error (no ID) | ready (status=paid) | polling (status=pending) | pollTimeout
-// Response shape from report.js:145-173: loadReport → apiGet('/reports/'+orderID)
+// Rendered by lit-html ReportApp class — #status-area shows status card, #report-content shows report.
+// Response shape: { data: { order_id, product, chart_json, llm_json, status, ... } }
 
 import { test, expect } from '../fixtures.js';
 
@@ -15,7 +16,7 @@ const CHART_JSON = JSON.stringify({
       rizhu: { gan: '戊', zhi: '辰', shishen: [{ source: 'gan', shishen: '日主' }], canggan: { 辰: '戊乙癸' }, nayin: '大林木', shensha: [{ name: '华盖' }] },
       shizhu: { gan: '辛', zhi: '酉', shishen: [{ source: 'gan', shishen: '伤官' }], canggan: { 酉: '辛' }, nayin: '石榴木', shensha: [] },
       yong_shen: { fuyi: { qiangruo: '身强', geju: '正印格', yong: '木', xi: '水', ji: '土' }, tiaohou: { season: '冬', yong: '火', xi: '木', ji: '木' } },
-      dayun: [],
+      dayun: { start_age: 5, zhu: [] },
     },
   },
 });
@@ -43,7 +44,7 @@ const LLM_JSON = `# 八字命理报告
 宜从事木火行业，向东方发展。`;
 
 // Mock chart report API — returns paid report with chart_json + llm_json.
-async function mockChartReport(page, orderID = 'test-chart-id') {
+async function mockChartReport(page, orderID = 'dead-beef') {
   await page.route(`**/api/reports/${orderID}`, async (route) => {
     await route.fulfill({
       status: 200,
@@ -64,7 +65,7 @@ async function mockChartReport(page, orderID = 'test-chart-id') {
 }
 
 // Mock bond report API.
-async function mockBondReport(page, orderID = 'test-bond-id') {
+async function mockBondReport(page, orderID = 'cafe-fade') {
   const bondChartJSON = JSON.stringify({
     chart_a: { chart: { riyuan: '庚金', nianzhu: { gan: '庚', zhi: '午' }, yuezhu: { gan: '壬', zhi: '午' }, rizhu: { gan: '庚', zhi: '午' }, shizhu: { gan: '丙', zhi: '子' } } },
     chart_b: { chart: { riyuan: '甲木', nianzhu: { gan: '甲', zhi: '子' }, yuezhu: { gan: '丙', zhi: '寅' }, rizhu: { gan: '甲', zhi: '寅' }, shizhu: { gan: '戊', zhi: '辰' } } },
@@ -90,7 +91,7 @@ async function mockBondReport(page, orderID = 'test-bond-id') {
 }
 
 // Mock naming report API.
-async function mockNamingReport(page, orderID = 'test-naming-id') {
+async function mockNamingReport(page, orderID = 'babe-face') {
   const namingChartJSON = JSON.stringify({
     naming: {
       analysis: { surname: '陈', yong_shen: '火', zodiac: '鼠' },
@@ -133,30 +134,31 @@ test.describe('Report page', () => {
     await page.goto('/en/report/');
     await page.waitForSelector('#report-header-title', { timeout: 10000 });
 
-    await page.locator('[x-show="error"]').waitFor({ state: 'visible', timeout: 10000 });
-    await expect(page.locator('[x-show="error"] p')).toBeVisible();
-    await expect(page.locator('[x-show="error"] a')).toBeVisible();
+    // ReportApp sets phase='error' when orderID is missing — renders .status-card.status-error.
+    await expect(page.locator('.status-card.status-error')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('.status-card.status-error .status-actions a')).toBeVisible();
   });
 
   test('invalid order ID shows error', async () => {
     await page.goto('/en/report/nonexistent-id-12345');
     await page.waitForSelector('#report-header-title', { timeout: 10000 });
 
-    await page.locator('[x-show="error"]').waitFor({ state: 'visible', timeout: 10000 });
-    await expect(page.locator('[x-show="error"] p')).toBeVisible();
+    // ReportApp calls loadReport → API returns 404 → phase='error'.
+    await expect(page.locator('.status-card.status-error')).toBeVisible({ timeout: 10000 });
   });
 
   // ── save banner ──
 
   test('save banner visible by default, has copy link and close buttons', async () => {
-    await page.goto('/en/report/test-id');
+    await page.goto('/en/report/abba');
     await page.waitForSelector('#report-header-title', { timeout: 10000 });
 
     const banner = page.locator('.save-banner');
     await expect(banner).toBeVisible({ timeout: 5000 });
-    await expect(page.locator('button[x-text="copyBtnText"]')).toBeVisible();
+    // Copy button is #banner-copy-btn per report.html.
+    await expect(page.locator('#banner-copy-btn')).toBeVisible();
 
-    await page.locator('.save-banner').getByText('×').click();
+    await page.locator('#banner-close-btn').click();
     await expect(banner).not.toBeVisible({ timeout: 3000 });
   });
 
@@ -164,86 +166,87 @@ test.describe('Report page', () => {
 
   test('paid chart report renders markdown and summary cards', async () => {
     await mockChartReport(page);
-    await page.goto('/zh/report/test-chart-id');
+    await page.goto('/zh/report/dead-beef');
     await page.waitForSelector('#report-header-title', { timeout: 10000 });
 
-    // Phase transitions to ready, report content visible.
-    await page.locator('[x-show="ready"]').waitFor({ state: 'visible', timeout: 10000 });
+    // Phase transitions to ready — report content becomes visible.
+    await expect(page.locator('#report-content')).toBeVisible({ timeout: 10000 });
 
-    // Summary cards rendered from chart_json.
-    await expect(page.locator('.summary-grid')).toBeVisible();
+    // Summary cards rendered from chart_json — use .first() to avoid strict-mode
+    // conflict between chart summary and tiaohou summary sections.
+    await expect(page.locator('.summary-grid').first()).toBeVisible();
     await expect(page.locator('.summary-card .value').first()).toContainText('戊土');
 
-    // Markdown → HTML rendered.
-    const content = await page.locator('[x-show="ready"]').innerHTML();
-    expect(content).toContain('命盘总览');
-    expect(content).toContain('戊土');
-    expect(content).toContain('五行分析');
-    expect(content).toContain('十神解读');
-    expect(content).toContain('大运流年');
+    // Markdown → HTML rendered in #chart-interpretation (product=chart).
+    const interpretation = page.locator('#chart-interpretation');
+    await expect(interpretation).toContainText('命盘总览');
+    await expect(interpretation).toContainText('戊土');
+    await expect(interpretation).toContainText('五行分析');
+    await expect(interpretation).toContainText('十神解读');
+    await expect(interpretation).toContainText('大运流年');
 
-    // Title reflects product.
-    await expect(page.locator('h1')).toContainText('八字报告');
+    // Title reflects product — use #report-header-title to avoid strict-mode conflict.
+    await expect(page.locator('#report-header-title')).toContainText('八字报告');
   });
 
   test('paid chart report in EN locale', async () => {
-    await mockChartReport(page, 'en-chart-id');
-    await page.goto('/en/report/en-chart-id');
+    await mockChartReport(page, 'beef-dead');
+    await page.goto('/en/report/beef-dead');
     await page.waitForSelector('#report-header-title', { timeout: 10000 });
 
-    await page.locator('[x-show="ready"]').waitFor({ state: 'visible', timeout: 10000 });
+    await expect(page.locator('#report-content')).toBeVisible({ timeout: 10000 });
 
     // EN title
-    await expect(page.locator('h1')).toContainText('BaZi');
+    await expect(page.locator('#report-header-title')).toContainText('BaZi');
   });
 
   // ── bond report ──
 
   test('paid bond report renders bond-specific data', async () => {
     await mockBondReport(page);
-    await page.goto('/zh/report/test-bond-id');
+    await page.goto('/zh/report/cafe-fade');
     await page.waitForSelector('#report-header-title', { timeout: 10000 });
 
-    await page.locator('[x-show="ready"]').waitFor({ state: 'visible', timeout: 10000 });
+    await expect(page.locator('#report-content')).toBeVisible({ timeout: 10000 });
 
-    // Bond report markdown.
-    const content = await page.locator('[x-show="ready"]').innerHTML();
-    expect(content).toContain('缘分分析');
-    expect(content).toContain('金木相冲');
+    // Bond report markdown rendered in .report-content.
+    const interpretation = page.locator('#bond-interpretation');
+    await expect(interpretation).toContainText('缘分分析');
+    await expect(interpretation).toContainText('金木相冲');
 
     // Title reflects bond product.
-    await expect(page.locator('h1')).toContainText('合盘报告');
+    await expect(page.locator('#report-header-title')).toContainText('合盘报告');
   });
 
   // ── naming report ──
 
   test('paid naming report renders candidates', async () => {
     await mockNamingReport(page);
-    await page.goto('/zh/report/test-naming-id');
+    await page.goto('/zh/report/babe-face');
     await page.waitForSelector('#report-header-title', { timeout: 10000 });
 
-    await page.locator('[x-show="ready"]').waitFor({ state: 'visible', timeout: 10000 });
+    await expect(page.locator('#report-content')).toBeVisible({ timeout: 10000 });
 
-    const content = await page.locator('[x-show="ready"]').innerHTML();
-    expect(content).toContain('起名报告');
-    expect(content).toContain('陈明远');
+    const interpretation = page.locator('#naming-interpretation');
+    await expect(interpretation).toContainText('起名报告');
+    await expect(interpretation).toContainText('陈明远');
 
-    await expect(page.locator('h1')).toContainText('起名报告');
+    await expect(page.locator('#report-header-title')).toContainText('起名报告');
   });
 
   // ── polling → ready transition ──
 
   test('transitions from payment polling to ready when order is paid', async () => {
     let callCount = 0;
-    await page.route('**/api/reports/poll-123', async (route) => {
+    await page.route('**/api/reports/abba-123', async (route) => {
       callCount++;
-      if (callCount === 1) {
+      if (callCount <= 2) {
         // First poll: still pending.
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
           body: JSON.stringify({
-            data: { order_id: 'poll-123', product: 'chart', status: 'pending' },
+            data: { order_id: 'abba-123', product: 'chart', status: 'pending' },
           }),
         });
       } else {
@@ -253,7 +256,7 @@ test.describe('Report page', () => {
           contentType: 'application/json',
           body: JSON.stringify({
             data: {
-              order_id: 'poll-123',
+              order_id: 'abba-123',
               product: 'chart',
               chart_json: CHART_JSON,
               llm_json: LLM_JSON,
@@ -264,31 +267,31 @@ test.describe('Report page', () => {
       }
     });
 
-    await page.goto('/zh/report/poll-123');
+    await page.goto('/zh/report/abba-123');
     await page.waitForSelector('#report-header-title', { timeout: 10000 });
 
     // Starts in payment polling phase.
     await expect(page.locator('.status-card.status-payment')).toBeVisible({ timeout: 5000 });
 
     // Eventually transitions to ready.
-    await page.locator('[x-show="ready"]').waitFor({ state: 'visible', timeout: 15000 });
-    await expect(page.locator('.summary-grid')).toBeVisible();
+    await expect(page.locator('#report-content')).toBeVisible({ timeout: 15000 });
+    await expect(page.locator('.summary-grid').first()).toBeVisible();
   });
 
   // ── generating → ready transition ──
 
   test('transitions from generating polling to ready when llm_json arrives', async () => {
     let callCount = 0;
-    await page.route('**/api/reports/gen-456', async (route) => {
+    await page.route('**/api/reports/cafe-456', async (route) => {
       callCount++;
-      if (callCount <= 2) {
+      if (callCount <= 3) {
         // Paid but no llm_json yet — generating status.
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
           body: JSON.stringify({
             data: {
-              order_id: 'gen-456',
+              order_id: 'cafe-456',
               product: 'chart',
               chart_json: CHART_JSON,
               status: 'paid',
@@ -302,7 +305,7 @@ test.describe('Report page', () => {
           contentType: 'application/json',
           body: JSON.stringify({
             data: {
-              order_id: 'gen-456',
+              order_id: 'cafe-456',
               product: 'chart',
               chart_json: CHART_JSON,
               llm_json: LLM_JSON,
@@ -313,29 +316,29 @@ test.describe('Report page', () => {
       }
     });
 
-    await page.goto('/zh/report/gen-456');
+    await page.goto('/zh/report/cafe-456');
     await page.waitForSelector('#report-header-title', { timeout: 10000 });
 
     // Starts in generating phase.
     await expect(page.locator('.status-card.status-generating')).toBeVisible({ timeout: 5000 });
 
     // Eventually transitions to ready with transition animation.
-    await page.locator('[x-show="ready"]').waitFor({ state: 'visible', timeout: 15000 });
-    await expect(page.locator('.summary-grid')).toBeVisible();
+    await expect(page.locator('#report-content')).toBeVisible({ timeout: 15000 });
+    await expect(page.locator('.summary-grid').first()).toBeVisible();
   });
 
   // ── save banner interactions ──
 
   test('banner close persists across page reloads via sessionStorage', async () => {
-    await mockChartReport(page, 'banner-test');
-    await page.goto('/zh/report/banner-test');
+    await mockChartReport(page, 'face-fade');
+    await page.goto('/zh/report/face-fade');
     await page.waitForSelector('#report-header-title', { timeout: 10000 });
 
     // Banner visible initially.
     await expect(page.locator('.save-banner')).toBeVisible({ timeout: 5000 });
 
     // Close it.
-    await page.locator('.save-banner').getByText('×').click();
+    await page.locator('#banner-close-btn').click();
     await expect(page.locator('.save-banner')).not.toBeVisible({ timeout: 3000 });
 
     // Reload — banner stays hidden.
@@ -348,14 +351,14 @@ test.describe('Report page', () => {
   // ── copy link ──
 
   test('copy link button updates text on click', async () => {
-    await mockChartReport(page, 'copy-test');
-    await page.goto('/zh/report/copy-test');
+    await mockChartReport(page, 'cafe-feed');
+    await page.goto('/zh/report/cafe-feed');
     await page.waitForSelector('#report-header-title', { timeout: 10000 });
 
-    await page.locator('[x-show="ready"]').waitFor({ state: 'visible', timeout: 10000 });
+    await expect(page.locator('#report-content')).toBeVisible({ timeout: 10000 });
 
     // Click copy link in the save banner.
-    const copyBtn = page.locator('.save-banner button[x-text="copyBtnText"]');
+    const copyBtn = page.locator('#banner-copy-btn');
     await expect(copyBtn).toBeVisible();
 
     // Clipboard permission is auto-granted in Playwright test context.

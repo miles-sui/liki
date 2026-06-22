@@ -1,5 +1,4 @@
-
----
+# 黄历引擎
 
 ## Public API
 
@@ -20,14 +19,16 @@
 |------|------|
 | `QueryDate(date string, event string) → (Day, error)` | 单日查询 |
 | `QueryMonth(yearMonth string, event string) → (Month, error)` | 整月查询 |
-| `ComputeBondDay(st SolarTime, eventType string, dateStr string) → (BondDay, error)` | 合日查询（编排入口，api.go） |
-| `ComputeBondMonth(st SolarTime, eventType string, yearMonth string) → (BondMonth, error)` | 合月查询（编排入口，api.go） |
+| `ComputeBondDay(st tianwen.SolarTime, eventType string, dateStr string) → (BondDay, error)` | 合日查询（编排入口，api.go） |
+| `ComputeBondMonth(st tianwen.SolarTime, eventType string, yearMonth string) → (BondMonth, error)` | 合月查询（编排入口，api.go） |
 
-编排层 `api.go` 收 `SolarTime` → `ComputeBazi` → 引擎 `computeBondDay(bz Bazi, …)` / `computeBondMonth(bz Bazi, …)` 收精确实体。
+编排层 `api.go` 收 `tianwen.SolarTime` → `ComputeBazi` → 引擎 `computeBondDay(bz ganzhi.Bazi, …)` / `computeBondMonth(bz ganzhi.Bazi, …)` 收精确实体。
 
 ### HTTP Routes
 
 | 路由 | Handler |
 |------|---------|
-| `GET /api/huangli/query` | 日/月查询 |
-| `POST /api/huangli/bond` | 合日/合月/合年 |
+| `GET /api/huangli/date` | 单日查询 |
+| `GET /api/huangli/month` | 整月查询 |
+| `POST /api/huangli/bond/date` | 合日查询 |
+| `POST /api/huangli/bond/month` | 合月查询 |

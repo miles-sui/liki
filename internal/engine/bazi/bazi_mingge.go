@@ -45,16 +45,16 @@ func (s strength) String() string {
 
 // computeFuYi computes the FuYi (扶抑) yongshen analysis from a chart.
 func computeFuYi(chart Chart) FuYi {
-	strength := computeDayMasterStrength(chart.WuxingCount, chart.DayMaster, chart.Month.Zhi, chart.HiddenStemsArray())
-	yong, xi, ji := computeYongJiElements(chart.WuxingCount, chart.DayMaster, strength)
-	var monthTenGodStem ganzhi.TenGod
-	for _, e := range chart.Month.TenGods {
+	strength := computeDayMasterStrength(chart.WuxingCount, chart.Ri.Gan, chart.Yue.Zhi, chart.CangGanArray())
+	yong, xi, ji := computeYongJiElements(chart.WuxingCount, chart.Ri.Gan, strength)
+	var monthShiShenStem ganzhi.ShiShen
+	for _, e := range chart.Yue.ShiShens {
 		if e.Source == sourceGan {
-			monthTenGodStem = e.TenGod
+			monthShiShenStem = e.ShiShen
 			break
 		}
 	}
-	pattern := computePattern(chart.DayMaster, chart.Month.Zhi, monthTenGodStem)
+	pattern := computePattern(chart.Ri.Gan, chart.Yue.Zhi, monthShiShenStem)
 	return FuYi{
 		Strength: strength.String(),
 		Pattern:  pattern,
@@ -65,8 +65,8 @@ func computeFuYi(chart Chart) FuYi {
 }
 
 // computeDayMasterStrength determines if the day master is 身强, 身弱, or 中和.
-func computeDayMasterStrength(elementCount map[ganzhi.Wuxing]int, dayMaster ganzhi.Gan, monthBranch ganzhi.Zhi, hiddenStems [4]hiddenStemsOut) strength {
-	dmElem := ganzhi.GanWuxing(dayMaster)
+func computeDayMasterStrength(elementCount map[ganzhi.Wuxing]int, riYuan ganzhi.Gan, monthBranch ganzhi.Zhi, cangGan [4]cangGanOut) strength {
+	dmElem := ganzhi.GanWuxing(riYuan)
 	monthElem := ganzhi.ZhiWuxing(monthBranch)
 	genElem := elementThatGenerates(dmElem)
 	ctrlElem := elementThatControls(dmElem)
@@ -91,7 +91,7 @@ func computeDayMasterStrength(elementCount map[ganzhi.Wuxing]int, dayMaster ganz
 
 	// Weighted root bonus (通根): main qi (本气) = +2, mid qi (中气) = +1, minor qi (余气) = +1.
 	rootBonus := 0
-	for _, hs := range hiddenStems {
+	for _, hs := range cangGan {
 		if ganzhi.GanWuxing(hs.Main) == dmElem {
 			rootBonus += 2
 		}
@@ -117,8 +117,8 @@ func computeDayMasterStrength(elementCount map[ganzhi.Wuxing]int, dayMaster ganz
 
 // computeYongJiElements determines the favorable (用神), supporting (喜神), and
 // unfavorable (忌神) elements based on day master strength.
-func computeYongJiElements(elementCount map[ganzhi.Wuxing]int, dayMaster ganzhi.Gan, s strength) (yongShen, xiShen, jiShen string) {
-	dmElem := ganzhi.GanWuxing(dayMaster)
+func computeYongJiElements(elementCount map[ganzhi.Wuxing]int, riYuan ganzhi.Gan, s strength) (yongShen, xiShen, jiShen string) {
+	dmElem := ganzhi.GanWuxing(riYuan)
 
 	switch s {
 	case strengthStrong:
@@ -143,33 +143,33 @@ func computeYongJiElements(elementCount map[ganzhi.Wuxing]int, dayMaster ganzhi.
 }
 
 // computePattern determines the chart pattern (格局).
-func computePattern(dayMaster ganzhi.Gan, monthBranch ganzhi.Zhi, monthTenGodStem ganzhi.TenGod) string {
-	dmElem := ganzhi.GanWuxing(dayMaster)
+func computePattern(riYuan ganzhi.Gan, monthBranch ganzhi.Zhi, monthShiShenStem ganzhi.ShiShen) string {
+	dmElem := ganzhi.GanWuxing(riYuan)
 	monthElem := ganzhi.ZhiWuxing(monthBranch)
 
 	if monthElem == dmElem {
-		if ganzhi.GanYinYang(dayMaster) == ganzhi.Yang {
+		if ganzhi.GanYinYang(riYuan) == ganzhi.Yang {
 			return "建禄格"
 		}
 		return "月刃格"
 	}
 
-	switch monthTenGodStem {
-	case ganzhi.TenGodZhengGuan:
+	switch monthShiShenStem {
+	case ganzhi.ShiShenZhengGuan:
 		return "正官格"
-	case ganzhi.TenGodQiSha:
+	case ganzhi.ShiShenQiSha:
 		return "七杀格"
-	case ganzhi.TenGodZhengCai:
+	case ganzhi.ShiShenZhengCai:
 		return "正财格"
-	case ganzhi.TenGodPianCai:
+	case ganzhi.ShiShenPianCai:
 		return "偏财格"
-	case ganzhi.TenGodZhengYin:
+	case ganzhi.ShiShenZhengYin:
 		return "正印格"
-	case ganzhi.TenGodPianYin:
+	case ganzhi.ShiShenPianYin:
 		return "偏印格"
-	case ganzhi.TenGodShiShen:
+	case ganzhi.ShiShenShiShen:
 		return "食神格"
-	case ganzhi.TenGodShangGuan:
+	case ganzhi.ShiShenShangGuan:
 		return "伤官格"
 	}
 	return "杂格"

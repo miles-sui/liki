@@ -43,9 +43,11 @@
  │ qimen   │              └──────┬──────┘│
  │ liuyao  │                     │       │
  │ fengshui│                ┌────┴────┐  │
- │ qiming  │                │ SQLite  │  │
- │ huangli │                │ orders  │  │
- │ tianwen │                └─────────┘  │
+ │ bazhai  │                │ SQLite  │  │
+ │ xuankong│                │ orders  │  │
+ │ qiming  │                └─────────┘  │
+ │ huangli │                            │
+ │ tianwen │                            │
  │ ganzhi  │                            │
  └─────────┘                            │
                                         │
@@ -56,7 +58,7 @@
 
 ## Engine 层
 
-九个包，三层架构：
+11 个包，三层架构：
 
 ```
 internal/engine/
@@ -66,7 +68,9 @@ internal/engine/
 ├── ziwei/      # 命理: 紫微斗数（12宫+14主星+四化+格局+大限流年）
 ├── qimen/      # 命理/问事: 奇门遁甲（时/日/月/年盘+克应+格局+应期）
 ├── liuyao/     # 问事: 六爻卜卦（64卦+装卦+用神+月建日建+应期）
-├── fengshui/   # 环境: 玄空风水（24山+飞星+挨星+旺山旺向+城门诀）
+├── fengshui/   # 环境: 风水基础（24山+飞星+旺衰+双星加会）
+├── bazhai/     # 环境: 八宅风水（命卦+八宅方位+四柱八卦）
+├── xuankong/   # 环境: 玄空风水（三元九运+飞星+挨星+旺山旺向+城门诀）
 ├── huangli/    # 择日: 黄历（宜忌+二十八宿+时辰吉凶）
 └── qiming/     # 命名: 起名（三才五格+五行补益+字形分析）
 ```
@@ -81,11 +85,11 @@ internal/engine/
 - **引擎核心**：小写函数接收精确实体（`ganzhi.Bazi`、`tianwen.LunarTime`、`tianwen.GregorianTime`），不收 `SolarTime`。
 
 ```
-api.go (public)                          engine file (private)
-────────────────────────────────────     ──────────────────────
-ComputeChart(st SolarTime, …) Chart  →  computeChart(bz Bazi, …) Chart
-ComputeLiuNian(st SolarTime, …)      →  computeLiuNian(bz Bazi, …)
-ComputeBondDay(st SolarTime, …)      →  computeBondDay(bz Bazi, …)
+api.go (public)                                engine file (private)
+────────────────────────────────────           ──────────────────────
+ComputeChart(st tianwen.SolarTime, …) Chart → computeChart(bz ganzhi.Bazi, …) Chart
+ComputeLiuNian(st tianwen.SolarTime, …)      → computeLiuNian(bz ganzhi.Bazi, …)
+ComputeBondDay(st tianwen.SolarTime, …)      → computeBondDay(bz ganzhi.Bazi, …)
 ```
 
 纯查询函数（`QueryDate`、`ComputeMingGua` 等）不属于编排，保持在原文件大写导出。
@@ -105,7 +109,7 @@ POST /api/agent/chat  {session_id, message, lang}
   │
   └─ ChatAgent.Chat(messages, tools, onEvent, orderCreator, amounts)
        │  单 loop，tools (max 30 rounds, SSE 流式)
-       │  工具: compute_chart, compute_bond, compute_naming, purchase
+       │  工具: get_city_coords, compute_chart, compute_bond, compute_naming, purchase
        │
        ├─ 收集: LLM 追问出生信息
        ├─ 计算: compute_* → engine → LLM 生成 teaser
@@ -117,7 +121,7 @@ POST /api/agent/chat  {session_id, message, lang}
 ### Free API 流
 
 ```
-POST /api/bazi/chart  (或 /api/bazi/bond, /api/qiming/generate, /api/ziwei/chart)
+POST /api/bazi/chart  (或 /api/bazi/bond, /api/qiming/wuge, /api/ziwei/chart 等)
   │
   ├─ 解析请求 → Engine 计算
   └─ 返回 JSON (命理数据，不经过 LLM/支付)
@@ -138,11 +142,25 @@ POST /api/bazi/chart  (或 /api/bazi/bond, /api/qiming/generate, /api/ziwei/char
 打字系统按领域拆分：
 - `llm.Message/Role/ToolCall` — LLM 线格式
 - `agent.Product` — 报告产品类型
-- `handler.BirthParams` — HTTP 契约
+- `agent.TimePoint` — 出生时间点（RFC3339 公历 + 经度）
+- `handler.BirthRequest` — HTTP 契约（统一出生+性别，八字/紫微/八宅复用）
 - `ganzhi.Gan/Zhi/Wuxing/ShiShen/Zhu/Bazi` — 干支基础类型
-- `tianwen.SolarTime/GregorianTime/LunarTime` — 时间类型
+- `tianwen.SolarTime/GregorianTime/LunarTime/Timeset` — 时间类型
 
 所有领域概念用类型化实体传递，禁用裸 `int`。Map key 用 `ganzhi.Zhi` 而非 `int`，函数参数收 `ganzhi.Gan` 而非 `int`。
+
+### JSON 契约
+
+Engine 输出统一 snake_case，所有公开结构体显式声明 `json:"..."` tag。无 CamelCase 裸字段。
+
+Error envelope 标准化：
+- 400 `invalid_request` — JSON 解析失败 / 业务参数非法 / 引擎计算失败
+- 422 `validation_error` — 结构化校验失败
+- 404 `not_found` — 资源不存在
+- 413 `too_large` — 请求体过大
+- 500 `internal_error` — 服务内部错误
+
+Handler 层提取了 `timesetOrRespond` helper，消除 14 处重复的 `Timeset()` 转换 + 错误响应模式。`decodeAndValidate[T]` 统一 JSON 解码 + 校验流程。
 
 ### 单连接 SQLite
 
@@ -165,7 +183,7 @@ cmd/lingji
   └─ internal/http         → handler 注册 + 中间件 + SessionStore
        ├─ internal/agent      → ChatAgent
        │    └─ internal/llm   → DeepSeek 客户端
-       ├─ internal/engine     → Engine 层 (9 包)
+       ├─ internal/engine     → Engine 层 (11 包)
        └─ internal/payment    → 支付服务 + Store
             ├─ internal/dodo   → Dodo Payments SDK
             └─ internal/email  → Resend 邮件客户端

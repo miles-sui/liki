@@ -3,15 +3,17 @@
 ## 零、Engine 层现状
 
 ```
-9 个包，17 包全绿，go vet 零警告：
+11 个包，全绿 go vet，全绿 go test -race：
 
-ganzhi/     # 干支基础
-tianwen/    # 天文历算（24节气、干支历、公历转农历）
+ganzhi/     # 干支基础（天干地支、五行生克、合冲刑害、十神、藏干、长生十二宫、纳音）
+tianwen/    # 天文历算（真太阳时、节气、干支历、公历农历互转）
 bazi/       # 八字命理
 ziwei/      # 紫微斗数
 qimen/      # 奇门遁甲（时/日/月/年盘 + 克应 + 格局 + 应期）
 liuyao/     # 六爻卜卦（64卦 + 装卦 + 用神 + 月建日建 + 应期）
-fengshui/   # 玄空风水（飞星 + 挨星 + 旺衰 + 城门诀）
+fengshui/   # 风水基础（24山 + 飞星 + 旺衰 + 双星加会）
+bazhai/     # 八宅风水（命卦 + 八宅方位 + 四柱八卦）
+xuankong/   # 玄空风水（三元九运 + 飞星 + 挨星 + 旺山旺向 + 城门诀）
 huangli/    # 黄历
 qiming/     # 起名
 ```
@@ -28,23 +30,20 @@ qiming/     # 起名
      Chat 流       Form 流       Free API
   (POST+SSE)    (POST+JSON)    (GET+JSON)
         │             │             │
-   Agent+Engine   Engine+LLM     Engine only
+   Agent+Engine   Engine only    Engine only
         │             │             │
-   Session(内存)  Order(SQLite)   无状态
-        │             │             │
-        └─────────────┼─────────────┘
-                      │
-                  Payment
-               (Dodo webhook)
+   Session(内存)  无状态          无状态
+        │
+   Payment (Dodo webhook)
 ```
 
 三条用户路径：
-- **Chat 流**：自然语言 → Collect → Confirm → Gather → Generate(teaser) → SSE done → 支付 → Report(full)
-- **Form 流**：表单提交 → Gather → Generate(full) → 预览 → 支付 → 查看报告
+- **Chat 流**：自然语言 → 收集参数（tool calling） → 排盘（compute_* tool） → LLM 流式 teaser → SSE done → 支付 → webhook 触发完整报告生成
+- **Form 流**：表单提交 → Engine 计算 → 返回 JSON（无 LLM、无持久化）
 - **Free API**：直接调引擎 → 返回 JSON（无 LLM、无持久化、无支付）
 
 Form 流和 Free API 的 HTTP handler 都在 `internal/http`（bazi.go, qiming_handler.go 等），
-直接调用 `engine.Service` 和 `agent.Agent`，没有独立的 chart/bond/naming 包。
+直接调用 `engine.Service`，没有独立的 chart/bond/naming 包。
 
 ---
 
@@ -59,28 +58,14 @@ Form 流和 Free API 的 HTTP handler 都在 `internal/http`（bazi.go, qiming_h
           ┌──────────────┐
           │  COLLECTING  │◀── POST 追问
           └──────┬───────┘
-                 │ params complete
+                 │ purchase tool 触发
                  ▼
           ┌──────────────┐
-          │  CONFIRMING  │  安全阀：确认后再走引擎
-          └──────┬───────┘
-                 │ POST 确认
-                 ▼
-          ┌──────────────┐
-          │  COMPUTING   │  engine.Gather() ~1s
-          └──────┬───────┘
-                 │
-                 ▼
-          ┌──────────────┐
-          │  GENERATING  │  LLM 流式
-          └──────┬───────┘
-                 │ done event
-                 ▼
+          │   CLOSED     │  终态，done 事件已发出
           └──────────────┘
-             CLOSED (终态)
 ```
 
-**评价：合理。** CONFIRMING 是安全阀——参数收齐后等用户确认再调引擎，避免浪费 token。COMPUTING 和 GENERATING 在代码中是连续的（中间无等待），但逻辑上分立清晰。
+**评价：简洁合理。** ChatAgent 单实例管理全流程，状态仅两态。LLM 通过 tool calling 驱动参数收集和排盘，无需中间状态（CONFIRMING/COMPUTING/GENERATING）的显式管理——这些是 agent 内部的过程，sess.Phase 只关心会话是否还能继续接收消息。
 
 ### 2.2 客户端 Chat UI
 
@@ -93,7 +78,7 @@ welcome ──(send)──→ chatting(loading) ──(text-delta)──→ stre
   └────(newChat)────────────────────┘
 ```
 
-**评价：合理。** Vue 3 reactive phase + substate 组合是标准实践。`streaming` 是统一态——Phase 1 Collect 和 Phase 3 Generate 用同一 SSE 通道、同一 text-delta 事件，区别只在退出条件。
+**评价：合理。** Vue 3 reactive phase + substate 组合是标准实践。`streaming` 是统一态——收集和生成用同一 SSE 通道、同一 text-delta 事件，区别只在退出条件。
 
 ### 2.3 客户端 Report 页面 —— ✅ 已修复
 
@@ -122,53 +107,49 @@ pending ──(webhook)──→ paid
 
 ## 三、数据流复盘
 
-### 3.1 完整链路
+### 3.1 Chat 流完整链路
 
 ```
 用户输入 (自然语言)
   │
-  ▼ Phase 1: Collect
-agent.CollectParams
-  │  ToDomain()
-  ▼
-domain.CollectParams {Product, Chart, Bazi, Surname, ChartB, BaziB}
+  ├─ agent.Chat() → ChatStreamWithTools
   │
-  ▼ Phase 2: Gather
-engine.GatheredData {Chart, YongShen, DaYun, Bond, Naming, RawChart, ...}
-  │  json.Marshal → dataJSON
+  ├─ LLM 追问收集参数
+  │    └─ get_city_coords tool → 城市经纬度确认
   │
-  ├──→ CreateOrder(chart_json=dataJSON, llm_json="")  →  SQLite
+  ├─ 参数齐全 → LLM 决定调 compute_* tool
+  │    └─ tool handler 调用 engine.ComputeChart/ComputeBond 等
+  │         └─ engine 返回 JSON → tool result 注入对话
   │
-  ▼ Phase 3: Generate(teaser)
-LLM 流式 → SSE text-delta → 前端渲染
+  ├─ LLM 基于 engine 结果流式生成 teaser 报告
+  │    （Markdown，SSE text-delta 事件）
   │
-  ▼ done event {order_id, amount, product}
+  ├─ LLM 自然引导购买（最多 3 次）
   │
-  ▼ 用户支付 → webhook → status=paid
-  │
-  ▼ GET /api/report/{id}
-     ├─ llm_json 非空 → 直接返回
-     └─ llm_json 为空 → Generate(full) → UpdateLlmJSON → 返回
+  └─ LLM 调 purchase tool → handlePurchase
+       ├─ CreateOrder(chartJSON, product, amount) → SQLite (status=pending)
+       └─ SSE done 事件 {order_id, amount, product}
+            └─ sess.SetPhase(PhaseClosed)
 ```
 
 ### 3.2 数据层结构
 
 | 层 | 类型 | 序列化目标 |
 |---|---|---|
-| Agent → Domain | `CollectParams` (ChartParams/BaziInput) | — |
-| Engine | `GatheredData` (json.RawMessage × 5 + Raw × 3) | `orders.chart_json` |
+| Agent tool handler → Engine | tool args → `ComputeChart(st, …)` | — |
+| Engine → Agent | 各 engine 产物（bazi.Chart, liuyao.Chart, qiming.NameCandidate 等） | `orders.chart_json` |
 | LLM | 流式 string (Markdown) | `orders.llm_json` |
 
-`GatheredData` 同时带 Raw 字段 (`json:"-"`) 和 JSON 字段是合理的——JSON 字段进数据库，Raw 字段供 Go 后续计算（`computeYongShen` 需要 `ChartResult` 而非重新解析 JSON）。
+`chart_json` 存储 engine 完整计算结果的 JSON。`llm_json` 存储 LLM 生成的报告文本。
 
 ### 3.3 数据冗余点
 
 | 冗余 | 说明 | 判断 |
 |---|---|---|
-| `GatheredData.RawChart` + `.Chart` | Chart 数据同时存 Go 对象和 JSON | ✅ 合理，Go 对象避免重新解析 |
-| `ChartOutput.yong_shen` 嵌入 | 用神在 chart 结构内 | ✅ 合理，chart 输出是自包含的 |
-| Bond 包含两个完整 ChartOutput | 合盘需要双方完整命盘 | ✅ 正确，产品语义要求 |
-| `llm_json` 创建时为空 | 支付后首次访问时 Generate + 缓存 | ✅ 合理，延迟生成 |
+| `chart_json` 存完整 engine 结果 | 包含用神、大运、流年等全部数据 | ✅ 合理，一份 JSON 含所有信息 |
+| Bond 包含两个完整 Chart | 合盘需要双方完整命盘 | ✅ 正确，产品语义要求 |
+| `llm_json` 创建时为空 | 支付后 webhook 触发 GenerateFromData + 缓存 | ✅ 合理，延迟生成 |
+| Order 含 product 字段 | 标识 chart/bond/naming 产品类型 | ✅ 必要，报告页路由用 |
 
 ---
 
@@ -237,3 +218,15 @@ LLM 流式 → SSE text-delta → 前端渲染
 | P2 | `report.js` 改用 `apiGet` | `web/js/report.js` | ✅ 完成 |
 | P2 | fetch 加 `AbortSignal.timeout()` | `web/js/api.js` | ✅ 完成 |
 | P3 | chat.html i18n | `web/chat.html` | ✅ 完成 |
+| P0 | bazi.Chart 子结构 JSON tag 补齐 | `bazi_chart.go`, `bazi_bond.go` 等 | ✅ 完成 |
+| P0 | TimePoint 去掉 Lunar 字段 | `agent/tools.go`, `handler_helpers.go`, 13 个 tool schema JSON | ✅ 完成 |
+| P1 | 三条重复 {Birth, Gender} 请求 struct 合并为 BirthRequest | `bazi.go`, `ziwei.go`, `fengshui.go` | ✅ 完成 |
+| P1 | error code 标准化（validation_error / invalid_request 区分） | `handler_helpers.go`, `agent.go`, `bazi.go` | ✅ 完成 |
+| P1 | `liuyaoRequest.Fixed` 加校验、`validateEmail` 换标准库、`qiming_handler` 命名 struct | `liuyao.go`, `payment.go`, `qiming_handler.go` | ✅ 完成 |
+| P2 | Timeset 转换 14 处重复提取为 `timesetOrRespond` helper | `handler_helpers.go` + 6 个 handler 文件 | ✅ 完成 |
+| P2 | LLM tool schema 去 lunar 字段 | `internal/llm/data/tools/*.json` | ✅ 完成 |
+| P2 | shishen→shi_shen / sancai→san_cai 命名统一 | `bazi_liunian.go` 等 5 文件, `qiming_types.go` | ✅ 完成 |
+| P1 | error code 残余修正（server_error→internal_error, session_closed/invalid_surname→invalid_request） | `agent.go`, `qiming_handler.go` | ✅ 完成 |
+| P1 | huangli bond 错误分类修正（422 validation_error → 400 invalid_request） | `huangli_handler.go` | ✅ 完成 |
+| P1 | `agent.Person.Gender` 类型 `string` → `ganzhi.Gender`，消除 tool 层与 HTTP 层类型不一致 | `tools.go`, `tools_bazi.go`, `tools_ziwei.go`, `tools_other.go` | ✅ 完成 |
+| P2 | API 文档更新（ziwei 补 gender、bazi 年份修正、error envelope 文档化） | `web/docs/ziwei.md`, `bazi.md`, `reference.md` | ✅ 完成 |

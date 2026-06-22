@@ -60,7 +60,7 @@ curl -s -X POST https://liki.hk/api/bazi/liunian \
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| year | int | yes | Year, 1900-2200 |
+| year | int | yes | Year, 1900-2100 |
 | month | int | yes | Month, 1-12 |
 | birth | object | yes | `{time, longitude}` |
 

@@ -13,7 +13,7 @@ const WEB_DIR = path.resolve(__dirname, '..');
 const html = fs.readFileSync(path.join(WEB_DIR, 'chat.html'), 'utf-8');
 
 // Extract content inside <div id="app">.
-const bodyMatch = html.match(/<div\s[^>]*\bid="app"[^>]*>([\s\S]*?)<\/div>\s*<script/);
+const bodyMatch = html.match(/<div\s[^>]*\bid="app"[^>]*>([\s\S]*?)<\/div>\s*<\/body>/);
 if (!bodyMatch) {
   console.error('ERROR: could not find <div id="app"> in chat.html');
   process.exit(1);

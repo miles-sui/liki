@@ -10,31 +10,34 @@
         "properties": {
           "birth": {
             "type": "object",
-            "description": "甲方出生信息。time（公历）和lunar（农历）二选一",
+            "description": "甲方出生信息",
             "properties": {
-              "time": {"type": "string", "description": "公历出生时间，RFC3339格式"},
-              "lunar": {
-                "type": "object",
-                "properties": {
-                  "year": {"type": "integer", "description": "农历年"},
-                  "month": {"type": "integer", "description": "农历月 1-12"},
-                  "day": {"type": "integer", "description": "农历日 1-30"},
-                  "hour": {"type": "integer", "description": "出生小时 0-23"},
-                  "minute": {"type": "integer", "description": "出生分钟 0-59"},
-                  "leap": {"type": "boolean", "description": "是否闰月"}
-                },
-                "required": ["year", "month", "day", "hour"]
+              "time": {
+                "type": "string",
+                "description": "公历出生时间，RFC3339格式"
               },
-              "longitude": {"type": "number", "description": "出生地经度，如 116.4"}
+              "longitude": {
+                "type": "number",
+                "description": "出生地经度，如 116.4"
+              }
             },
-            "anyOf": [
-              {"required": ["time", "longitude"]},
-              {"required": ["lunar", "longitude"]}
+            "required": [
+              "time",
+              "longitude"
             ]
           },
-          "gender": {"type": "string", "enum": ["male", "female"]}
+          "gender": {
+            "type": "string",
+            "enum": [
+              "male",
+              "female"
+            ]
+          }
         },
-        "required": ["birth", "gender"]
+        "required": [
+          "birth",
+          "gender"
+        ]
       },
       "b": {
         "type": "object",
@@ -42,33 +45,39 @@
         "properties": {
           "birth": {
             "type": "object",
-            "description": "乙方出生信息。time（公历）和lunar（农历）二选一",
+            "description": "乙方出生信息",
             "properties": {
-              "time": {"type": "string", "description": "公历出生时间，RFC3339格式"},
-              "lunar": {
-                "type": "object",
-                "properties": {
-                  "year": {"type": "integer", "description": "农历年"},
-                  "month": {"type": "integer", "description": "农历月 1-12"},
-                  "day": {"type": "integer", "description": "农历日 1-30"},
-                  "hour": {"type": "integer", "description": "出生小时 0-23"},
-                  "minute": {"type": "integer", "description": "出生分钟 0-59"},
-                  "leap": {"type": "boolean", "description": "是否闰月"}
-                },
-                "required": ["year", "month", "day", "hour"]
+              "time": {
+                "type": "string",
+                "description": "公历出生时间，RFC3339格式"
               },
-              "longitude": {"type": "number", "description": "出生地经度，如 116.4"}
+              "longitude": {
+                "type": "number",
+                "description": "出生地经度，如 116.4"
+              }
             },
-            "anyOf": [
-              {"required": ["time", "longitude"]},
-              {"required": ["lunar", "longitude"]}
+            "required": [
+              "time",
+              "longitude"
             ]
           },
-          "gender": {"type": "string", "enum": ["male", "female"]}
+          "gender": {
+            "type": "string",
+            "enum": [
+              "male",
+              "female"
+            ]
+          }
         },
-        "required": ["birth", "gender"]
+        "required": [
+          "birth",
+          "gender"
+        ]
       }
     },
-    "required": ["a", "b"]
+    "required": [
+      "a",
+      "b"
+    ]
   }
 }

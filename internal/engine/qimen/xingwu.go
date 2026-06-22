@@ -4,11 +4,11 @@ import "liki/internal/engine/ganzhi"
 
 // StarInteraction holds star-palace interaction data.
 type StarInteraction struct {
-	Star       string
-	Palace     string
-	Name       string
-	Meaning    string
-	Auspicious bool
+	Star       string `json:"star"`
+	Palace     string `json:"palace"`
+	Name       string `json:"name"`
+	Meaning    string `json:"meaning"`
+	Auspicious bool   `json:"auspicious"`
 }
 
 // computeStarInteractions returns star-palace 克应 for each palace.

@@ -77,7 +77,7 @@ func TestYueZhu_Basic(t *testing.T) {
 	// 用五虎遁独立计算月柱
 	tests := []struct {
 		name     string
-		yearGan  ganzhi.Gan
+		nianGan  ganzhi.Gan
 		branch   int    // 月支 1=寅..12=丑
 		wantGan  ganzhi.Gan
 		wantZhi  ganzhi.Zhi
@@ -103,7 +103,7 @@ func TestYueZhu_Basic(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// 直接用五虎遁公式：月干 = (正月干 + 月数 - 1) % 10
-			janGan := wuhudun(tt.yearGan)
+			janGan := wuhudun(tt.nianGan)
 			monthNum := tt.branch // 1=寅月
 			wantMonthGan := ganzhi.Gan((int(janGan) + monthNum - 1) % 10)
 			if wantMonthGan == 0 {
@@ -111,7 +111,7 @@ func TestYueZhu_Basic(t *testing.T) {
 			}
 			if wantMonthGan != tt.wantGan {
 				t.Fatalf("test data bug: wuhudun(%s).month(%d) = %s, test expects %s",
-					ganzhi.GanName(tt.yearGan), monthNum, ganzhi.GanName(wantMonthGan), ganzhi.GanName(tt.wantGan))
+					ganzhi.GanName(tt.nianGan), monthNum, ganzhi.GanName(wantMonthGan), ganzhi.GanName(tt.wantGan))
 			}
 			// 月支=(monthNum+1)%12+1 → 寅(1)→寅(3), 丑(12)→丑(2)...
 			// 实际：寅月=支3(寅), 卯月=支4(卯), ...
@@ -205,7 +205,7 @@ func daysFrom1900(y, m, d int) int {
 	return days
 }
 
-func TestRiZhu_CrossCheck(t *testing.T) {
+func TestRiZhu_JiaoChaCheck(t *testing.T) {
 	// 对几个重要日期，用独立算法（天数累加）验证日柱
 	tests := []struct {
 		name    string
@@ -363,7 +363,7 @@ func TestComputeBazi_BeijingNoon(t *testing.T) {
 	//     46%10=6, gan=7=庚. 46%12=10, zhi=11=戌. → 庚戌
 	// 时: 12:00 → 午时。庚日午时：庚日子=丙子...午=壬午
 	//     时干=(7*2+7-2)%10=19%10=9→壬 ✓
-	st := ComputeSolarTime(2024, 6, 15, 12, 0, 120, 8)
+	st := GregorianToSolar(time.Date(2024, time.Month(6), 15, 12, 0, 0, 0, time.FixedZone("", int(8*3600))), 120, 8)
 	bz := ComputeBazi(st)
 
 	if bz.Nian.Gan != ganzhi.GanJia || bz.Nian.Zhi != ganzhi.ZhiChen {
@@ -389,7 +389,7 @@ func TestSolarTime_BeijingNoon(t *testing.T) {
 	// 北京经度约116.4°E，时区UTC+8(120°E)
 	// 经度修正 ≈ 4*(116.4-120) = -14.4分钟
 	// 但这里用120°E，修正=0。配合均时差(equ of time)，真太阳时≈12:00附近。
-	st := ComputeSolarTime(2024, 6, 15, 12, 0, 120, 8)
+	st := GregorianToSolar(time.Date(2024, time.Month(6), 15, 12, 0, 0, 0, time.FixedZone("", int(8*3600))), 120, 8)
 	tm := st.Time()
 	if tm.Hour() < 11 || tm.Hour() > 13 {
 		t.Errorf("北京正午真太阳时 = %02d:%02d, 预期在12:00附近", tm.Hour(), tm.Minute())
@@ -400,7 +400,7 @@ func TestSolarTime_UrumqiOffset(t *testing.T) {
 	// 乌鲁木齐约87.6°E，时区UTC+8(120°E)
 	// 经度差 ≈ 4*(87.6-120) = -129.6分钟 ≈ -2小时10分钟
 	// 正午12:00的真太阳时 ≈ 09:50 左右
-	st := ComputeSolarTime(2024, 6, 15, 12, 0, 87.6, 8)
+	st := GregorianToSolar(time.Date(2024, time.Month(6), 15, 12, 0, 0, 0, time.FixedZone("", int(8*3600))), 87.6, 8)
 	ast := float64(st.Time().Hour()*60 + st.Time().Minute())
 	if ast > 11*60 {
 		t.Errorf("乌鲁木齐正午真太阳时 = %02d:%02d (%.0f分钟), 预期约在10:00前后",
@@ -412,7 +412,7 @@ func TestSolarTime_LateNightDayShift(t *testing.T) {
 	// 新疆喀什 (75°E, UTC+8)，晚上22:30
 	// 经度修正 = 4*(75-120) = -180分钟 = -3小时
 	// 真太阳时 ≈ 22:30 - 3:00 = 19:30
-	st := ComputeSolarTime(2024, 6, 15, 22, 30, 75, 8)
+	st := GregorianToSolar(time.Date(2024, time.Month(6), 15, 22, 30, 0, 0, time.FixedZone("", int(8*3600))), 75, 8)
 	ast := float64(st.Time().Hour()*60 + st.Time().Minute())
 	// 应在19:00-20:00区间（戌时）
 	if ast < 18*60 || ast > 20*60+30 {
@@ -427,7 +427,7 @@ func TestComputeBazi_SolarTimeAffectsRiZhu(t *testing.T) {
 	// 更极端：黑龙江抚远 134°E + UTC+8，23:30
 	// 经度修正 = 4*(134-120) = +56分钟
 	// 真太阳时 ≈ 00:26 → 跨越到次日！
-	st := ComputeSolarTime(2024, 6, 15, 23, 30, 134, 8)
+	st := GregorianToSolar(time.Date(2024, time.Month(6), 15, 23, 30, 0, 0, time.FixedZone("", int(8*3600))), 134, 8)
 	if st.Time().Day() != 16 {
 		t.Errorf("抚远23:30真太阳时应跨日到6月16日，实际=%d日", st.Time().Day())
 	}

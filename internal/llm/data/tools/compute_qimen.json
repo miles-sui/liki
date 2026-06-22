@@ -6,26 +6,35 @@
     "properties": {
       "birth": {
         "type": "object",
-        "description": "排盘时间。time（公历）和lunar（农历）二选一",
+        "description": "排盘时间",
         "properties": {
-          "time": {"type": "string", "description": "公历时间，RFC3339格式。与lunar二选一"},
-          "lunar": {
-            "type": "object",
-            "properties": {
-              "year": {"type": "integer"}, "month": {"type": "integer"}, "day": {"type": "integer"},
-              "hour": {"type": "integer"}, "minute": {"type": "integer"}, "leap": {"type": "boolean"}
-            },
-            "required": ["year", "month", "day", "hour"]
+          "time": {
+            "type": "string",
+            "description": "公历时间，RFC3339格式。与lunar二选一"
           },
-          "longitude": {"type": "number", "description": "经度，如 116.4"}
+          "longitude": {
+            "type": "number",
+            "description": "经度，如 116.4"
+          }
         },
-        "anyOf": [
-          {"required": ["time", "longitude"]},
-          {"required": ["lunar", "longitude"]}
+        "required": [
+          "time",
+          "longitude"
         ]
       },
-      "kind": {"type": "string", "enum": ["shi", "ri", "yue", "nian"], "description": "盘的类型：shi=时盘(默认), ri=日盘, yue=月盘, nian=年盘"}
+      "kind": {
+        "type": "string",
+        "enum": [
+          "shi",
+          "ri",
+          "yue",
+          "nian"
+        ],
+        "description": "盘的类型：shi=时盘(默认), ri=日盘, yue=月盘, nian=年盘"
+      }
     },
-    "required": ["birth"]
+    "required": [
+      "birth"
+    ]
   }
 }

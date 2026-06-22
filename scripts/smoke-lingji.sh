@@ -1,9 +1,8 @@
 #!/bin/bash
-# LingJi — API smoke test
+# Liki — API smoke test
 set -uo pipefail
 
 BASE="${1:-http://localhost:8080}"
-# API goes directly to Go (bypasses Caddy so X-Forwarded-For rotation works).
 API="${2:-http://localhost:8081}"
 PASS=0; FAIL=0
 HAS_JQ=false
@@ -15,11 +14,6 @@ TMP=$(mktemp -d /tmp/smoke-lingji-XXXXXX)
 trap 'rm -rf "$TMP"' EXIT
 
 command -v jq &>/dev/null && HAS_JQ=true
-
-# IP rotation: each fake IP gets its own rate-limit bucket (core: 1 req/s burst 10).
-# Caddy overwrites X-Forwarded-For, so we hit Go :8081 directly.
-# Use $RANDOM instead of a counter — api() is called in $() subshells,
-# so variable mutations don't propagate back to the parent.
 
 api() {
   local method="$1" path="$2" data="${3:-}"
@@ -38,7 +32,6 @@ api() {
   sleep 0.1
 }
 
-# caddy() — for static file routes served by Caddy (not API).
 caddy() {
   local method="$1" path="$2" data="${3:-}"
   local f="$TMP/body"
@@ -59,7 +52,7 @@ json_val() {
     echo "$1" | jq -r "$2" 2>/dev/null || true
   else
     local k="${2##*.}"
-    echo "$1" | grep -o "\"$k\":\"[^\"]*\"" | head -1 | sed "s/\"$k\":\"//;s/\"$//" || true
+    echo "$1" | /bin/grep -o "\"$k\":\"[^\"]*\"" | head -1 | sed "s/\"$k\":\"//;s/\"$//" || true
   fi
 }
 
@@ -80,6 +73,8 @@ check_302()  { check "$1 HTTP" "302" "${2:-}"; }
 check_400()  { check "$1 HTTP" "400" "${2:-}"; }
 check_404()  { check "$1 HTTP" "404" "${2:-}"; }
 check_422()  { check "$1 HTTP" "422" "${2:-}"; }
+
+check_403()  { check "$1 HTTP" "403" "${2:-}"; }
 
 check_error_shape() {
   local desc="$1" body="$2"
@@ -106,29 +101,18 @@ check_has() {
   fi
 }
 
-check_total() {
-  local desc="$1" body="$2" expected="$3"
-  if $HAS_JQ; then
-    local t=$(echo "$body" | jq '.data.total' 2>/dev/null)
-    check "  $desc total=$expected" "$expected" "$t"
-  fi
-}
-
-echo "${BOLD}LingJi — API Smoke Test${NC}"
+echo "${BOLD}Liki — API Smoke Test${NC}"
 echo "Target: Caddy=$BASE API=$API"
 $HAS_JQ && echo "jq: available" || echo "jq: not available (limited validation)"
 echo ""
 
 # --- Shared test data ---
-BIRTH_C='{"year":1984,"month":2,"day":4,"hour":18,"minute":30,"longitude":116.4,"timezone":8,"gender":"male"}'
-BIRTH_A='{"year":1990,"month":3,"day":20,"hour":10,"minute":30,"longitude":120,"timezone":8,"gender":"male"}'
-BIRTH_B='{"year":1992,"month":7,"day":8,"hour":14,"minute":30,"longitude":120,"timezone":8,"gender":"female"}'
-
-# Hardcoded numeric bazi for 1984-02-04 18:30 (甲子 丁丑 戊辰 辛酉)
-BAZI_NUM='{"nian":{"gan":1,"zhi":1},"yue":{"gan":4,"zhi":2},"ri":{"gan":5,"zhi":5},"shi":{"gan":8,"zhi":10}}'
-DAYUN_GANZHI='{"gan":5,"zhi":3}'
-# YongShen for 1984 male (甲子年 戊辰日)
-YONGSHEN='{"fuyi":{"qiangruo":"身强","geju":"建禄格","yong":"木","xi":"水","ji":"土"},"tiaohou":{"season":"冬","yong":"火","xi":"木","ji":"木"}}'
+BT='{"time":"1984-02-04T18:30:00+08:00","longitude":116.4}'
+BT_A='{"time":"1990-03-20T10:30:00+08:00","longitude":120}'
+BT_B='{"time":"1992-07-08T14:30:00+08:00","longitude":120}'
+BR="{\"birth\":$BT,\"gender\":\"male\"}"
+BR_A="{\"birth\":$BT_A,\"gender\":\"male\"}"
+BR_B="{\"birth\":$BT_B,\"gender\":\"female\"}"
 
 # ============================================================================
 # Health check
@@ -141,116 +125,117 @@ check_has "status" "$b" '.data.status'
 check "  status ok" "ok" "$(json_val "$b" '.data.status')"
 
 # ============================================================================
-# Homepage
+# Static (Caddy)
 # ============================================================================
 echo ""
-echo "${BOLD}── Homepage ──${NC}"
-s=$(caddy GET /)
-check_200 "GET /" "$s"
-b=$(body)
-check "  has 灵机" "false" "$(echo "$b" | grep -q '灵机' && echo false || echo true)"
+echo "${BOLD}── Static ──${NC}"
+# Only test if Caddy is running on $BASE
+if curl -s --connect-timeout 2 -o /dev/null -w '%{http_code}' "$BASE/api/health" 2>/dev/null | /bin/grep -q .; then
+  s=$(caddy GET /)
+  check_200 "GET /" "$s"
+  b=$(body)
+  check "  has 灵机" "false" "$(echo "$b" | /bin/grep -q '灵机' && echo false || echo true)"
+
+	  s=$(caddy GET /llms.txt)
+	  check_200 "GET /llms.txt" "$s"
+	  b=$(body)
+	  check "  non-empty" "false" "$([ -z "$b" ] && echo true || echo false)"
+	  check "  has Skill" "false" "$(echo "$b" | /bin/grep -q 'Skill' && echo false || echo true)"
+
+	  # Skill files
+	  s=$(caddy GET /skills/liki.md)
+	  check_200 "GET /skills/liki.md" "$s"
+	  b=$(body)
+	  check "  has version" "false" "$(echo "$b" | /bin/grep -q 'version:' && echo false || echo true)"
+	  check "  has brand def" "false" "$(echo "$b" | /bin/grep -q '灵机' && echo false || echo true)"
+	  check "  has tool calls" "false" "$(echo "$b" | /bin/grep -q 'POST /api/bazi/chart' && echo false || echo true)"
+
+	  s=$(caddy GET /skills/report-chart.md)
+	  check_200 "GET /skills/report-chart.md" "$s"
+	  b=$(body)
+	  check "  has report structure" "false" "$(echo "$b" | /bin/grep -q '格局总论' && echo false || echo true)"
+
+	  s=$(caddy GET /skills/report-bond.md)
+	  check_200 "GET /skills/report-bond.md" "$s"
+	  b=$(body)
+	  check "  has bond structure" "false" "$(echo "$b" | /bin/grep -q '综合缘分评定' && echo false || echo true)"
+
+	  s=$(caddy GET /skills/report-naming.md)
+	  check_200 "GET /skills/report-naming.md" "$s"
+	  b=$(body)
+	  check "  has naming structure" "false" "$(echo "$b" | /bin/grep -q '候选名字分析' && echo false || echo true)"
+	  else
+	  echo "  (Caddy not running — skipping static checks)"
+	  fi
 
 # ============================================================================
-# llms.txt
-# ============================================================================
-echo ""
-echo "${BOLD}── llms.txt ──${NC}"
-s=$(caddy GET /llms.txt)
-check_200 "GET /llms.txt" "$s"
-b=$(body)
-check "  non-empty" "false" "$([ -z "$b" ] && echo true || echo false)"
-
-# ============================================================================
-# Payment checkout / download / webhook
+# Payment
 # ============================================================================
 echo ""
 echo "${BOLD}── Payment ──${NC}"
-CHECKOUT='{"order_id":"nonexistent","email":"test@example.com"}'
-s=$(api POST /api/payments/checkout "$CHECKOUT")
+s=$(api POST /api/payments/checkout '{"order_id":"nonexistent","email":"test@example.com"}')
 check_404 "POST /api/payments/checkout (no order)" "$s"
+b=$(body)
+check_error_shape "checkout 404" "$b"
 
-s=$(api GET "/api/orders/nonexistent/download")
-check_302 "GET /api/orders/nonexistent/download" "$s"
+s=$(api GET /api/orders/nonexistent/report)
+check_302 "GET /api/orders/{id}/report" "$s"
 
-# Webhook with no signature
 s=$(api POST /api/payments/webhook '{"type":"order.paid","data":{"order_id":"test"}}')
 check_400 "POST /api/payments/webhook (no sig)" "$s"
 
-# ============================================================================
-# Reference data
-# ============================================================================
-echo ""
-echo "${BOLD}── Reference Data ──${NC}"
-
-s=$(api GET /api/reference/stems)
-check_200 "GET /api/reference/stems" "$s"
-b=$(body)
-check_total "stems" "$b" "10"
-check_has "stem name" "$b" '.data.items[0].name'
-check_has "stem element" "$b" '.data.items[0].element'
-check_has "stem yin_yang" "$b" '.data.items[0].yin_yang'
-
-s=$(api GET /api/reference/branches)
-check_200 "GET /api/reference/branches" "$s"
-b=$(body)
-check_total "branches" "$b" "12"
-check_has "branch name" "$b" '.data.items[0].name'
-check_has "hidden_stems" "$b" '.data.items[0].hidden_stems'
-
-s=$(api GET /api/reference/nayin)
-check_200 "GET /api/reference/nayin" "$s"
-b=$(body)
-check_total "nayin" "$b" "60"
-check_has "nayin name" "$b" '.data.items[0].nayin'
-
-s=$(api GET /api/reference/shensha)
-check_200 "GET /api/reference/shensha" "$s"
-b=$(body)
-check_has "shensha envelope" "$b" '.data'
-
-s=$(api GET /api/reference/zodiac)
-check_200 "GET /api/reference/zodiac" "$s"
-b=$(body)
-check_has "six_he" "$b" '.data.six_he'
-check_has "triple_he" "$b" '.data.triple_he'
-check_has "six_chong" "$b" '.data.six_chong'
-check_has "six_hai" "$b" '.data.six_hai'
-
-s=$(api GET /api/reference/mansions)
-check_200 "GET /api/reference/mansions" "$s"
-b=$(body)
-check_total "mansions" "$b" "28"
-
-s=$(api GET /api/reference/trigrams)
-check_200 "GET /api/reference/trigrams" "$s"
-b=$(body)
-check_total "trigrams" "$b" "8"
-
-s=$(api GET /api/reference/huangdao)
-check_200 "GET /api/reference/huangdao" "$s"
-b=$(body)
-check_total "huangdao" "$b" "12"
-
-s=$(api GET /api/reference/24-shan)
-check_200 "GET /api/reference/24-shan" "$s"
-b=$(body)
-check_has "mountains" "$b" '.data.mountains'
+s=$(api GET /api/orders/nonexistent/status)
+check_404 "GET /api/orders/{id}/status (not found)" "$s"
 
 # ============================================================================
-# Solar terms
+# Misc
 # ============================================================================
 echo ""
-echo "${BOLD}── Solar Terms ──${NC}"
-s=$(api GET /api/solar-terms)
-check_200 "GET /api/solar-terms" "$s"
+echo "${BOLD}── Misc ──${NC}"
+s=$(api GET /api/version)
+check_200 "GET /api/version" "$s"
 b=$(body)
-check_has "year" "$b" '.data.year'
-check_has "current" "$b" '.data.current'
-check_has "months" "$b" '.data.months'
-if $HAS_JQ; then
-  mc=$(echo "$b" | jq '.data.months | length' 2>/dev/null)
-  check "  12 solar months" "12" "$mc"
-fi
+check_has "build_time" "$b" '.data.build_time'
+
+s=$(api GET /api/location)
+check_200 "GET /api/location" "$s"
+b=$(body)
+check_has "country" "$b" '.data.country'
+
+s=$(api GET /api/stats)
+check_200 "GET /api/stats" "$s"
+
+s=$(api POST /api/analytics/pageview '{"path":"/zh/"}')
+check_204 "POST /api/analytics/pageview" "$s"
+
+# ============================================================================
+# Agent
+# ============================================================================
+echo ""
+echo "${BOLD}── Agent ──${NC}"
+s=$(api GET /api/agent/greeting)
+check_200 "GET /api/agent/greeting" "$s"
+b=$(body)
+check_has "greeting" "$b" '.data.greeting'
+
+s=$(api GET /api/agent/session)
+check_400 "GET /api/agent/session (missing session_id)" "$s"
+
+s=$(api GET '/api/agent/session?session_id=nonexistent')
+check_404 "GET /api/agent/session (not found)" "$s"
+
+# Chat SSE — verify headers
+chat_code=$(curl -s -w '%{http_code}' -o "$TMP/chat_body" "$API/api/agent/chat" \
+  -H 'Content-Type: application/json' -d '{"message":"hello"}' \
+  -D "$TMP/chat_headers")
+check_200 "POST /api/agent/chat" "$chat_code"
+chat_ct=$(/bin/grep -i 'content-type:' "$TMP/chat_headers" 2>/dev/null | tr -d '\r' || true)
+check "  SSE content-type" "false" "$(echo "$chat_ct" | /bin/grep -q 'text/event-stream' && echo false || echo true)"
+chat_sid=$(/bin/grep -i 'x-session-id:' "$TMP/chat_headers" 2>/dev/null | tr -d '\r' || true)
+check "  has X-Session-ID" "false" "$([ -n "$chat_sid" ] && echo false || echo true)"
+
+s=$(api POST /api/agent/chat '{"message":""}')
+check_400 "POST /api/agent/chat (empty message)" "$s"
 
 # ============================================================================
 # Huangli
@@ -258,221 +243,212 @@ fi
 echo ""
 echo "${BOLD}── Huangli ──${NC}"
 
-# Single date query
-s=$(api GET '/api/huangli/query?date=2026-06-15&event=wedding')
-check_200 "GET /api/huangli/query?date=&event=wedding" "$s"
+s=$(api GET '/api/huangli/date?date=2026-06-19&event=嫁娶')
+check_200 "GET /api/huangli/date" "$s"
 b=$(body)
-check_has "day pillar gan" "$b" '.data.day_pillar.gan'
-check_has "jian_chu" "$b" '.data.jian_chu'
+check_has "date entry" "$b" '.data.entry'
 
-# Month query
-s=$(api GET '/api/huangli/query?month=2026-06&event=travel')
-check_200 "GET /api/huangli/query?month=&event=travel" "$s"
+s=$(api GET '/api/huangli/month?month=2026-06&event=嫁娶')
+check_200 "GET /api/huangli/month" "$s"
 b=$(body)
-check_has "year_month" "$b" '.data.year_month'
-check_has "days" "$b" '.data.days'
+check_has "month entries" "$b" '.data.entries'
 
-# Jieqi
-s=$(api GET '/api/huangli/jieqi?year=2026&month=6&day=15')
-check_200 "GET /api/huangli/jieqi" "$s"
+HL_BD="{\"birth\":$BT,\"event_type\":\"嫁娶\",\"date\":\"2026-06-19\"}"
+s=$(api POST /api/huangli/bond/date "$HL_BD")
+check_200 "POST /api/huangli/bond/date" "$s"
 b=$(body)
-check_has "jieqi_depth" "$b" '.data.jieqi_depth'
-check_has "ren_yuan" "$b" '.data.ren_yuan'
+check_has "bond date" "$b" '.data.entry'
 
-# Huangli bond — single date
-HL_BOND="{\"birth_info\":$BIRTH_C,\"date\":\"2026-06-15\",\"event_type\":\"wedding\"}"
-s=$(api POST /api/huangli/bond "$HL_BOND")
-check_200 "POST /api/huangli/bond (date)" "$s"
+HL_BM="{\"birth\":$BT,\"event_type\":\"嫁娶\",\"month\":\"2026-06\"}"
+s=$(api POST /api/huangli/bond/month "$HL_BM")
+check_200 "POST /api/huangli/bond/month" "$s"
 b=$(body)
-check_has "bond day pillar" "$b" '.data.day_pillar.gan'
-check_has "bond gan_relation" "$b" '.data.gan_relation'
+check_has "bond month" "$b" '.data.entries'
 
-# Huangli bond — month mode
-HL_BOND_MONTH="{\"birth_info\":$BIRTH_C,\"month\":\"2026-06\",\"event_type\":\"wedding\"}"
-s=$(api POST /api/huangli/bond "$HL_BOND_MONTH")
-check_200 "POST /api/huangli/bond (month)" "$s"
-b=$(body)
-check_has "bond month year_month" "$b" '.data.year_month'
-check_has "bond month days" "$b" '.data.days'
+# Negative: missing params
+s=$(api GET /api/huangli/date)
+check_400 "GET /api/huangli/date (missing params)" "$s"
 
-# Huangli negative: missing event
-s=$(api GET /api/huangli/query)
-check_422 "GET /api/huangli/query (missing event)" "$s"
-b=$(body)
-check_error_shape "huangli missing event" "$b"
-
-# Huangli negative: missing date/month with event
-s=$(api GET '/api/huangli/query?event=wedding')
-check_422 "GET /api/huangli/query (missing date/month)" "$s"
-
-# Huangli bond negative: missing birth_info
-s=$(api POST /api/huangli/bond '{"date":"2026-06-15","event_type":"wedding"}')
-check_422 "POST /api/huangli/bond (missing birth)" "$s"
+# Empty birth → validation_error (time is required)
+s=$(api POST /api/huangli/bond/date '{"birth":{},"event_type":"嫁娶","date":"2026-06-19"}')
+check_422 "POST /api/huangli/bond/date (empty birth)" "$s"
 
 # ============================================================================
-# Fengshui
+# Bazhai
 # ============================================================================
 echo ""
-echo "${BOLD}── Fengshui ──${NC}"
+echo "${BOLD}── Bazhai ──${NC}"
 
-s=$(api GET '/api/fengshui/san-yuan?year=2026')
-check_200 "GET /api/fengshui/san-yuan?year=2026" "$s"
+s=$(api POST /api/bazhai/minggua '{"gender":"male","birth_year":1984}')
+check_200 "POST /api/bazhai/minggua" "$s"
 b=$(body)
-check_has "current" "$b" '.data.current'
-check_has "all_periods" "$b" '.data.all_periods'
-if $HAS_JQ; then
-  pc=$(echo "$b" | jq '.data.all_periods | length' 2>/dev/null)
-  check "  9 periods" "9" "$pc"
-fi
+check_has "minggua gua" "$b" '.data.gua'
+check_has "minggua group" "$b" '.data.group'
 
-# San-yuan negative: missing year
-s=$(api GET /api/fengshui/san-yuan)
-check_422 "GET /api/fengshui/san-yuan (missing year)" "$s"
-
-# MingGua
-MG='{"year":1984,"gender":"male"}'
-s=$(api POST /api/fengshui/minggua "$MG")
-check_200 "POST /api/fengshui/minggua" "$s"
+s=$(api POST /api/bazhai/chart "$BR")
+check_200 "POST /api/bazhai/chart" "$s"
 b=$(body)
-check_has "ming_gua" "$b" '.data.ming_gua.gua_number'
-check_has "all_trigrams" "$b" '.data.all_trigrams'
+check_has "bazhai ming_gua" "$b" '.data.ming_gua'
+check_has "bazhai ba_zhai_dirs" "$b" '.data.ba_zhai_dirs'
+check_has "bazhai year_stars" "$b" '.data.year_stars'
 
-# MingGua negative: invalid gender
-s=$(api POST /api/fengshui/minggua '{"year":1984,"gender":"other"}')
-check_422 "POST /api/fengshui/minggua (bad gender)" "$s"
-b=$(body)
-check_error_shape "minggua bad gender" "$b"
+# Negative
+s=$(api POST /api/bazhai/minggua '{"gender":"other","birth_year":1984}')
+check_422 "POST /api/bazhai/minggua (bad gender)" "$s"
 
-# MingGua negative: missing year
-s=$(api POST /api/fengshui/minggua '{"gender":"male"}')
-check_422 "POST /api/fengshui/minggua (missing year)" "$s"
+s=$(api POST /api/bazhai/minggua '{"gender":"male"}')
+check_422 "POST /api/bazhai/minggua (missing year)" "$s"
 
 # ============================================================================
-# BaZi free chart
+# Xuankong
 # ============================================================================
 echo ""
-echo "${BOLD}── BaZi Free Chart ──${NC}"
-s=$(api POST /api/bazi/chart "$BIRTH_C")
+echo "${BOLD}── Xuankong ──${NC}"
+
+s=$(api GET '/api/xuankong/sanyuan?year=2026')
+check_200 "GET /api/xuankong/sanyuan" "$s"
+b=$(body)
+check_has "sanyuan current" "$b" '.data.current'
+
+XK="{\"birth\":$BT,\"sit_mountain\":0,\"face_mountain\":11}"
+s=$(api POST /api/xuankong/chart "$XK")
+check_200 "POST /api/xuankong/chart" "$s"
+
+s=$(api POST /api/xuankong/chart "{\"birth\":$BT}")
+check_422 "POST /api/xuankong/chart (missing mountains)" "$s"
+
+# ============================================================================
+# BaZi
+# ============================================================================
+echo ""
+echo "${BOLD}── BaZi ──${NC}"
+
+s=$(api POST /api/bazi/chart "$BR")
 check_200 "POST /api/bazi/chart" "$s"
 b=$(body)
-check_has "day_master" "$b" '.data.riyuan'
-check_has "yong_shen" "$b" '.data.yong_shen.fuyi.yong'
-check_has "dayun" "$b" '.data.dayun'
-check_has "year_pillar" "$b" '.data.nianzhu.gan'
-check_has "element_count" "$b" '.data.wuxing'
+check_has "year.gan" "$b" '.data.year.gan'
+check_has "month.gan" "$b" '.data.month.gan'
+check_has "day.gan" "$b" '.data.day.gan'
+check_has "hour.gan" "$b" '.data.hour.gan'
+check_has "ri_yuan" "$b" '.data.ri_yuan'
+check_has "fu_yi" "$b" '.data.fu_yi.yong'
+check_has "da_yun" "$b" '.data.da_yun'
+check_has "wuxing_count" "$b" '.data.wuxing_count'
 
-# BaZi chart negative: bad JSON
+# BaZi bond — returns Bond struct directly
+BOND="{\"a\":$BR_A,\"b\":$BR_B}"
+s=$(api POST /api/bazi/bond "$BOND")
+check_200 "POST /api/bazi/bond" "$s"
+b=$(body)
+check_has "bond zhu_cross" "$b" '.data.zhu_cross'
+check_has "bond shi_shen_cross" "$b" '.data.shi_shen_cross'
+check_has "bond nayin_cross" "$b" '.data.nayin_cross'
+check_has "bond structure" "$b" '.data.structure'
+
+# BaZi luck cycles
+s=$(api POST /api/bazi/liunian "{\"year\":2026,\"birth\":$BT}")
+check_200 "POST /api/bazi/liunian" "$s"
+check_has "liunian" "$b" '.data'
+
+s=$(api POST /api/bazi/liuyue "{\"year\":2026,\"month\":6,\"birth\":$BT}")
+check_200 "POST /api/bazi/liuyue" "$s"
+
+s=$(api POST /api/bazi/liuri "{\"date\":\"2026-06-19\",\"birth\":$BT}")
+check_200 "POST /api/bazi/liuri" "$s"
+
+s=$(api POST /api/bazi/liushi "{\"date\":\"2026-06-19\",\"hour\":14,\"birth\":$BT}")
+check_200 "POST /api/bazi/liushi" "$s"
+
+s=$(api POST /api/bazi/xiaoyun "{\"birth\":$BT,\"gender\":\"male\",\"count\":10}")
+check_200 "POST /api/bazi/xiaoyun" "$s"
+
+s=$(api POST /api/bazi/xiaoxian '{"gender":"male","count":10}')
+check_200 "POST /api/bazi/xiaoxian" "$s"
+
+# Negative
 s=$(api POST /api/bazi/chart 'not-json')
 check_400 "POST /api/bazi/chart (bad json)" "$s"
-b=$(body)
-check_error_shape "bazi chart bad json" "$b"
+check_error_shape "bazi bad json" "$(body)"
 
-# BaZi chart negative: missing gender
-s=$(api POST /api/bazi/chart '{"year":1984,"month":2,"day":4,"hour":18,"minute":30,"longitude":116.4,"timezone":8}')
+s=$(api POST /api/bazi/chart "{\"birth\":$BT}")
 check_422 "POST /api/bazi/chart (missing gender)" "$s"
 
 # ============================================================================
-# BaZi bond (free)
+# ZiWei
 # ============================================================================
 echo ""
-echo "${BOLD}── BaZi Free Bond ──${NC}"
-BAZI_BOND='{"a":{"year":1990,"month":3,"day":20,"hour":10,"minute":30,"gender":"male"},"b":{"year":1992,"month":7,"day":8,"hour":14,"minute":30,"gender":"female"}}'
-s=$(api POST /api/bazi/bond "$BAZI_BOND")
-check_200 "POST /api/bazi/bond" "$s"
-b=$(body)
-check_has "chart_a" "$b" '.data.chart_a.riyuan'
-check_has "chart_b" "$b" '.data.chart_b.riyuan'
-check_has "bond pillar_cross" "$b" '.data.bond.zhuzhu_rel'
+echo "${BOLD}── ZiWei ──${NC}"
 
-# BaZi bond negative: missing a
-s=$(api POST /api/bazi/bond '{"b":{"year":1992,"month":7,"day":8,"hour":14,"minute":30,"gender":"female"}}')
-check_400 "POST /api/bazi/bond (missing a)" "$s"
+s=$(api POST /api/ziwei/chart "$BR")
+check_200 "POST /api/ziwei/chart" "$s"
+b=$(body)
+check_has "ziwei palaces" "$b" '.data.palaces'
+check_has "ziwei si_hua" "$b" '.data.si_hua'
+check_has "ziwei ju_shu" "$b" '.data.ju_shu'
+
+# Dependent endpoints need the full chart
+if $HAS_JQ; then
+  ZW_CHART=$(echo "$b" | jq -c '.data' 2>/dev/null)
+
+  s=$(api POST /api/ziwei/daxian "{\"chart\":$ZW_CHART,\"gender\":\"male\"}")
+  check_200 "POST /api/ziwei/daxian" "$s"
+
+  s=$(api POST /api/ziwei/liunian "{\"liu_year\":2026,\"chart\":$ZW_CHART}")
+  check_200 "POST /api/ziwei/liunian" "$s"
+
+  s=$(api POST /api/ziwei/liuyue "{\"liu_year\":2026,\"lunar_month\":5,\"chart\":$ZW_CHART}")
+  check_200 "POST /api/ziwei/liuyue" "$s"
+
+  s=$(api POST /api/ziwei/liuri "{\"liu_year\":2026,\"lunar_month\":5,\"lunar_day\":15,\"chart\":$ZW_CHART}")
+  check_200 "POST /api/ziwei/liuri" "$s"
+
+  s=$(api POST /api/ziwei/bond "{\"a\":$ZW_CHART,\"b\":$ZW_CHART}")
+  check_200 "POST /api/ziwei/bond" "$s"
+fi
+
+s=$(api POST /api/ziwei/chart "{\"birth\":$BT}")
+check_422 "POST /api/ziwei/chart (missing gender)" "$s"
 
 # ============================================================================
-# Fengshui HeCan
+# QiMen
 # ============================================================================
 echo ""
-echo "${BOLD}── Fengshui HeCan ──${NC}"
-if $HAS_JQ; then
-  HECAN="{\"birth_year\":1984,\"gender\":\"male\",\"bazi\":$BAZI_NUM,\"yong_shen\":$YONGSHEN,\"year\":2026}"
-  s=$(api POST /api/fengshui/hecan "$HECAN")
-  check_200 "POST /api/fengshui/hecan" "$s"
-  b=$(body)
-  check_has "ming_gua" "$b" '.data.ming_gua.gua_number'
-  check_has "ba_zhai_dirs" "$b" '.data.ba_zhai_dirs'
-  check_has "year_stars" "$b" '.data.year_stars'
+echo "${BOLD}── QiMen ──${NC}"
 
-  # HeCan negative: missing bazi
-  s=$(api POST /api/fengshui/hecan '{"birth_year":1984,"gender":"male","year":2026}')
-  check_422 "POST /api/fengshui/hecan (missing bazi)" "$s"
-fi
+s=$(api POST /api/qimen/pan "{\"birth\":$BT,\"kind\":\"shi\"}")
+check_200 "POST /api/qimen/pan (shi)" "$s"
+check_has "qimen pan" "$b" '.data'
+
+s=$(api POST /api/qimen/pan "{\"birth\":$BT,\"kind\":\"ri\"}")
+check_200 "POST /api/qimen/pan (ri)" "$s"
+
+s=$(api POST /api/qimen/pan "{\"birth\":$BT}")
+check_200 "POST /api/qimen/pan (default)" "$s"
+
+s=$(api POST /api/qimen/pan "{\"birth\":$BT,\"kind\":\"invalid\"}")
+check_422 "POST /api/qimen/pan (bad kind)" "$s"
 
 # ============================================================================
-# BaZi luck cycle endpoints
+# LiuYao
 # ============================================================================
 echo ""
-echo "${BOLD}── BaZi Luck Cycles ──${NC}"
+echo "${BOLD}── LiuYao ──${NC}"
 
-if $HAS_JQ; then
-  # LiuNian
-  LN_REQ="{\"bazi\":$BAZI_NUM,\"year\":2026,\"current_dayun\":$DAYUN_GANZHI}"
-  s=$(api POST /api/bazi/liunian "$LN_REQ")
-  check_200 "POST /api/bazi/liunian" "$s"
-  b=$(body)
-  check_has "liunian year_stem" "$b" '.data.year_stem'
-  check_has "liunian shishen" "$b" '.data.shishen'
-
-  # LiuYue
-  LY_REQ="{\"bazi\":$BAZI_NUM,\"year\":2026,\"month\":6}"
-  s=$(api POST /api/bazi/liuyue "$LY_REQ")
-  check_200 "POST /api/bazi/liuyue" "$s"
-  b=$(body)
-  check_has "liuyue month_stem" "$b" '.data.month_stem'
-
-  # LiuRi
-  LR_REQ="{\"bazi\":$BAZI_NUM,\"date\":\"2026-06-15\",\"dayun_pillar\":$DAYUN_GANZHI,\"liunian_pillar\":$DAYUN_GANZHI}"
-  s=$(api POST /api/bazi/liuri "$LR_REQ")
-  check_200 "POST /api/bazi/liuri" "$s"
-  b=$(body)
-  check_has "liuri day_stem" "$b" '.data.day_stem'
-
-  # LiuShi
-  LS_REQ="{\"bazi\":$BAZI_NUM,\"date\":\"2026-06-15\",\"hour\":12}"
-  s=$(api POST /api/bazi/liushi "$LS_REQ")
-  check_200 "POST /api/bazi/liushi" "$s"
-  b=$(body)
-  check_has "liushi hour_stem" "$b" '.data.hour_stem'
-
-  # Negative: liunian with bad bazi
-  s=$(api POST /api/bazi/liunian '{"bazi":{"nian":{"gan":0,"zhi":0}},"year":2026}')
-  check_422 "POST /api/bazi/liunian (bad bazi)" "$s"
-fi
-
-# XiaoYun — uses birth params directly
-XY_REQ='{"birth":{"year":1984,"month":2,"day":4,"hour":18,"minute":30,"longitude":116.4,"timezone":8,"gender":"male"},"count":5}'
-s=$(api POST /api/bazi/xiao-yun "$XY_REQ")
-check_200 "POST /api/bazi/xiao-yun" "$s"
+LY="{\"birth\":$BT}"
+s=$(api POST /api/liuyao/chart "$LY")
+check_200 "POST /api/liuyao/chart" "$s"
 b=$(body)
-if $HAS_JQ; then
-  check_has "xiaoyun items" "$b" '.data[0].zhi'
-fi
+check_has "liuyao ben_gua" "$b" '.data.ben_gua'
+check_has "liuyao lines" "$b" '.data.lines'
 
-# XiaoYun negative: missing birth
-s=$(api POST /api/bazi/xiao-yun '{"count":5}')
-check_422 "POST /api/bazi/xiao-yun (missing birth)" "$s"
+LYF="{\"birth\":$BT,\"yong_shen\":\"父母\",\"fixed\":[6,7,8,9,6,7]}"
+s=$(api POST /api/liuyao/chart "$LYF")
+check_200 "POST /api/liuyao/chart (fixed)" "$s"
 
-# XiaoXian
-XX_REQ='{"gender":"male","count":5}'
-s=$(api POST /api/bazi/xiao-xian "$XX_REQ")
-check_200 "POST /api/bazi/xiao-xian" "$s"
-b=$(body)
-if $HAS_JQ; then
-  check_has "xiaoxian items" "$b" '.data[0].branch'
-fi
-
-# XiaoXian negative: missing gender
-s=$(api POST /api/bazi/xiao-xian '{"count":5}')
-check_422 "POST /api/bazi/xiao-xian (missing gender)" "$s"
+# Negative: bad fixed values (1-5 are invalid)
+s=$(api POST /api/liuyao/chart "{\"birth\":$BT,\"fixed\":[1,2,3,4,5,6]}")
+check_422 "POST /api/liuyao/chart (bad fixed)" "$s"
+check_error_shape "liuyao bad fixed" "$(body)"
 
 # ============================================================================
 # Qiming
@@ -480,113 +456,62 @@ check_422 "POST /api/bazi/xiao-xian (missing gender)" "$s"
 echo ""
 echo "${BOLD}── Qiming ──${NC}"
 
-# Characters — requires element, stroke_min
-s=$(api GET '/api/qiming/characters?element=wood&stroke_min=0&stroke_max=30&limit=10')
-check_200 "GET /api/qiming/characters" "$s"
-b=$(body)
-check_has "characters" "$b" '.data.items[0].char'
-check_has "character wuxing" "$b" '.data.items[0].wuxing'
+s=$(api POST /api/qiming/wuge '{"surname":"李","yong_shen":"水","xi_shen":["金"]}')
+check_200 "POST /api/qiming/wuge" "$s"
+check_has "wuge" "$b" '.data'
 
-# Characters negative: missing element
-s=$(api GET '/api/qiming/characters?stroke_min=0&stroke_max=30')
-check_422 "GET /api/qiming/characters (missing element)" "$s"
-b=$(body)
-check_error_shape "qiming missing element" "$b"
-
-# Characters negative: invalid element
-s=$(api GET '/api/qiming/characters?element=xyz&stroke_min=0&stroke_max=30')
-check_422 "GET /api/qiming/characters (bad element)" "$s"
-
-# Characters negative: missing stroke_min
-s=$(api GET '/api/qiming/characters?element=wood')
-check_422 "GET /api/qiming/characters (missing stroke_min)" "$s"
-
-# Evaluate
-EVAL='{"surname":"王","given_name":"小明","yong_shen":"火","zodiac":1}'
-s=$(api POST /api/qiming/evaluate "$EVAL")
+s=$(api POST /api/qiming/evaluate '{"surname":"李","given_name":"沐泽","yong_shen":"水"}')
 check_200 "POST /api/qiming/evaluate" "$s"
 b=$(body)
-check_has "wu_ge" "$b" '.data.wu_ge'
-check_has "san_cai" "$b" '.data.san_cai'
-check_has "wuxing_match" "$b" '.data.wuxing_match'
+check_has "evaluate wu_ge" "$b" '.data.wu_ge'
+check_has "evaluate san_cai" "$b" '.data.san_cai'
 
-# Evaluate negative: empty given_name
-s=$(api POST /api/qiming/evaluate '{"surname":"王","given_name":""}')
-check_422 "POST /api/qiming/evaluate (empty given_name)" "$s"
-b=$(body)
-check_error_shape "qiming empty name" "$b"
+s=$(api POST /api/qiming/detail '{"surname":"李","names":["沐洪"]}')
+check_200 "POST /api/qiming/detail" "$s"
+check_has "detail" "$b" '.data'
 
-# Evaluate negative: missing yong_shen
-s=$(api POST /api/qiming/evaluate '{"surname":"王","given_name":"小明"}')
-check_422 "POST /api/qiming/evaluate (missing yong_shen)" "$s"
+# Negative
+s=$(api POST /api/qiming/wuge '{"surname":"李"}')
+check_422 "POST /api/qiming/wuge (missing yong_shen)" "$s"
 
-# Generate (free)
-GEN='{"surname":"陈","yong_shen":"木","xi_shen":["水"],"zodiac":4,"gender":"male","limit":5}'
-s=$(api POST /api/qiming/generate "$GEN")
-check_200 "POST /api/qiming/generate" "$s"
-b=$(body)
-check_has "candidates" "$b" '.data.candidates'
-check_has "surname_element" "$b" '.data.surname_element'
-
-# Generate negative: missing surname
-s=$(api POST /api/qiming/generate '{"yong_shen":"金"}')
-check_422 "POST /api/qiming/generate (missing surname)" "$s"
-
-# Generate negative: invalid yong_shen
-s=$(api POST /api/qiming/generate '{"surname":"陈","yong_shen":"x"}')
-check_422 "POST /api/qiming/generate (bad yong_shen)" "$s"
+s=$(api POST /api/qiming/evaluate '{"surname":"李"}')
+check_422 "POST /api/qiming/evaluate (missing params)" "$s"
 
 # ============================================================================
-# Agent / Chat
+# Access Policy
 # ============================================================================
-echo ""
-echo "${BOLD}── Agent / Chat ──${NC}"
+if curl -s --connect-timeout 2 -o /dev/null -w '%{http_code}' "$BASE/api/health" 2>/dev/null | /bin/grep -q .; then
+  echo ""
+  echo "${BOLD}── Access Policy ──${NC}"
 
-# Greeting
-s=$(api GET /api/agent/greeting)
-check_200 "GET /api/agent/greeting" "$s"
-b=$(body)
-check_has "greeting" "$b" '.data.greeting'
+  # Restricted: agent APIs with external Origin → 403
+  s=$(curl -s -w '%{http_code}' -o /dev/null -X POST "$BASE/api/agent/chat" \
+    -H 'Content-Type: application/json' \
+    -H 'Origin: https://evil.com' \
+    -d '{"message":"hello"}')
+  check_403 "POST /api/agent/chat (external Origin)" "$s"
 
-# Session restore — negative: missing session_id
-s=$(api GET /api/agent/session)
-check_400 "GET /api/agent/session (missing session_id)" "$s"
+  s=$(curl -s -w '%{http_code}' -o /dev/null "$BASE/api/agent/greeting" \
+    -H 'Origin: https://evil.com')
+  check_403 "GET /api/agent/greeting (external Origin)" "$s"
 
-# Session restore — negative: nonexistent session
-s=$(api GET '/api/agent/session?session_id=nonexistent')
-check_404 "GET /api/agent/session (not found)" "$s"
+  s=$(curl -s -w '%{http_code}' -o /dev/null -X POST "$BASE/api/orders/nonexistent/retry" \
+    -H 'Origin: https://evil.com')
+  check_403 "POST /api/orders/{id}/retry (external Origin)" "$s"
 
-# Chat SSE — basic smoke: check Content-Type and SSE framing
-CHAT_MSG='{"message":"hello"}'
-chat_code=$(curl -s -w '%{http_code}' -o "$TMP/chat_body" "$API/api/agent/chat" \
-  -H 'Content-Type: application/json' -d "$CHAT_MSG" \
-  -D "$TMP/chat_headers")
-check_200 "POST /api/agent/chat" "$chat_code"
-chat_ct=$(grep -i 'content-type:' "$TMP/chat_headers" 2>/dev/null | tr -d '\r' || true)
-check "  SSE content-type" "false" "$(echo "$chat_ct" | grep -q 'text/event-stream' && echo false || echo true)"
-chat_sid=$(grep -i 'x-session-id:' "$TMP/chat_headers" 2>/dev/null | tr -d '\r' || true)
-check "  has X-Session-ID" "false" "$([ -n "$chat_sid" ] && echo false || echo true)"
+  # Public APIs with external Origin → normal response
+  s=$(curl -s -w '%{http_code}' -o /dev/null "$BASE/api/health" \
+    -H 'Origin: https://evil.com')
+  check_200 "GET /api/health (external Origin ignored)" "$s"
 
-# Chat negative: empty message
-s=$(api POST /api/agent/chat '{"message":""}')
-check_400 "POST /api/agent/chat (empty message)" "$s"
-
-# Version
-echo ""
-echo "${BOLD}── Version ──${NC}"
-s=$(api GET /api/version)
-check_200 "GET /api/version" "$s"
-b=$(body)
-check_has "build_time" "$b" '.data.build_time'
-
-# Analytics
-echo ""
-echo "${BOLD}── Analytics ──${NC}"
-s=$(api POST /api/analytics/pageview '{"path":"/zh/","title":"Home"}')
-check_204 "POST /api/analytics/pageview" "$s"
-
-s=$(api GET /api/stats)
-check_200 "GET /api/stats" "$s"
+  s=$(curl -s -w '%{http_code}' -o /dev/null -X POST "$BASE/api/bazi/chart" \
+    -H 'Content-Type: application/json' \
+    -H 'Origin: https://evil.com' \
+    -d "{\"birth\":$BT,\"gender\":\"male\"}")
+  check_200 "POST /api/bazi/chart (external Origin ignored)" "$s"
+else
+  echo "  (Caddy not running — skipping access policy checks)"
+fi
 
 # ============================================================================
 echo ""

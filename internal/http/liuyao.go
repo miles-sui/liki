@@ -20,7 +20,23 @@ func (r liuyaoRequest) Validate() error {
 	return validation.ValidateStruct(&r,
 		validation.Field(&r.Birth, validation.By(validateTimePoint)),
 		validation.Field(&r.YongShen, validation.By(validateYongShen)),
+		validation.Field(&r.Fixed, validation.By(validateFixedYaos)),
 	)
+}
+
+var validYaoValues = map[int]bool{0: true, 6: true, 7: true, 8: true, 9: true}
+
+func validateFixedYaos(value any) error {
+	yaos, ok := value.([6]int)
+	if !ok {
+		return nil
+	}
+	for _, v := range yaos {
+		if !validYaoValues[v] {
+			return errors.New("fixed yao values must be 0 (auto), 6, 7, 8, or 9")
+		}
+	}
+	return nil
 }
 
 func validateYongShen(value any) error {
@@ -50,9 +66,8 @@ func handleLiuyaoChart(w http.ResponseWriter, r *http.Request) {
 		respondInvalidRequest(w, err.Error())
 		return
 	}
-	ts, err := req.Birth.Timeset()
-	if err != nil {
-		respondInvalidRequest(w, err.Error())
+	ts, ok := timesetOrRespond(w, req.Birth)
+	if !ok {
 		return
 	}
 	chart := liuyao.ComputeChart(ts.Solar, ys, req.Fixed)

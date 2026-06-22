@@ -157,9 +157,9 @@ type Chart struct {
 
 | 函数 | 说明 |
 |------|------|
-| `ComputeChart(st SolarTime, yongShen YongShen, fixed [6]int) → Chart` | 起卦+排盘+用神+旺衰+日建关系+应期（编排入口，api.go） |
+| `ComputeChart(st tianwen.SolarTime, yongShen YongShen, fixed [6]int) → Chart` | 起卦+排盘+用神+旺衰+日建关系+应期（编排入口，api.go） |
 
-编排层 `api.go` 收 `SolarTime` → `ComputeBazi` → 引擎 `computeChart(bz Bazi, yongShen YongShen, fixed [6]int)` 收精确实体。`computeGuaPan` 收 `ganzhi.Zhu` 而非 `time.Time`。
+编排层 `api.go` 收 `tianwen.SolarTime` → `ComputeBazi` → 引擎 `computeChart(bz ganzhi.Bazi, yongShen YongShen, fixed [6]int)` 收精确实体。`computeGuaPan` 收 `ganzhi.Zhu` 而非 `time.Time`。
 
 ## HTTP Route
 
@@ -177,6 +177,6 @@ POST /api/liuyao/chart
 }
 ```
 
-- `solar_time`: 用事时间（必填，通过 `POST /api/tianwen/solartime` 获取）
+- `solar_time`: 用事时间，从 `POST /api/bazi/chart` 获取的 `solar_time` 字段
 - `yong_shen`: "父母"/"兄弟"/"官鬼"/"妻财"/"子孙"/"世爻"（默认 "世爻"）
 - `fixed`: 可选，手动指定 6 个爻（6/7/8/9），不传则为随机起卦

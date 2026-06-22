@@ -735,16 +735,16 @@ th {
   .cta-bar .btn { width: 100%; }
   .hide-mobile { display: none; }
 
-  .pillar-cards { display: grid; grid-template-columns: repeat(2, 1fr); gap: .5rem; }
-  .pillar-card {
+  .zhu-cards { display: grid; grid-template-columns: repeat(2, 1fr); gap: .5rem; }
+  .zhu-card {
     background: #f6f8fb;
     border-radius: .5rem;
     padding: .75rem;
   }
-  .pillar-card .pc-label { font-size: .6875rem; color: #6c7484; text-transform: uppercase; margin-bottom: .25rem; }
-  .pillar-card .pc-gan { font-size: 1rem; font-weight: 700; color: #1e2532; }
-  .pillar-card .pc-zhi { font-size: .875rem; color: #394050; }
-  .pillar-card .pc-detail { font-size: .6875rem; color: #6c7484; margin-top: .125rem; }
+  .zhu-card .zc-label { font-size: .6875rem; color: #6c7484; text-transform: uppercase; margin-bottom: .25rem; }
+  .zhu-card .zc-gan { font-size: 1rem; font-weight: 700; color: #1e2532; }
+  .zhu-card .zc-zhi { font-size: .875rem; color: #394050; }
+  .zhu-card .zc-detail { font-size: .6875rem; color: #6c7484; margin-top: .125rem; }
 }
 
-.pillar-cards { display: none; }
+.zhu-cards { display: none; }

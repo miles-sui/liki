@@ -9,65 +9,97 @@ import (
 
 // --- per-pillar data ---
 
-type hiddenStemsOut struct {
-	Main  ganzhi.Gan
-	Mid   *ganzhi.Gan
-	Minor *ganzhi.Gan
+type cangGanOut struct {
+	Main  ganzhi.Gan  `json:"main"`
+	Mid   *ganzhi.Gan `json:"mid"`
+	Minor *ganzhi.Gan `json:"minor"`
 }
 
 type zhuInfo struct {
-	Gan ganzhi.Gan; Zhi ganzhi.Zhi; NaYin string
-	HiddenStems hiddenStemsOut; TenGods []tenGodEntry; ChangSheng []changShengEntry
-	ShenSha []shenShaEntry; IsVoid, IsSelfHe, IsKuiGang bool; SelfHeName string
+	Gan        ganzhi.Gan         `json:"gan"`
+	Zhi        ganzhi.Zhi         `json:"zhi"`
+	NaYin      string             `json:"na_yin"`
+	CangGan    cangGanOut         `json:"cang_gan"`
+	ShiShens   []shiShenEntry     `json:"shi_shens"`
+	ChangSheng []changShengEntry  `json:"chang_sheng"`
+	ShenSha    []shenShaEntry     `json:"shen_sha"`
+	IsVoid     bool               `json:"is_void"`
+	IsSelfHe   bool               `json:"is_self_he"`
+	IsKuiGang  bool               `json:"is_kui_gang"`
+	SelfHeName string             `json:"self_he_name"`
 }
-type tenGodEntry struct{  TenGod ganzhi.TenGod; Name, Source string; Gan ganzhi.Gan }
-type changShengEntry struct{ Stage, Name string; Gan ganzhi.Gan }
-type stageOut struct{ Name string; Index ganzhi.Zhi }
-type naYinRelation struct{ A, B, Relation string }
-type daYunZhus struct{ startAge int; direction string; zhus []ganzhi.Zhu }
+type shiShenEntry struct {
+	ShiShen ganzhi.ShiShen `json:"shi_shen"`
+	Name    string         `json:"name"`
+	Source  string         `json:"source"`
+	Gan     ganzhi.Gan     `json:"gan"`
+}
+type changShengEntry struct {
+	Stage string     `json:"stage"`
+	Name  string     `json:"name"`
+	Gan   ganzhi.Gan `json:"gan"`
+}
+type stageOut struct {
+	Name  string     `json:"name"`
+	Index ganzhi.Zhi `json:"index"`
+}
+type naYinGuanXi struct {
+	A, B, Relation string
+}
+type daYunZhus struct {
+	startAge  int
+	direction string
+	zhus      []ganzhi.Zhu
+}
 
 // Ten god source constants.
 const (
-	sourceGan    = "stem"
-	sourceMainQi = "main_qi"
-	sourceMidQi  = "mid_qi"
-	sourceMinQi  = "minor_qi"
+	sourceGan     = "stem"
+	sourceMainQi  = "main_qi"
+	sourceMidQi   = "mid_qi"
+	sourceMinQi   = "minor_qi"
 )
 
 // --- chart ---
 
-// ChartBase holds the core bazi chart data without optional decorations.
+// ChartBase holds the core bazi chart data without display-only decorations.
 type ChartBase struct {
-	Year, Month, Day, Hour zhuInfo
-	SolarTime       tianwen.SolarTime
-	DayMaster       ganzhi.Gan
-	FuYi            FuYi; TiaoHou TiaoHou
-	WuxingCount     map[ganzhi.Wuxing]int
-	ChangSheng      [12]stageOut
-	DaYun           *DaYun
-	TaiYuanMingGong TaiYuanMingGong
+	Nian        zhuInfo                `json:"nian"`
+	Yue         zhuInfo                `json:"yue"`
+	Ri          zhuInfo                `json:"ri"`
+	Shi         zhuInfo                `json:"shi"`
+	DaYun       *DaYun                 `json:"da_yun"`
 }
-// Chart holds a complete bazi chart including he-hui, gong-jia, and wang-shuai analysis.
+// Chart holds a complete bazi chart including display fields and analysis.
 type Chart struct {
 	ChartBase
-	HeHui    []TripleHeFull; GongJia []GongJia; SanQiName string
-	WangShuai map[string]string; NayinRel []naYinRelation
+	SolarTime       tianwen.SolarTime      `json:"solar_time"`
+	FuYi            FuYi                   `json:"fu_yi"`
+	TiaoHou         TiaoHou                `json:"tiao_hou"`
+	ChangSheng      [12]stageOut           `json:"chang_sheng"`
+	WuxingCount     map[ganzhi.Wuxing]int  `json:"wuxing_count"`
+	TaiYuanMingGong TaiYuanMingGong        `json:"tai_yuan_ming_gong"`
+	HeHui           []TripleHeFull         `json:"he_hui"`
+	GongJia         []GongJia              `json:"gong_jia"`
+	SanQiName       string                 `json:"san_qi_name"`
+	WangShuai       map[string]string      `json:"wang_shuai"`
+	NayinRel        []naYinGuanXi          `json:"nayin_rel"`
 }
-var zhuNames = [4]string{"year", "month", "day", "hour"}
+var zhuNames = [4]string{"nian", "yue", "ri", "shi"}
 func (cb ChartBase) ToBazi() ganzhi.Bazi {
 	return ganzhi.Bazi{
-		Nian: ganzhi.Zhu{Gan: cb.Year.Gan, Zhi: cb.Year.Zhi},
-		Yue:  ganzhi.Zhu{Gan: cb.Month.Gan, Zhi: cb.Month.Zhi},
-		Ri:   ganzhi.Zhu{Gan: cb.Day.Gan, Zhi: cb.Day.Zhi},
-		Shi:  ganzhi.Zhu{Gan: cb.Hour.Gan, Zhi: cb.Hour.Zhi},
+		Nian: ganzhi.Zhu{Gan: cb.Nian.Gan, Zhi: cb.Nian.Zhi},
+		Yue:  ganzhi.Zhu{Gan: cb.Yue.Gan, Zhi: cb.Yue.Zhi},
+		Ri:   ganzhi.Zhu{Gan: cb.Ri.Gan, Zhi: cb.Ri.Zhi},
+		Shi:  ganzhi.Zhu{Gan: cb.Shi.Gan, Zhi: cb.Shi.Zhi},
 	}
 }
 func (cb ChartBase) NaYinArray() [4]string {
-	return [4]string{cb.Year.NaYin, cb.Month.NaYin, cb.Day.NaYin, cb.Hour.NaYin}
+	return [4]string{cb.Nian.NaYin, cb.Yue.NaYin, cb.Ri.NaYin, cb.Shi.NaYin}
 }
 
-func (cb ChartBase) HiddenStemsArray() [4]hiddenStemsOut {
-	return [4]hiddenStemsOut{cb.Year.HiddenStems, cb.Month.HiddenStems, cb.Day.HiddenStems, cb.Hour.HiddenStems}
+func (cb ChartBase) CangGanArray() [4]cangGanOut {
+	return [4]cangGanOut{cb.Nian.CangGan, cb.Yue.CangGan, cb.Ri.CangGan, cb.Shi.CangGan}
 }
 
 func computeDaYunZhus(st tianwen.SolarTime, month ganzhi.Zhu, nianGan ganzhi.Gan, gender ganzhi.Gender) daYunZhus {
@@ -123,6 +155,6 @@ func computeDaYunZhus(st tianwen.SolarTime, month ganzhi.Zhu, nianGan ganzhi.Gan
 	return daYunZhus{
 		startAge:  startAge,
 		direction: dir,
-		zhus:   zhus,
+		zhus:      zhus,
 	}
 }

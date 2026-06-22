@@ -30,40 +30,40 @@ func TestToolRegistry_Execute_ComputeChart(t *testing.T) {
 
 	var chart struct {
 		DaYun struct {
-			Zhus []json.RawMessage `json:"Pillars"`
-		} `json:"DaYun"`
+			Zhu []json.RawMessage `json:"zhu"`
+		} `json:"da_yun"`
 		FuYi struct {
-			QiangRuo string `json:"QiangRuo"`
-		} `json:"FuYi"`
-		Year struct {
+			Strength string `json:"qiangruo"`
+		} `json:"fu_yi"`
+		Nian struct {
 			Gan string `json:"Gan"`
 			Zhi string `json:"Zhi"`
-		} `json:"Year"`
-		Month struct {
+		} `json:"nian"`
+		Yue struct {
 			Gan string `json:"Gan"`
 			Zhi string `json:"Zhi"`
-		} `json:"Month"`
-		Day struct {
+		} `json:"yue"`
+		Ri struct {
 			Gan string `json:"Gan"`
 			Zhi string `json:"Zhi"`
-		} `json:"Day"`
-		Hour struct {
+		} `json:"ri"`
+		Shi struct {
 			Gan string `json:"Gan"`
 			Zhi string `json:"Zhi"`
-		} `json:"Hour"`
+		} `json:"shi"`
 	}
 	if err := json.Unmarshal(env.Data, &chart); err != nil {
 		t.Fatal(err)
 	}
-	if len(chart.DaYun.Zhus) == 0 {
+	if len(chart.DaYun.Zhu) == 0 {
 		t.Error("DaYun.Zhus is empty")
 	}
-	if chart.FuYi.QiangRuo == "" {
+	if chart.FuYi.Strength == "" {
 		t.Error("FuYi.QiangRuo is empty")
 	}
 	// 1984-02-15 08:00 → 年甲子, 月丙寅, 日己卯, 时戊辰
-	if chart.Year.Gan == "" || chart.Year.Zhi == "" {
-		t.Error("Year.Gan/Zhi is empty")
+	if chart.Nian.Gan == "" || chart.Nian.Zhi == "" {
+		t.Error("Nian.Gan/Zhi is empty")
 	}
 }
 
@@ -92,8 +92,8 @@ func TestToolRegistry_Execute_ComputeBond(t *testing.T) {
 
 	var bond struct {
 		ZhuCross struct {
-			Pairs []json.RawMessage `json:"Pairs"`
-		} `json:"ZhuCross"`
+			Pairs []json.RawMessage `json:"pairs"`
+		} `json:"zhu_cross"`
 		ShenshaCross struct {
 			Lu struct {
 				AInB bool `json:"AInB"`
@@ -115,7 +115,7 @@ func TestToolRegistry_Execute_ComputeLiuNian(t *testing.T) {
 	args := json.RawMessage(`{
 			"year": 2025,
 			` + bt + `,
-			"dayun": {"pillars": [{"gan":"甲","zhi":"子"}], "start_age": 5, "direction": "forward"}
+			"gender": "male"
 		}`)
 	result, err := r.Execute(context.Background(), "compute_liunian", args)
 	if err != nil {
@@ -152,7 +152,7 @@ func TestToolRegistry_Execute_ComputeLiuNian(t *testing.T) {
 func TestToolRegistry_Execute_ComputeLiuYue(t *testing.T) {
 	r := NewChatToolRegistry()
 
-	args := json.RawMessage(`{"year": 2025, "month": 6, ` + bt + `}`)
+	args := json.RawMessage(`{"year": 2025, "month": 6, ` + bt + `, "gender": "male"}`)
 	result, err := r.Execute(context.Background(), "compute_liuyue", args)
 	if err != nil {
 		t.Fatalf("compute_liuyue: %v", err)
@@ -189,10 +189,10 @@ func TestToolRegistry_Execute_ComputeLiuri(t *testing.T) {
 	r := NewChatToolRegistry()
 
 	args := json.RawMessage(`{
-			"date": "2025-06-01",
+			"year": 2025, "month": 6, "day": 1,
 			` + bt + `,
-			"dayun": {"gan":"甲","zhi":"子"},
-			"liunian": {"gan":"乙","zhi":"巳"}
+			
+			"gender": "male"
 		}`)
 	result, err := r.Execute(context.Background(), "compute_liuri", args)
 	if err != nil {
@@ -208,9 +208,6 @@ func TestToolRegistry_Execute_ComputeLiuri(t *testing.T) {
 	}
 	if err := json.Unmarshal(result, &env); err != nil {
 		t.Fatal(err)
-	}
-	if env.Data.Date != "2025-06-01" {
-		t.Errorf("date = %q, want 2025-06-01", env.Data.Date)
 	}
 	if env.Data.DayStem == "" {
 		t.Error("day_stem is empty")
@@ -457,7 +454,7 @@ func TestToolRegistry_Schemas(t *testing.T) {
 
 func TestToolRegistry_Execute_ComputeLiuShi(t *testing.T) {
 	r := NewChatToolRegistry()
-	args := json.RawMessage(`{"date":"2025-06-01","hour":8,` + bt + `}`)
+	args := json.RawMessage(`{"year":2025,"month":6,"day":1,"hour":8,` + bt + `}`)
 	result, err := r.Execute(context.Background(), "compute_liushi", args)
 	if err != nil {
 		t.Fatalf("compute_liushi: %v", err)

@@ -5,6 +5,7 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"net/mail"
 
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 
@@ -32,19 +33,7 @@ func validateEmail(value any) error {
 	if s == "" {
 		return nil // email is optional
 	}
-	if len(s) < 5 || len(s) > 254 {
-		return errors.New("invalid email")
-	}
-	at := -1
-	for i, c := range s {
-		if c == '@' {
-			if at != -1 {
-				return errors.New("invalid email")
-			}
-			at = i
-		}
-	}
-	if at < 1 || at == len(s)-1 {
+	if _, err := mail.ParseAddress(s); err != nil {
 		return errors.New("invalid email")
 	}
 	return nil

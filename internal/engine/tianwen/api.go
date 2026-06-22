@@ -10,12 +10,13 @@
 //   LunarTime     — 农历时间（含时辰地支）
 //
 // Core functions
-//   ComputeTime(y,m,d,h,min,lon,tz) → Timeset
+//   ComputeTimeset(gt GregorianTime, lon) → Timeset
+//   GregorianToSolar(t time.Time, lon, tz) → SolarTime
 //   SolarToLunar(gt GregorianTime) → LunarTime
-//   LunarToSolar(y,m,d,leap) → (year, month, day)
+//   LunarToGregorian(lt LunarTime) → GregorianTime
 //
 // Zhu computations
-//   Bazi(st SolarTime) → ganzhi.Bazi
+//   ComputeBazi(st SolarTime) → ganzhi.Bazi
 //   RiZhu(gt GregorianTime) → Zhu
 //   NianZhu(gt GregorianTime) → Zhu
 //   YueZhu(gt GregorianTime) → Zhu

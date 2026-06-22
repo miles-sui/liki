@@ -1,6 +1,7 @@
 package huangli
 
 import (
+	"time"
 	"testing"
 
 	"liki/internal/engine/ganzhi"
@@ -46,7 +47,7 @@ func TestEvaluateZhi_AllRelations(t *testing.T) {
 // =============================================================================
 
 func TestComputeBondDay_Basic(t *testing.T) {
-	ts := tianwen.ComputeTime(2000, 1, 1, 12, 0, 116.4074, 8.0)
+	ts := tianwen.ComputeTimeset(tianwen.GregorianTime(time.Date(2000, time.Month(1), 1, 12, 0, 0, 0, time.FixedZone("", int(8.0*3600)))), 116.4074)
 	result, err := ComputeBondDay(ts.Solar, "marriage", "2024-02-10")
 	if err != nil {
 		t.Fatalf("ComputeBondDay: %v", err)
@@ -66,7 +67,7 @@ func TestComputeBondDay_Basic(t *testing.T) {
 }
 
 func TestComputeBondMonth_Basic(t *testing.T) {
-	ts := tianwen.ComputeTime(2000, 1, 1, 12, 0, 116.4074, 8.0)
+	ts := tianwen.ComputeTimeset(tianwen.GregorianTime(time.Date(2000, time.Month(1), 1, 12, 0, 0, 0, time.FixedZone("", int(8.0*3600)))), 116.4074)
 	m, err := ComputeBondMonth(ts.Solar, "marriage", "2024-06")
 	if err != nil {
 		t.Fatalf("ComputeBondMonth: %v", err)
@@ -193,7 +194,7 @@ func TestJianChuSuitable_PoDay(t *testing.T) {
 // =============================================================================
 
 func TestRenYuanName_Normal(t *testing.T) {
-	phases := ganzhi.RenYuanPhasesForBranch(ganzhi.ZhiYin)
+	phases := ganzhi.RenYuanSiLingFenYeForZhi(ganzhi.ZhiYin)
 	if len(phases) == 0 {
 		t.Skip("RenYuan phases not available")
 	}
@@ -407,7 +408,7 @@ func TestTaiSui(t *testing.T) {
 // 日主己土 (1984-02-15 08:00 Beijing → 甲子 丙寅 己卯 戊辰)
 func TestComputeBondDay_Golden_GanRelation(t *testing.T) {
 	// 日主己土 (1984-02-15 08:00 Beijing → 甲子 丙寅 己卯 戊辰)
-	ts := tianwen.ComputeTime(1984, 2, 15, 8, 0, 116.4074, 8.0)
+	ts := tianwen.ComputeTimeset(tianwen.GregorianTime(time.Date(1984, time.Month(2), 15, 8, 0, 0, 0, time.FixedZone("", int(8.0*3600)))), 116.4074)
 
 	// 2024-02-10 = 甲辰日, 日主己土
 	// 甲木克己土, 阳克阴 → 正官
@@ -433,7 +434,7 @@ func TestComputeBondDay_Golden_GanRelation(t *testing.T) {
 func TestComputeBondDay_Golden_ZhiRelation(t *testing.T) {
 	// 日支亥 (2000-01-01: 1984 is JiaZi, but 2000-01-01 gives different pillar)
 	// Actually let's use a known birthday: 1984-02-15 → 日柱己卯 (日支=卯)
-	ts := tianwen.ComputeTime(1984, 2, 15, 8, 0, 116.4074, 8.0)
+	ts := tianwen.ComputeTimeset(tianwen.GregorianTime(time.Date(1984, time.Month(2), 15, 8, 0, 0, 0, time.FixedZone("", int(8.0*3600)))), 116.4074)
 
 	// 2024-02-10 = 甲辰日 (日支=辰)
 	// 卯 vs 辰: 卯辰相害 → 六害
@@ -449,7 +450,7 @@ func TestComputeBondDay_Golden_ZhiRelation(t *testing.T) {
 
 func TestComputeBondDay_Golden_TaiSui(t *testing.T) {
 	// 2024年太岁=辰
-	ts := tianwen.ComputeTime(1984, 2, 15, 8, 0, 116.4074, 8.0)
+	ts := tianwen.ComputeTimeset(tianwen.GregorianTime(time.Date(1984, time.Month(2), 15, 8, 0, 0, 0, time.FixedZone("", int(8.0*3600)))), 116.4074)
 
 	// 2024-02-10 = 甲辰日, 太岁=辰
 	// 辰 vs 辰: 伏吟(自刑)
@@ -552,7 +553,7 @@ func TestTaiSui_All60Years(t *testing.T) {
 // ── ComputeBondMonth golden test ──
 
 func TestComputeBondMonth_Golden(t *testing.T) {
-	ts := tianwen.ComputeTime(1984, 2, 15, 8, 0, 116.4074, 8.0)
+	ts := tianwen.ComputeTimeset(tianwen.GregorianTime(time.Date(1984, time.Month(2), 15, 8, 0, 0, 0, time.FixedZone("", int(8.0*3600)))), 116.4074)
 	// 日主己土, 日支卯
 
 	m, err := ComputeBondMonth(ts.Solar, "wedding", "2024-06")

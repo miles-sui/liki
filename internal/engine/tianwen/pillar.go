@@ -44,14 +44,14 @@ func NianZhu(gt GregorianTime) ganzhi.Zhu {
 func YueZhu(gt GregorianTime) ganzhi.Zhu {
 	t := gt.Time().UTC()
 	jz := JianYue(GregorianTime(t))
-	branch := jz
+	zhi := jz
 	monthNum := (int(jz)+9)%12 + 1 // 1=寅月..12=丑月
 	yp := NianZhu(GregorianTime(t))
-	stem := ganzhi.Gan(((int(yp.Gan)*2 + monthNum) % 10))
-	if stem == 0 {
-		stem = 10
+	gan := ganzhi.Gan(((int(yp.Gan)*2 + monthNum) % 10))
+	if gan == 0 {
+		gan = 10
 	}
-	return ganzhi.Zhu{Gan: stem, Zhi: branch}
+	return ganzhi.Zhu{Gan: gan, Zhi: zhi}
 }
 
 // ShiZhu computes the hour pillar from solar time.
@@ -61,13 +61,13 @@ func ShiZhu(st SolarTime) ganzhi.Zhu {
 	if solarMinutes >= 1380 {
 		daySt = SolarTime(st.Time().AddDate(0, 0, 1))
 	}
-	branch := hourBranchFromSolarTime(solarMinutes)
+	zhi := hourZhiFromSolarTime(solarMinutes)
 	dp := RiZhu(GregorianTime(daySt.Time()))
-	stem := ganzhi.Gan(((int(dp.Gan)*2 + int(branch) - 2) % 10))
-	if stem == 0 {
-		stem = 10
+	gan := ganzhi.Gan(((int(dp.Gan)*2 + int(zhi) - 2) % 10))
+	if gan == 0 {
+		gan = 10
 	}
-	return ganzhi.Zhu{Gan: stem, Zhi: branch}
+	return ganzhi.Zhu{Gan: gan, Zhi: zhi}
 }
 
 func ComputeBazi(st SolarTime) ganzhi.Bazi {

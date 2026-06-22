@@ -12,7 +12,7 @@ import "liki/internal/engine/ganzhi"
 //	庚辰 (庚+辰中乙→乙庚合), 辛巳 (辛+巳中丙→丙辛合),
 //	壬戌 (壬+戌中丁→丁壬合), 癸巳 (癸+巳中戊→戊癸合).
 func isSelfHe(p ganzhi.Zhu) bool {
-	hs := ganzhi.HiddenStemsForBranch(p.Zhi)
+	hs := ganzhi.CangGanForZhi(p.Zhi)
 	for _, h := range hs.Slice() {
 		if h != nil && isGanHePair(p.Gan, *h) {
 			return true
@@ -23,7 +23,7 @@ func isSelfHe(p ganzhi.Zhu) bool {
 
 // selfHeName returns the 干支自合 description string (e.g. "甲己合").
 func selfHeName(p ganzhi.Zhu) string {
-	hs := ganzhi.HiddenStemsForBranch(p.Zhi)
+	hs := ganzhi.CangGanForZhi(p.Zhi)
 	for _, h := range hs.Slice() {
 		if h != nil && isGanHePair(p.Gan, *h) {
 			return ganzhi.GanName(p.Gan) + ganzhi.GanName(*h) + "合"

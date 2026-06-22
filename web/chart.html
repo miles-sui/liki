@@ -17,14 +17,10 @@
 	<meta name="twitter:image" content="https://liki.hk/img/og-image.png">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>八字排盘示例 | 灵机 Liki</title>
-<script src="/js/i18next.min.js"></script>
-<script src="/js/i18nextHttpBackend.min.js"></script>
-<script src="/js/i18nextBrowserLanguageDetector.min.js"></script>
-<script src="/js/i18n.js"></script>
-<script src="/js/components.js"></script>
 <script defer src="/js/api.js"></script>
 <script defer src="/js/demo-utils.js"></script>
 <link rel="stylesheet" href="/css/app.css">
+<script src="/js/common.js"></script>
 </head>
 <body class="bg-stone-50 min-h-screen">
 
@@ -48,19 +44,19 @@
     <h2 data-i18n="chart.summary">命盘摘要</h2>
     <div class="summary-grid">
       <div class="summary-card">
-        <div class="label" data-i18n="chart.dayMaster">日主</div>
+        <div class="label" data-i18n="chart.riYuan">日主</div>
         <div class="value">戊土</div>
       </div>
       <div class="summary-card">
-        <div class="label" data-i18n="chart.patternYong">格局 / 用神</div>
+        <div class="label" data-i18n="chart.geJuYongShen">格局 / 用神</div>
         <div class="value" style="color:#b45309">正印格 / 火土</div>
       </div>
       <div class="summary-card">
-        <div class="label" data-i18n="chart.wangShuai">旺衰</div>
+        <div class="label" data-i18n="chart.qiangRuo">旺衰</div>
         <div class="value">身旺</div>
       </div>
       <div class="summary-card">
-        <div class="label" data-i18n="chart.zodiac">生肖</div>
+        <div class="label" data-i18n="chart.shengXiao">生肖</div>
         <div class="value">鼠</div>
       </div>
     </div>
@@ -69,46 +65,46 @@
   <!-- Pillars table -->
   <div class="section-card">
     <h2 data-i18n="chart.title.full">八字 · 灵机 Liki</h2>
-    <!-- Mobile pillar cards -->
-    <div class="pillar-cards">
-      <div class="pillar-card">
-        <div class="pc-label" data-i18n="pillar.year">年柱</div>
-        <div class="pc-gan">甲 (七杀)</div>
-        <div class="pc-zhi">子</div>
-        <div class="pc-detail">癸 · 海中金</div>
+    <!-- Mobile zhu cards -->
+    <div class="zhu-cards">
+      <div class="zhu-card">
+        <div class="zc-label" data-i18n="zhu.nian">年柱</div>
+        <div class="zc-gan">甲 (七杀)</div>
+        <div class="zc-zhi">子</div>
+        <div class="zc-detail">癸 · 海中金</div>
       </div>
-      <div class="pillar-card">
-        <div class="pc-label" data-i18n="pillar.month">月柱</div>
-        <div class="pc-gan">丙 (偏印)</div>
-        <div class="pc-zhi">寅</div>
-        <div class="pc-detail">甲 丙 戊 · 炉中火</div>
+      <div class="zhu-card">
+        <div class="zc-label" data-i18n="zhu.yue">月柱</div>
+        <div class="zc-gan">丙 (偏印)</div>
+        <div class="zc-zhi">寅</div>
+        <div class="zc-detail">甲 丙 戊 · 炉中火</div>
       </div>
-      <div class="pillar-card">
-        <div class="pc-label" data-i18n="pillar.day">日柱</div>
-        <div class="pc-gan">戊 (比肩)</div>
-        <div class="pc-zhi">辰</div>
-        <div class="pc-detail">乙 戊 癸 · 大林木</div>
+      <div class="zhu-card">
+        <div class="zc-label" data-i18n="zhu.ri">日柱</div>
+        <div class="zc-gan">戊 (比肩)</div>
+        <div class="zc-zhi">辰</div>
+        <div class="zc-detail">乙 戊 癸 · 大林木</div>
       </div>
-      <div class="pillar-card">
-        <div class="pc-label" data-i18n="pillar.hour">时柱</div>
-        <div class="pc-gan">丁 (正印)</div>
-        <div class="pc-zhi">巳</div>
-        <div class="pc-detail">丙 戊 庚 · 沙中土</div>
+      <div class="zhu-card">
+        <div class="zc-label" data-i18n="zhu.shi">时柱</div>
+        <div class="zc-gan">丁 (正印)</div>
+        <div class="zc-zhi">巳</div>
+        <div class="zc-detail">丙 戊 庚 · 沙中土</div>
       </div>
     </div>
     <div class="table-wrap hide-mobile">
       <table>
         <thead><tr>
-          <th data-i18n="chart.table.pillar">柱</th>
-          <th data-i18n="chart.table.stem">天干</th>
-          <th data-i18n="chart.table.branch">地支</th>
-          <th data-i18n="chart.table.hiddenStem">藏干</th>
+          <th data-i18n="chart.table.zhu">柱</th>
+          <th data-i18n="chart.table.tianGan">天干</th>
+          <th data-i18n="chart.table.diZhi">地支</th>
+          <th data-i18n="chart.table.cangGan">藏干</th>
           <th data-i18n="chart.table.nayin">纳音</th>
           <th data-i18n="chart.table.shensha">神煞</th>
         </tr></thead>
         <tbody>
           <tr>
-            <td class="text-stone-500 text-sm" data-i18n="pillar.year">年柱</td>
+            <td class="text-stone-500 text-sm" data-i18n="zhu.nian">年柱</td>
             <td class="font-medium">甲<br><span class="text-xs text-stone-500">七杀</span></td>
             <td class="font-medium">子</td>
             <td class="text-xs text-stone-500">癸</td>
@@ -116,7 +112,7 @@
             <td class="text-xs"><span class="tag tag-amber">桃花</span></td>
           </tr>
           <tr>
-            <td class="text-stone-500 text-sm" data-i18n="pillar.month">月柱</td>
+            <td class="text-stone-500 text-sm" data-i18n="zhu.yue">月柱</td>
             <td class="font-medium">丙<br><span class="text-xs text-stone-500">偏印</span></td>
             <td class="font-medium">寅</td>
             <td class="text-xs text-stone-500">甲 丙 戊</td>
@@ -124,7 +120,7 @@
             <td class="text-xs"><span class="tag tag-amber">驿马</span> <span class="tag tag-green">学堂</span></td>
           </tr>
           <tr>
-            <td class="text-stone-500 text-sm" data-i18n="pillar.day">日柱</td>
+            <td class="text-stone-500 text-sm" data-i18n="zhu.ri">日柱</td>
             <td class="font-medium">戊<br><span class="text-xs text-stone-500">比肩</span></td>
             <td class="font-medium">辰</td>
             <td class="text-xs text-stone-500">乙 戊 癸</td>
@@ -132,7 +128,7 @@
             <td class="text-xs"><span class="tag tag-amber">华盖</span></td>
           </tr>
           <tr>
-            <td class="text-stone-500 text-sm" data-i18n="pillar.hour">时柱</td>
+            <td class="text-stone-500 text-sm" data-i18n="zhu.shi">时柱</td>
             <td class="font-medium">丁<br><span class="text-xs text-stone-500">正印</span></td>
             <td class="font-medium">巳</td>
             <td class="text-xs text-stone-500">丙 戊 庚</td>
@@ -146,7 +142,7 @@
 
   <!-- Element distribution -->
   <div class="section-card">
-    <h2 data-i18n="chart.elementDist">五行分布</h2>
+    <h2 data-i18n="chart.wuXingFenBu">五行分布</h2>
     <div style="display:flex; flex-wrap:wrap; gap:.5rem;">
       <span class="tag tag-green" style="font-size:.875rem">木: 2</span>
       <span class="tag tag-green" style="font-size:.875rem">火: 3</span>
@@ -204,6 +200,5 @@
 
 <liki-footer></liki-footer>
 
-<script defer src="/js/analytics.js"></script>
 </body>
 </html>

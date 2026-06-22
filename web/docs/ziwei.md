@@ -30,11 +30,12 @@ curl -s -X POST https://liki.hk/api/ziwei/chart \
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | chart | object | yes | Full ZiWei chart from /api/ziwei/chart |
+| gender | string | yes | "male" or "female" |
 
 ```bash
 curl -s -X POST https://liki.hk/api/ziwei/daxian \
   -H 'Content-Type: application/json' \
-  -d '{"chart":{}}'
+  -d '{"chart":{},"gender":"male"}'
 ```
 
 ## LiuNian

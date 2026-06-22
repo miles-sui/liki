@@ -103,13 +103,13 @@ func (bz Bazi) Validate() error {
 // -- primitive lookups --
 
 // GanWuxing returns the five-phase element for a heavenly stem.
-func GanWuxing(g Gan) Wuxing { return Wuxing(ganWuxingBiao[g]) }
+func GanWuxing(g Gan) Wuxing { return ganWuxingBiao[g] }
 
 // GanYinYang returns the yin-yang classification for a heavenly stem.
 func GanYinYang(g Gan) YinYang { return YinYang(ganYinYangBiao[g]) }
 
 // ZhiWuxing returns the five-phase element for an earthly branch.
-func ZhiWuxing(z Zhi) Wuxing { return Wuxing(zhiWuxingBiao[z]) }
+func ZhiWuxing(z Zhi) Wuxing { return zhiWuxingBiao[z] }
 
 // -- five-phase cycle --
 

@@ -16,7 +16,7 @@ type LiuNian struct {
 	YearName          string              `json:"year_name"`
 	Element           string              `json:"wuxing"`
 	NaYin             string              `json:"nayin"`
-	TenGod            string              `json:"shishen"`
+	ShiShen            string              `json:"shi_shen"`
 	Generates         int                 `json:"generates"`
 	Restrains         int                 `json:"restrains"`
 	NatalInteractions []zhuInteraction `json:"natal_interactions"`
@@ -32,14 +32,14 @@ func computeLiuNian(bz ganzhi.Bazi, year int, currentDaYun *DaYunZhu) (*LiuNian,
 	if year < 1 || year > 9999 {
 		return nil, fmt.Errorf("compute liunian: invalid year %d", year)
 	}
-	dayMaster := bz.Ri.Gan
+	riYuan := bz.Ri.Gan
 	yp := tianwen.NianZhu(tianwen.GregorianTime(time.Date(year, 6, 15, 0, 0, 0, 0, time.UTC))) // mid-year avoids LiChun edge
 	yearStem, yearBranch := yp.Gan, yp.Zhi
 
-	dmElem := ganzhi.GanWuxing(dayMaster)
+	dmElem := ganzhi.GanWuxing(riYuan)
 	yearElem := ganzhi.GanWuxing(yearStem)
 
-	tgName := ganzhi.TenGodFromGan(dayMaster, yearStem)
+	tgName := ganzhi.ShiShenFromGan(riYuan, yearStem)
 
 	gen, rest := countGenRest(yearElem, dmElem)
 
@@ -52,7 +52,7 @@ func computeLiuNian(bz ganzhi.Bazi, year int, currentDaYun *DaYunZhu) (*LiuNian,
 		YearName:  ganzhi.GanName(yearStem) + ganzhi.ZhiName(yearBranch),
 		Element:   yearElem.String(),
 		NaYin:     naYin,
-		TenGod:    tgName.String(),
+		ShiShen:    tgName.String(),
 		Generates: gen,
 		Restrains: rest,
 	}
@@ -71,13 +71,13 @@ func computeLiuNian(bz ganzhi.Bazi, year int, currentDaYun *DaYunZhu) (*LiuNian,
 		dyZhu := ganzhi.Zhu{Gan: currentDaYun.Gan, Zhi: currentDaYun.Zhi}
 		dyStemRels, dyBranchRels := analyzeZhuWithBazi(dyZhu, bz)
 		r.DaYunInteractions = []zhuInteraction{{
-			ZhuLabel: currentDaYun.TenGod + "(" + currentDaYun.Name + ")",
+			ZhuLabel: currentDaYun.ShiShen + "(" + currentDaYun.Name + ")",
 			GanRels:     dyStemRels,
 			ZhiRels:     dyBranchRels,
 		}}
 	}
 
-	r.ShenSha = computeDynamicShenSha(yearBranch, bz.Nian.Zhi, dayMaster)
+	r.ShenSha = computeDynamicShenSha(yearBranch, bz.Nian.Zhi, riYuan)
 	r.FuYinFanYin = computeFuYinFanYin(liuNianZhu, bz)
 
 	return r, nil

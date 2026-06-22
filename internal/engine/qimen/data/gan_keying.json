@@ -1,0 +1,522 @@
+[
+  {
+    "di": "乙",
+    "tian": "癸",
+    "name": "乙+癸",
+    "geju": "花开遇雨",
+    "meaning": "遁迹修道，隐遁为宜",
+    "ji": false
+  },
+  {
+    "di": "庚",
+    "tian": "戊",
+    "name": "庚+戊",
+    "geju": "天乙伏宫",
+    "meaning": "百事不可谋为，大凶",
+    "ji": false
+  },
+  {
+    "di": "庚",
+    "tian": "丁",
+    "name": "庚+丁",
+    "geju": "亭亭之格",
+    "meaning": "因私匿起官司，门吉有救",
+    "ji": false
+  },
+  {
+    "di": "辛",
+    "tian": "辛",
+    "name": "辛+辛",
+    "geju": "伏吟天庭",
+    "meaning": "公废私就，讼狱自刑",
+    "ji": false
+  },
+  {
+    "di": "壬",
+    "tian": "戊",
+    "name": "壬+戊",
+    "geju": "小蛇化龙",
+    "meaning": "男人发达，事业亨通",
+    "ji": true
+  },
+  {
+    "di": "乙",
+    "tian": "丙",
+    "name": "乙+丙",
+    "geju": "奇仪顺遂",
+    "meaning": "吉星临门，谋事可就",
+    "ji": true
+  },
+  {
+    "di": "乙",
+    "tian": "丁",
+    "name": "乙+丁",
+    "geju": "奇仪相佐",
+    "meaning": "文书喜事，求婚可成",
+    "ji": true
+  },
+  {
+    "di": "乙",
+    "tian": "己",
+    "name": "乙+己",
+    "geju": "日奇入雾",
+    "meaning": "遁迹藏形，暗昧不明",
+    "ji": false
+  },
+  {
+    "di": "庚",
+    "tian": "庚",
+    "name": "庚+庚",
+    "geju": "战格",
+    "meaning": "官灾横祸，兄弟争财",
+    "ji": false
+  },
+  {
+    "di": "辛",
+    "tian": "乙",
+    "name": "辛+乙",
+    "geju": "白虎猖狂",
+    "meaning": "家败人亡，远行多殃",
+    "ji": false
+  },
+  {
+    "di": "癸",
+    "tian": "庚",
+    "name": "癸+庚",
+    "geju": "太白入网",
+    "meaning": "以暴争讼，自罹罪责",
+    "ji": false
+  },
+  {
+    "di": "丙",
+    "tian": "辛",
+    "name": "丙+辛",
+    "geju": "日月相会",
+    "meaning": "谋事成就，病人不凶",
+    "ji": true
+  },
+  {
+    "di": "丁",
+    "tian": "壬",
+    "name": "丁+壬",
+    "geju": "五神互合",
+    "meaning": "贵人恩诏，讼狱公平",
+    "ji": true
+  },
+  {
+    "di": "戊",
+    "tian": "庚",
+    "name": "戊+庚",
+    "geju": "值符飞宫",
+    "meaning": "吉事不吉，凶事更凶",
+    "ji": false
+  },
+  {
+    "di": "丁",
+    "tian": "戊",
+    "name": "丁+戊",
+    "geju": "青龙转光",
+    "meaning": "官人升迁，常人威昌",
+    "ji": true
+  },
+  {
+    "di": "庚",
+    "tian": "丙",
+    "name": "庚+丙",
+    "geju": "太白入荧",
+    "meaning": "为客进利，为主破财",
+    "ji": false
+  },
+  {
+    "di": "壬",
+    "tian": "丁",
+    "name": "壬+丁",
+    "geju": "干合蛇刑",
+    "meaning": "文书牵连，贵人顺遂",
+    "ji": false
+  },
+  {
+    "di": "癸",
+    "tian": "乙",
+    "name": "癸+乙",
+    "geju": "华盖逢星",
+    "meaning": "贵人禄位，常人平安",
+    "ji": true
+  },
+  {
+    "di": "丙",
+    "tian": "庚",
+    "name": "丙+庚",
+    "geju": "荧入太白",
+    "meaning": "门户破财，盗贼必来",
+    "ji": false
+  },
+  {
+    "di": "丙",
+    "tian": "壬",
+    "name": "丙+壬",
+    "geju": "火入天罗",
+    "meaning": "为客不利，是非颇多",
+    "ji": false
+  },
+  {
+    "di": "丁",
+    "tian": "丙",
+    "name": "丁+丙",
+    "geju": "星随月转",
+    "meaning": "贵人升进，常人康乐",
+    "ji": true
+  },
+  {
+    "di": "丁",
+    "tian": "庚",
+    "name": "丁+庚",
+    "geju": "行人必归",
+    "meaning": "音信通达，行人必至",
+    "ji": true
+  },
+  {
+    "di": "壬",
+    "tian": "癸",
+    "name": "壬+癸",
+    "geju": "幼女奸淫",
+    "meaning": "家有丑声，门吉不凶",
+    "ji": false
+  },
+  {
+    "di": "戊",
+    "tian": "丙",
+    "name": "戊+丙",
+    "geju": "青龙返首",
+    "meaning": "大吉大利，百事顺遂",
+    "ji": true
+  },
+  {
+    "di": "乙",
+    "tian": "戊",
+    "name": "乙+戊",
+    "geju": "阴害阳门",
+    "meaning": "利阴不利阳，门凶迫制",
+    "ji": false
+  },
+  {
+    "di": "丁",
+    "tian": "丁",
+    "name": "丁+丁",
+    "geju": "星奇入太阴",
+    "meaning": "文书即至，喜事遂心",
+    "ji": true
+  },
+  {
+    "di": "辛",
+    "tian": "丙",
+    "name": "辛+丙",
+    "geju": "干合悖师",
+    "meaning": "因财致讼，门吉则安",
+    "ji": false
+  },
+  {
+    "di": "戊",
+    "tian": "丁",
+    "name": "戊+丁",
+    "geju": "青龙耀明",
+    "meaning": "谒贵求名，多见喜事",
+    "ji": true
+  },
+  {
+    "di": "戊",
+    "tian": "乙",
+    "name": "戊+乙",
+    "geju": "青龙和会",
+    "meaning": "门吉事吉，门凶事凶",
+    "ji": false
+  },
+  {
+    "di": "乙",
+    "tian": "乙",
+    "name": "乙+乙",
+    "geju": "日奇伏吟",
+    "meaning": "不宜谒贵求名，安分守己",
+    "ji": false
+  },
+  {
+    "di": "丙",
+    "tian": "己",
+    "name": "丙+己",
+    "geju": "火悖入刑",
+    "meaning": "囚人刑杖，文书不行",
+    "ji": false
+  },
+  {
+    "di": "庚",
+    "tian": "癸",
+    "name": "庚+癸",
+    "geju": "大格",
+    "meaning": "行人不至，官事不止",
+    "ji": false
+  },
+  {
+    "di": "丙",
+    "tian": "戊",
+    "name": "丙+戊",
+    "geju": "飞鸟跌穴",
+    "meaning": "百事洞彻，谋为最吉",
+    "ji": true
+  },
+  {
+    "di": "己",
+    "tian": "壬",
+    "name": "己+壬",
+    "geju": "地网高张",
+    "meaning": "狡童佚女，奸情杀伤",
+    "ji": false
+  },
+  {
+    "di": "己",
+    "tian": "癸",
+    "name": "己+癸",
+    "geju": "地刑玄武",
+    "meaning": "男女疾病垂危，词讼有狱",
+    "ji": false
+  },
+  {
+    "di": "壬",
+    "tian": "丙",
+    "name": "壬+丙",
+    "geju": "水蛇入火",
+    "meaning": "官灾刑禁，络绎不绝",
+    "ji": false
+  },
+  {
+    "di": "戊",
+    "tian": "壬",
+    "name": "戊+壬",
+    "geju": "青龙入牢",
+    "meaning": "公私皆碍，动用不吉",
+    "ji": false
+  },
+  {
+    "di": "乙",
+    "tian": "辛",
+    "name": "乙+辛",
+    "geju": "青龙逃走",
+    "meaning": "奴仆拐带，测婚离散",
+    "ji": false
+  },
+  {
+    "di": "丙",
+    "tian": "癸",
+    "name": "丙+癸",
+    "geju": "月奇地网",
+    "meaning": "阴人害事，暗昧不明",
+    "ji": false
+  },
+  {
+    "di": "丁",
+    "tian": "己",
+    "name": "丁+己",
+    "geju": "火入勾陈",
+    "meaning": "奸私仇冤，事因女人",
+    "ji": false
+  },
+  {
+    "di": "丁",
+    "tian": "辛",
+    "name": "丁+辛",
+    "geju": "罪人释囚",
+    "meaning": "官人失位，罪人得赦",
+    "ji": false
+  },
+  {
+    "di": "乙",
+    "tian": "壬",
+    "name": "乙+壬",
+    "geju": "日奇入地",
+    "meaning": "尊卑悖乱，官讼是非",
+    "ji": false
+  },
+  {
+    "di": "己",
+    "tian": "丙",
+    "name": "己+丙",
+    "geju": "火悖地户",
+    "meaning": "阳人冤冤，阴人必辱",
+    "ji": false
+  },
+  {
+    "di": "己",
+    "tian": "己",
+    "name": "己+己",
+    "geju": "地户逢鬼",
+    "meaning": "病者必死，百事不遂",
+    "ji": false
+  },
+  {
+    "di": "癸",
+    "tian": "丁",
+    "name": "癸+丁",
+    "geju": "寅蛇夭矫",
+    "meaning": "文书官司，火焚莫逃",
+    "ji": false
+  },
+  {
+    "di": "癸",
+    "tian": "辛",
+    "name": "癸+辛",
+    "geju": "网盖天牢",
+    "meaning": "占病占讼，死罪莫逃",
+    "ji": false
+  },
+  {
+    "di": "戊",
+    "tian": "己",
+    "name": "戊+己",
+    "geju": "贵人入狱",
+    "meaning": "公私皆不利，谋为多阻",
+    "ji": false
+  },
+  {
+    "di": "戊",
+    "tian": "辛",
+    "name": "戊+辛",
+    "geju": "青龙折足",
+    "meaning": "招灾失财，需防破败",
+    "ji": false
+  },
+  {
+    "di": "辛",
+    "tian": "丁",
+    "name": "辛+丁",
+    "geju": "狱神得奇",
+    "meaning": "经商获倍利，囚人逢赦",
+    "ji": true
+  },
+  {
+    "di": "辛",
+    "tian": "庚",
+    "name": "辛+庚",
+    "geju": "白虎出力",
+    "meaning": "刀刃相交，主客皆伤",
+    "ji": false
+  },
+  {
+    "di": "癸",
+    "tian": "丙",
+    "name": "癸+丙",
+    "geju": "华盖悖师",
+    "meaning": "贱者遇贵，贵者遇贱",
+    "ji": false
+  },
+  {
+    "di": "癸",
+    "tian": "戊",
+    "name": "癸+戊",
+    "geju": "天乙会合",
+    "meaning": "吉门宜求财，婚姻喜美",
+    "ji": true
+  },
+  {
+    "di": "戊",
+    "tian": "癸",
+    "name": "戊+癸",
+    "geju": "青龙华盖",
+    "meaning": "门吉招福，门凶多乖",
+    "ji": false
+  },
+  {
+    "di": "戊",
+    "tian": "戊",
+    "name": "戊+戊",
+    "geju": "伏吟",
+    "meaning": "凡事闭塞，静守为吉",
+    "ji": false
+  },
+  {
+    "di": "乙",
+    "tian": "庚",
+    "name": "乙+庚",
+    "geju": "日奇被刑",
+    "meaning": "争讼财产，夫妻不和",
+    "ji": false
+  },
+  {
+    "di": "丁",
+    "tian": "癸",
+    "name": "丁+癸",
+    "geju": "朱雀投江",
+    "meaning": "词讼不利，音信沈溺",
+    "ji": false
+  },
+  {
+    "di": "己",
+    "tian": "戊",
+    "name": "己+戊",
+    "geju": "犬遇青龙",
+    "meaning": "门吉谋遂，门凶枉费",
+    "ji": false
+  },
+  {
+    "di": "庚",
+    "tian": "壬",
+    "name": "庚+壬",
+    "geju": "移荡格",
+    "meaning": "道路移动，音信阻隔",
+    "ji": false
+  },
+  {
+    "di": "丙",
+    "tian": "丁",
+    "name": "丙+丁",
+    "geju": "星奇朱雀",
+    "meaning": "贵人文书，常人安乐",
+    "ji": true
+  },
+  {
+    "di": "丙",
+    "tian": "丙",
+    "name": "丙+丙",
+    "geju": "月奇悖师",
+    "meaning": "文书逼迫，急迫之象",
+    "ji": false
+  },
+  {
+    "di": "辛",
+    "tian": "戊",
+    "name": "辛+戊",
+    "geju": "困龙被伤",
+    "meaning": "官司破财，屈抑安分",
+    "ji": false
+  },
+  {
+    "di": "壬",
+    "tian": "壬",
+    "name": "壬+壬",
+    "geju": "天狱自刑",
+    "meaning": "求谋无成，祸患自招",
+    "ji": false
+  },
+  {
+    "di": "丙",
+    "tian": "乙",
+    "name": "丙+乙",
+    "geju": "日月并行",
+    "meaning": "公私皆吉，合作可成",
+    "ji": true
+  },
+  {
+    "di": "丁",
+    "tian": "乙",
+    "name": "丁+乙",
+    "geju": "人遁吉格",
+    "meaning": "加官进禄，常人婚喜",
+    "ji": true
+  },
+  {
+    "di": "癸",
+    "tian": "癸",
+    "name": "癸+癸",
+    "geju": "天网四张",
+    "meaning": "行人失伴，病讼皆伤",
+    "ji": false
+  }
+]

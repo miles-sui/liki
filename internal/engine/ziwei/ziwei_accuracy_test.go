@@ -400,11 +400,11 @@ func TestHuoXingLingXingPos(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := huoXingPos(tt.yearZhi, tt.hourZhi); got != tt.wantHuoXing {
 				t.Errorf("huoXingPos(%d,%d) = %d, want %d",
-					int(tt.yearZhi), int(tt.hourZhi), int(got), int(tt.wantHuoXing))
+					tt.yearZhi, tt.hourZhi, got, tt.wantHuoXing)
 			}
 			if got := lingXingPos(tt.yearZhi, tt.hourZhi); got != tt.wantLingXing {
 				t.Errorf("lingXingPos(%d,%d) = %d, want %d",
-					int(tt.yearZhi), int(tt.hourZhi), int(got), int(tt.wantLingXing))
+					tt.yearZhi, tt.hourZhi, got, tt.wantLingXing)
 			}
 		})
 	}
@@ -477,16 +477,17 @@ func TestRiGan(t *testing.T) {
 			}
 
 			// Cross-check: convert lunar→solar, compute RiZhu, compare Gan
-			sy, sm, sd := tianwen.LunarToSolar(tt.liuYear, tt.lunarMonth, tt.lunarDay, false)
-			if sy == 0 {
-				sy, sm, sd = tianwen.LunarToSolar(tt.liuYear-1, tt.lunarMonth, tt.lunarDay, false)
+			gt := tianwen.LunarToGregorian(tianwen.LunarTime{Year: tt.liuYear, Month: tt.lunarMonth, Day: tt.lunarDay, Leap: false})
+			if gt.Time().IsZero() {
+				gt = tianwen.LunarToGregorian(tianwen.LunarTime{Year: tt.liuYear - 1, Month: tt.lunarMonth, Day: tt.lunarDay, Leap: false})
 			}
-			if sy != 0 {
-				dp := tianwen.RiZhu(tianwen.GregorianTime(time.Date(sy, time.Month(sm), sd, 0, 0, 0, 0, time.UTC)))
+			if !gt.Time().IsZero() {
+				dp := tianwen.RiZhu(gt)
 				if dp.Gan != got {
+					sy, sm, sd := gt.Time().Date()
 					t.Errorf("riGan(%d,%d,%d) = %d, but RiZhu(solar=%d-%d-%d).Gan = %d",
 						tt.liuYear, tt.lunarMonth, tt.lunarDay, int(got),
-						sy, sm, sd, int(dp.Gan))
+						sy, int(sm), sd, int(dp.Gan))
 				}
 			}
 		})
@@ -790,7 +791,7 @@ func TestTianMaPos(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := tianMaPos(tt.yearZhi); got != tt.want {
 				t.Errorf("tianMaPos(%d) = %d, want %d",
-					int(tt.yearZhi), int(got), int(tt.want))
+					tt.yearZhi, got, tt.want)
 			}
 		})
 	}
@@ -1754,7 +1755,7 @@ func TestComputeChart_MultipleCombinations(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			st := tianwen.ComputeSolarTime(tt.year, tt.month, tt.day, tt.hour, 0, 120, 8)
+			st := tianwen.GregorianToSolar(time.Date(tt.year, time.Month(tt.month), tt.day, tt.hour, 0, 0, 0, time.FixedZone("", int(8*3600))), 120, 8)
 			chart := ComputeChart(st, tt.gender)
 
 			// All 12 palaces must have valid stem/zhi

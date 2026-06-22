@@ -34,7 +34,7 @@ func init() {
 
 func loadTiaohou() error {
 	var entries []struct {
-		DayMaster   string `json:"day_master"`
+		RiYuan   string `json:"ri_yuan"`
 		MonthBranch string `json:"month_branch"`
 		Primary     string `json:"primary"`
 		Secondary   string `json:"secondary"`
@@ -44,7 +44,7 @@ func loadTiaohou() error {
 	}
 	lookupTiaohou = make(map[tiaohouKey]struct{ primary, secondary ganzhi.Gan }, len(entries))
 	for _, e := range entries {
-		dm, err := ganzhi.ParseGan(e.DayMaster)
+		dm, err := ganzhi.ParseGan(e.RiYuan)
 		if err != nil {
 			return err
 		}

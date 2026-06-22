@@ -1,6 +1,6 @@
 import { html, render } from './lit-html.js';
 
-const t = (key) => i18next.t(key);
+const t = window.Liki.t;
 
 const svgClock = html`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`;
 const svgX = html`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
@@ -26,7 +26,7 @@ const PHASE_CARD = {
   payment: {
     variant: 'payment', icon: 'spinner',
     titleKey: 'report.polling', hintKey: 'report.pollingHint',
-    actions: [{ labelKey: 'report.pay', click: 'goPay', loading: 'payLoading' }]
+    actions: [{ labelKey: 'report.pay', click: 'handlePay', loading: 'payLoading' }]
   },
   generating: {
     variant: 'generating', icon: 'spinner',
@@ -36,7 +36,7 @@ const PHASE_CARD = {
     variant: 'timeout', icon: 'clock',
     titleKey: 'report.timeout', hintKey: 'report.timeoutHint',
     actions: [
-      { labelKey: 'report.pay', click: 'goPay', loading: 'payLoading' },
+      { labelKey: 'report.pay', click: 'handlePay', loading: 'payLoading' },
       { labelKey: 'report.checkStatus', click: 'checkPaymentStatus', cls: 'btn btn-sm bg-white border border-stone-200 text-stone-600 rounded' },
       { labelKey: 'report.refresh', click: 'retryPoll', cls: 'btn btn-sm bg-white border border-stone-200 text-stone-600 rounded' },
       { labelKey: 'report.copyLink', click: 'copyLink', cls: 'btn btn-sm bg-white border border-stone-200 text-stone-600 rounded' }
@@ -63,7 +63,7 @@ class ReportApp {
     this.chart = {};
     this.bond = { gan_rel: [], zhi_rel: [], key_hints: [] };
     this.namingData = { analysis: {}, candidates: [] };
-    this.pillars = [];
+    this.sizhu = [];
     this.llmHTML = '';
     this.elapsed = 0;
     this.elapsedTimer = null;
@@ -100,9 +100,15 @@ class ReportApp {
     };
 
     this.bindEvents();
-    if (i18next.isInitialized) this.render();
-    else document.addEventListener('i18n:loaded', () => this.render(), { once: true });
-    this.init();
+    if (i18next.isInitialized) {
+      this.render();
+      this.init();
+    } else {
+      document.addEventListener('i18n:loaded', () => {
+        this.render();
+        this.init();
+      }, { once: true });
+    }
   }
 
   bindEvents() {
@@ -190,7 +196,7 @@ class ReportApp {
 
   renderChart() {
     const c = this.chart;
-    const p = this.pillars;
+    const p = this.sizhu;
 
     // summary
     if (this.dom.chartSummary) {
@@ -198,22 +204,22 @@ class ReportApp {
       const fuyi = yong.fuyi || {};
       render(html`
         <div class="summary-grid">
-          <div class="summary-card"><div class="label">${t('chart.dayMaster')}</div><div class="value">${c.riyuan || ''}</div></div>
-          <div class="summary-card"><div class="label">${t('chart.patternYong')}</div><div class="value" style="color:#b45309">${fuyi.geju ? fuyi.geju + ' / ' + fuyi.yong : ''}</div></div>
-          <div class="summary-card"><div class="label">${t('chart.wangShuai')}</div><div class="value">${fuyi.qiangruo || ''}</div></div>
-          <div class="summary-card"><div class="label">${t('chart.zodiac')}</div><div class="value">${c.zodiac || ''}</div></div>
+          <div class="summary-card"><div class="label">${t('chart.riYuan')}</div><div class="value">${c.riyuan || ''}</div></div>
+          <div class="summary-card"><div class="label">${t('chart.geJuYongShen')}</div><div class="value" style="color:#b45309">${fuyi.geju ? fuyi.geju + ' / ' + fuyi.yong : ''}</div></div>
+          <div class="summary-card"><div class="label">${t('chart.qiangRuo')}</div><div class="value">${fuyi.qiangruo || ''}</div></div>
+          <div class="summary-card"><div class="label">${t('chart.shengXiao')}</div><div class="value">${c.zodiac || ''}</div></div>
         </div>
       `, this.dom.chartSummary);
     }
 
-    // pillars table
+    // zhu table
     if (this.dom.chartTableBody) {
-      const pillarLabels = [t('pillar.year'), t('pillar.month'), t('pillar.day'), t('pillar.hour')];
+      const zhuLabels = [t('zhu.nian'), t('zhu.yue'), t('zhu.ri'), t('zhu.shi')];
       render(html`
         ${p.map((pv, i) => html`
           <tr>
-            <td class="text-stone-500 text-sm">${pillarLabels[i]}</td>
-            <td class="font-medium">${pv.gan}<br><span class="text-xs text-stone-500">${pv.ten_god || ''}</span></td>
+            <td class="text-stone-500 text-sm">${zhuLabels[i]}</td>
+            <td class="font-medium">${pv.gan}<br><span class="text-xs text-stone-500">${pv.shi_shen || ''}</span></td>
             <td class="font-medium">${pv.zhi}</td>
             <td class="text-xs text-stone-500">${(pv.cang_gan || []).join(' ')}</td>
             <td class="text-xs text-stone-500">${pv.nayin || ''}</td>
@@ -261,9 +267,9 @@ class ReportApp {
         render(html`
           <div class="section-card">
             <h2>${t('chart.dayun')}</h2>
-            <p class="text-sm text-stone-500 mb-3">${t('chart.dayun.startAge').replace('{0}', dy.start_age)}</p>
+            <p class="text-sm text-stone-500 mb-3">${t('chart.dayun.qiYun').replace('{0}', dy.start_age)}</p>
             <div class="flex flex-wrap gap-2">
-              ${dy.pillars.map(dp => html`<span class="tag tag-green">${dp.gan + dp.zhi + ' (' + dp.age_start + '-' + dp.age_end + '岁)'}</span>`)}
+              ${dy.zhu.map(dp => html`<span class="tag tag-green">${dp.gan + dp.zhi + ' (' + dp.age_start + '-' + dp.age_end + '岁)'}</span>`)}
             </div>
           </div>
         `, this.dom.chartDayun);
@@ -286,10 +292,10 @@ class ReportApp {
     if (this.dom.bondDayMasters) {
       render(html`
         <div class="section-card">
-          <h2>${t('bond.dayMasters')}</h2>
+          <h2>${t('bond.riYuan')}</h2>
           <div class="summary-grid">
-            <div class="summary-card"><div class="label">${t('bond.dayMasterA')}</div><div class="value">${(c.chart_a && c.chart_a.riyuan) || ''}</div></div>
-            <div class="summary-card"><div class="label">${t('bond.dayMasterB')}</div><div class="value">${(c.chart_b && c.chart_b.riyuan) || ''}</div></div>
+            <div class="summary-card"><div class="label">${t('bond.riYuanA')}</div><div class="value">${(c.chart_a && c.chart_a.riyuan) || ''}</div></div>
+            <div class="summary-card"><div class="label">${t('bond.riYuanB')}</div><div class="value">${(c.chart_b && c.chart_b.riyuan) || ''}</div></div>
           </div>
         </div>
       `, this.dom.bondDayMasters);
@@ -301,7 +307,7 @@ class ReportApp {
         this.dom.bondGanRel.style.display = '';
         render(html`
           <div class="section-card">
-            <h2>${t('bond.ganRelation')}</h2>
+            <h2>${t('bond.tianGanGuanXi')}</h2>
             ${b.gan_rel.map(r => html`
               <div class="rel-row">
                 <span class="text-sm">${r.from} → ${r.to}</span>
@@ -321,7 +327,7 @@ class ReportApp {
         this.dom.bondZhiRel.style.display = '';
         render(html`
           <div class="section-card">
-            <h2>${t('bond.zhiRelation')}</h2>
+            <h2>${t('bond.diZhiGuanXi')}</h2>
             ${b.zhi_rel.map(z => html`
               <div class="rel-row">
                 <span class="text-sm">${z.from} → ${z.to}</span>
@@ -341,7 +347,7 @@ class ReportApp {
         this.dom.bondKeyHints.style.display = '';
         render(html`
           <div class="bg-amber-50 border border-amber-100 rounded-xl p-6 mb-3">
-            <h2 class="text-lg font-semibold mb-3 text-amber-800">${t('bond.keyHints')}</h2>
+            <h2 class="text-lg font-semibold mb-3 text-amber-800">${t('bond.guanJianTiShi')}</h2>
             ${b.key_hints.map(h => html`<div class="flex items-start gap-2 mb-1"><span class="text-amber-500 mt-1">•</span><span class="text-sm text-amber-800">${h}</span></div>`)}
           </div>
         `, this.dom.bondKeyHints);
@@ -510,11 +516,11 @@ class ReportApp {
       if (product === 'chart') {
         const cd = (raw.chart && raw.chart.chart) ? raw.chart.chart : raw;
         this.chart = cd;
-        const pillars = [cd.nianzhu, cd.yuezhu, cd.rizhu, cd.shizhu];
-        this.pillars = pillars.map(p => ({
+        const zhus = [cd.nianzhu, cd.yuezhu, cd.rizhu, cd.shizhu];
+        this.sizhu = zhu.map(p => ({
           gan: (p && p.gan) || '',
           zhi: (p && p.zhi) || '',
-          ten_god: (p && p.shishen || []).filter(t => t.source === 'gan').map(t => t.shishen).join(', '),
+          shi_shen: (p && p.shishen || []).filter(t => t.source === 'gan').map(t => t.shishen).join(', '),
           cang_gan: p && p.canggan ? Object.values(p.canggan) : [],
           nayin: (p && p.nayin) || '',
           shensha: (p && p.shensha || []).map(s => s.name)
@@ -524,7 +530,7 @@ class ReportApp {
         const ca = (raw.chart_a && raw.chart_a.chart) ? raw.chart_a.chart : (raw.chart_a || {});
         const cb = (raw.chart_b && raw.chart_b.chart) ? raw.chart_b.chart : (raw.chart_b || {});
         this.bond = raw.bond || {};
-        this.pillars = [];
+        this.sizhu = [];
         this.chart = {
           chart_a: ca,
           chart_b: cb,
@@ -632,7 +638,7 @@ class ReportApp {
     }
   }
 
-  async goPay() {
+  async handlePay() {
     const orderID = this.orderIDFromURL();
     if (!orderID || this.payLoading) return;
     this.payLoading = true;

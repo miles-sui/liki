@@ -16,7 +16,7 @@ var chongXingHaiJSON []byte
 var nayinJSON []byte
 
 //go:embed data/hidden_stems.json
-var hiddenStemsJSON []byte
+var cangGanJSON []byte
 
 //go:embed data/chang_sheng.json
 var lifeStagesJSON []byte
@@ -37,20 +37,20 @@ var (
 	HaiPairs      []BranchPair
 )
 
-// HiddenStems holds the hidden (藏干) stems for a branch.
-type HiddenStems struct {
+// CangGan holds the hidden (藏干) stems for a branch.
+type CangGan struct {
 	Main  *Gan
 	Mid   *Gan
 	Minor *Gan
 }
 
 // Slice returns the three hidden stems as a [3]*Gan for indexed access.
-func (h HiddenStems) Slice() [3]*Gan {
+func (h CangGan) Slice() [3]*Gan {
 	return [3]*Gan{h.Main, h.Mid, h.Minor}
 }
 
-// HiddenStemsTable maps branch to its hidden stems.
-var HiddenStemsTable map[Zhi]HiddenStems
+// CangGanTable maps branch to its hidden stems.
+var CangGanTable map[Zhi]CangGan
 
 // ChangShengTable maps stem to the 12 branch positions for 十二长生.
 var ChangShengTable map[Gan][]Zhi
@@ -61,15 +61,15 @@ var StageNamesZH = [12]string{
 	"衰", "病", "死", "墓", "绝", "胎", "养",
 }
 
-// RenYuanPhase is one phase in the 人元司令分野 table.
-type RenYuanPhase struct {
+// RenYuanSiLingFenYe is one phase in the 人元司令分野 table.
+type RenYuanSiLingFenYe struct {
 	Gan     Gan    `json:"gan"`
 	GanName string `json:"gan_name"`
 	Days    int    `json:"days"`
 }
 
 // RenYuanTable maps month branch to its governing stem phases (人元司令分野).
-var renYuanTable map[Zhi][]RenYuanPhase
+var renYuanTable map[Zhi][]RenYuanSiLingFenYe
 
 // GanHe describes a 天干五合 pair and its resulting element.
 type GanHe struct {
@@ -110,8 +110,8 @@ func init() {
 	if err := loadNayin(); err != nil {
 		log.Fatalf("ganzhi: load nayin: %v", err)
 	}
-	if err := loadHiddenStems(); err != nil {
-		log.Fatalf("ganzhi: load hidden_stems: %v", err)
+	if err := loadCangGan(); err != nil {
+		log.Fatalf("ganzhi: load cang_gan: %v", err)
 	}
 	if err := loadLifeStages(); err != nil {
 		log.Fatalf("ganzhi: load life_stages: %v", err)
@@ -122,15 +122,15 @@ func init() {
 }
 
 func parseGan(s string) Gan {
-	g, _ := ParseGan(s)
+	g, _ := ParseGan(s) //nolint:errcheck
 	return g
 }
 func parseZhi(s string) Zhi {
-	z, _ := ParseZhi(s)
+	z, _ := ParseZhi(s) //nolint:errcheck
 	return z
 }
 func parseWuxing(s string) Wuxing {
-	w, _ := ParseWuxing(s)
+	w, _ := ParseWuxing(s) //nolint:errcheck
 	return w
 }
 
@@ -254,7 +254,7 @@ func NaYinWuxing(nayin string) Wuxing {
 
 // -- hidden stems --
 
-func loadHiddenStems() error {
+func loadCangGan() error {
 	var cfg struct {
 		Branches map[string]struct {
 			Main  string  `json:"main"`
@@ -262,14 +262,14 @@ func loadHiddenStems() error {
 			Minor *string `json:"minor"`
 		} `json:"branches"`
 	}
-	if err := json.Unmarshal(hiddenStemsJSON, &cfg); err != nil {
+	if err := json.Unmarshal(cangGanJSON, &cfg); err != nil {
 		return err
 	}
-	HiddenStemsTable = make(map[Zhi]HiddenStems, len(cfg.Branches))
+	CangGanTable = make(map[Zhi]CangGan, len(cfg.Branches))
 	for k, v := range cfg.Branches {
 		z := parseZhi(k)
 		mainGan := parseGan(v.Main)
-		hs := HiddenStems{Main: &mainGan}
+		hs := CangGan{Main: &mainGan}
 		if v.Mid != nil {
 			mg := parseGan(*v.Mid)
 			hs.Mid = &mg
@@ -278,7 +278,7 @@ func loadHiddenStems() error {
 			mg := parseGan(*v.Minor)
 			hs.Minor = &mg
 		}
-		HiddenStemsTable[z] = hs
+		CangGanTable[z] = hs
 	}
 	return nil
 }
@@ -304,12 +304,12 @@ func loadLifeStages() error {
 	return nil
 }
 
-// HiddenStemsForBranch returns the hidden stems (藏干) for a branch.
-func HiddenStemsForBranch(b Zhi) HiddenStems {
-	if hs, ok := HiddenStemsTable[b]; ok {
+// CangGanForZhi returns the hidden stems (藏干) for a branch.
+func CangGanForZhi(b Zhi) CangGan {
+	if hs, ok := CangGanTable[b]; ok {
 		return hs
 	}
-	return HiddenStems{}
+	return CangGan{}
 }
 
 func loadRenYuan() error {
@@ -322,21 +322,21 @@ func loadRenYuan() error {
 	if err := json.Unmarshal(renYuanJSON, &cfg); err != nil {
 		return err
 	}
-	renYuanTable = make(map[Zhi][]RenYuanPhase, len(cfg.Months))
+	renYuanTable = make(map[Zhi][]RenYuanSiLingFenYe, len(cfg.Months))
 	for k, v := range cfg.Months {
 		z := parseZhi(k)
-		phases := make([]RenYuanPhase, len(v))
+		phases := make([]RenYuanSiLingFenYe, len(v))
 		for i, p := range v {
 			g := parseGan(p.Gan)
-			phases[i] = RenYuanPhase{Gan: g, GanName: GanName(g), Days: p.Days}
+			phases[i] = RenYuanSiLingFenYe{Gan: g, GanName: GanName(g), Days: p.Days}
 		}
 		renYuanTable[z] = phases
 	}
 	return nil
 }
 
-// RenYuanPhasesForBranch returns the 人元司令分野 phases for a month branch.
-func RenYuanPhasesForBranch(branch Zhi) []RenYuanPhase {
+// RenYuanSiLingFenYeForZhi returns the 人元司令分野 phases for a month branch.
+func RenYuanSiLingFenYeForZhi(branch Zhi) []RenYuanSiLingFenYe {
 	if phases, ok := renYuanTable[branch]; ok {
 		return phases
 	}

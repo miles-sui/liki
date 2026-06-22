@@ -1,59 +1,101 @@
-# 灵机 (Liki)
+# Liki (灵机)
 
-> 灵机（Liki）是一款 AI命理助手，为用户提供命盘解读、运势分析、合盘配对及起名等服务。
+> Liki is an AI Chinese metaphysics assistant. Services: BaZi chart, He Pan (bond), Qi Ming (naming).
+> All stateless computation APIs are free. Agent Chat uses paid reports.
 
-## API 文档
-- [八字排盘](https://liki.hk/docs/bazi.md): 完整命盘计算，含四柱、十神、纳音、神煞、用神、大运
-- [真太阳时](https://liki.hk/docs/bazi.md#solar-time): 出生地经纬度校正真太阳时
+## Skill
 
-## 合盘
-- [合盘配对](https://liki.hk/docs/bazi.md#bazi-bond): 双人命盘交叉分析，天干地支十神纳音五维合盘
+Install the Liki Agent Skill to become a Liki Chinese metaphysics assistant (命理助手).
 
-## 起名
-- [智能起名](https://liki.hk/docs/qiming.md): 基于八字用神和生肖的起名建议
-- [名字评测](https://liki.hk/docs/qiming.md#qiming-evaluate): 单名五行评分
+### Install
 
-## 黄历
-- [黄历查询](https://liki.hk/docs/huangli.md): 日期宜忌、建除、神煞、二十八宿
-- [择日参考](https://liki.hk/docs/huangli.md#huangli-bond): 结合生辰的黄历日期筛选
+1. Load [liki.md](https://liki.hk/skills/liki.md) as your system prompt
+2. Report templates for full report generation: [chart](https://liki.hk/skills/report-chart.md) | [bond](https://liki.hk/skills/report-bond.md) | [naming](https://liki.hk/skills/report-naming.md)
+3. Verify: collect birth info → call the corresponding API → generate interpretation using the templates
 
-## 风水
-- [命卦](https://liki.hk/docs/fengshui.md): 八宅法命卦计算
-- [三元九运](https://liki.hk/docs/fengshui.md#san-yuan-jiu-yun): 三元九运时间表
+### Update
 
-## 查表
-- [命理参考数据](https://liki.hk/docs/reference.md): 天干地支、六十纳音、神煞、二十八宿、八卦、二十四山
+liki.md starts with a version line (`version: 1.0.0`). At the start of each session, compare your locally cached version with the server version. If the server version is newer, reload the full skill.
 
-## 服务入口
-- [Agent Chat](https://liki.hk/zh/chat.html): AI 对话排盘
-- [八字报告示例](https://liki.hk/zh/chart.html): 完整命理分析报告样例
-- [起名报告示例](https://liki.hk/zh/naming.html): 八字起名分析报告样例
-- [合盘报告示例](https://liki.hk/zh/compatibility.html): 八字配对分析报告样例
+## Quick start for AI agents
 
-## 知识库 (zh-Hans)
-- [职业决策](https://liki.hk/wiki/zh-hans/career/): 职业方向与八字决策参考
-- [财富决策](https://liki.hk/wiki/zh-hans/wealth/): 财运分析与投资决策参考
-- [感情决策](https://liki.hk/wiki/zh-hans/relationship/): 感情婚恋决策参考
-- [人生方向](https://liki.hk/wiki/zh-hans/life/): 人生方向与八字指引
-- [起名决策](https://liki.hk/wiki/zh-hans/naming/): 起名与八字参考
-- [合盘决策](https://liki.hk/wiki/zh-hans/compatibility/): 合盘配对参考
-- [择日参考](https://liki.hk/wiki/zh-hans/timing/): 择日与黄历参考
-- [奇门决策](https://liki.hk/wiki/zh-hans/qimen/): 奇门遁甲决策参考
+- All `POST` APIs accept JSON, return `{"data":{...}}`.
+- All errors return `{"error":{"code":"...","message":"..."}}`.
+- `birth` = `{"time": "RFC3339", "longitude": float}`, e.g. `{"time":"1984-02-04T06:00:00+08:00","longitude":116.4}`.
+- `gender` = `"male"` or `"female"`.
+- Base URL: `https://liki.hk`
 
-## 知識庫 (zh-Hant)
-- [職業決策](https://liki.hk/wiki/zh-hant/career/): 職業方向與八字決策參考
-- [財富決策](https://liki.hk/wiki/zh-hant/wealth/): 財運分析與投資決策參考
-- [感情決策](https://liki.hk/wiki/zh-hant/relationship/): 感情婚戀決策參考
-- [人生方向](https://liki.hk/wiki/zh-hant/life/): 人生方向與八字指引
-- [起名決策](https://liki.hk/wiki/zh-hant/naming/): 起名與八字參考
-- [合盤決策](https://liki.hk/wiki/zh-hant/compatibility/): 合盤配對參考
-- [擇日參考](https://liki.hk/wiki/zh-hant/timing/): 擇日與黃曆參考
-- [奇門決策](https://liki.hk/wiki/zh-hant/qimen/): 奇門遁甲決策參考
+## BaZi (八字)
 
-## Knowledge Base (en)
-- [Career](https://liki.hk/wiki/en/career/): Career direction and Bazi decision reference
-- [Wealth](https://liki.hk/wiki/en/wealth/): Wealth analysis and investment decision reference
-- [Relationship](https://liki.hk/wiki/en/relationship/): Relationship and marriage decision reference
-- [Life](https://liki.hk/wiki/en/life/): Life direction and Bazi guidance
-- [Timing](https://liki.hk/wiki/en/timing/): Date selection and Huangli reference
-- [Qimen](https://liki.hk/wiki/en/qimen/): Qimen Dunjia decision reference
+- [BaZi Chart](https://liki.hk/docs/bazi.md): `POST /api/bazi/chart` — Si Zhu, Shi Shen, Cang Gan, Na Yin, Shen Sha, Yong Shen, Ge Ju, Wang Shuai, Tiao Hou, Da Yun
+- [He Pan](https://liki.hk/docs/bazi.md#bazi-bond): `POST /api/bazi/bond` — Cross-chart Gan-Zhi, Shi Shen, Na Yin, Shen Sha analysis
+- [Liu Nian](https://liki.hk/docs/bazi.md#bazi-liunian): `POST /api/bazi/liunian` — Yearly fortune (流年)
+- [Liu Yue](https://liki.hk/docs/bazi.md#bazi-liuyue): `POST /api/bazi/liuyue` — Monthly fortune (流月)
+- [Liu Ri](https://liki.hk/docs/bazi.md#bazi-liuri): `POST /api/bazi/liuri` — Daily fortune (流日)
+- [Liu Shi](https://liki.hk/docs/bazi.md#bazi-liushi): `POST /api/bazi/liushi` — Hourly fortune (流时)
+- [Xiao Yun](https://liki.hk/docs/bazi.md#bazi-xiaoyun): `POST /api/bazi/xiaoyun` — Minor fortune (小运)
+- [Xiao Xian](https://liki.hk/docs/bazi.md#bazi-xiaoxian): `POST /api/bazi/xiaoxian` — Minor boundary (小限)
+
+## ZiWei (紫微斗数)
+
+- [ZiWei Chart](https://liki.hk/docs/ziwei.md): `POST /api/ziwei/chart` — ZiWei Dou Shu chart with stars, palaces, brightness
+- [Da Xian](https://liki.hk/docs/ziwei.md#daxian): `POST /api/ziwei/daxian` — Decade cycles (大限)
+- [Liu Nian](https://liki.hk/docs/ziwei.md#liunian): `POST /api/ziwei/liunian` — Yearly cycle (流年)
+- [Liu Yue](https://liki.hk/docs/ziwei.md#liuyue): `POST /api/ziwei/liuyue` — Monthly cycle (流月)
+- [Liu Ri](https://liki.hk/docs/ziwei.md#liuri): `POST /api/ziwei/liuri` — Daily cycle (流日)
+- [He Pan](https://liki.hk/docs/ziwei.md#bond): `POST /api/ziwei/bond` — Cross-chart analysis (合盘)
+
+## Qi Men (奇门遁甲)
+
+- [Qi Men Pan](https://liki.hk/docs/qimen.md): `POST /api/qimen/pan` — Qi Men Dun Jia chart with Tian Pan, Ren Pan, Shen Pan (时/日/月/年)
+
+## Liu Yao (六爻)
+
+- [Liu Yao Chart](https://liki.hk/docs/liuyao.md): `POST /api/liuyao/chart` — Six-line divination with Yong Shen, Liu Qin, Liu Shou
+
+## Qi Ming (起名)
+
+- [Wu Ge](https://liki.hk/docs/qiming.md): `POST /api/qiming/wuge` — Auspicious stroke combos for a surname
+- [Compose](https://liki.hk/docs/qiming.md#compose): `POST /api/qiming/compose` — Compose name candidates from character pools
+- [Detail](https://liki.hk/docs/qiming.md#detail): `POST /api/qiming/detail` — Wu Ge, San Cai, phonetic details for names
+- [Evaluate](https://liki.hk/docs/qiming.md#evaluate): `POST /api/qiming/evaluate` — Single name Wu Xing evaluation
+
+## Huang Li (黄历)
+
+- [Date](https://liki.hk/docs/huangli.md): `GET /api/huangli/date` — Single-day almanac with Yi/Ji, Shen Sha, 28 Xiu
+- [Month](https://liki.hk/docs/huangli.md#huangli-month): `GET /api/huangli/month` — Month-range almanac
+- [Bond Date](https://liki.hk/docs/huangli.md#huangli-bond-date): `POST /api/huangli/bond/date` — Birth + almanac single-day selection (择日)
+- [Bond Month](https://liki.hk/docs/huangli.md#huangli-bond-month): `POST /api/huangli/bond/month` — Birth + almanac month-range selection (择月)
+
+## Feng Shui (风水)
+
+- [Ming Gua](https://liki.hk/docs/fengshui.md#minggua): `POST /api/bazhai/minggua` — BaZhai fate trigram (命卦)
+- [BaZhai Chart](https://liki.hk/docs/fengshui.md#bazhai-chart): `POST /api/bazhai/chart` — BaZhai combined analysis with flying stars
+- [San Yuan Jiu Yun](https://liki.hk/docs/fengshui.md#sanyuan-jiuyun): `GET /api/xuankong/sanyuan` — San Yuan Jiu Yun timetable (三元九运)
+- [XuanKong Chart](https://liki.hk/docs/fengshui.md#xuankong-chart): `POST /api/xuankong/chart` — XuanKong flying stars chart (玄空飞星)
+
+## Agent (Restricted)
+
+Agent endpoints are restricted to the Liki frontend (Origin: liki.hk). External access returns 403. See [Access Policy](https://liki.hk/docs/reference.md#access-policy).
+
+## Payment
+
+- [Checkout](https://liki.hk/docs/reference.md#checkout): `POST /api/payments/checkout` — Create payment checkout
+- [Order Status](https://liki.hk/docs/reference.md#order-status): `GET /api/orders/{id}/status`
+- [Report](https://liki.hk/docs/reference.md#report): `GET /api/reports/{id}` — Get generated report
+
+## Reference & System
+
+- [Reference Data](https://liki.hk/docs/reference.md): Tian Gan, Di Zhi, Na Yin, Shen Sha, 28 Xiu, Ba Gua, 24 Mountains, Wu Xing
+- [Errors](https://liki.hk/docs/reference.md#errors): Error envelope format and codes
+- [Health](https://liki.hk/docs/reference.md#health): `GET /api/health`
+- [Version](https://liki.hk/docs/reference.md#version): `GET /api/version`
+- [Location](https://liki.hk/docs/reference.md#location): `GET /api/location` — IP geolocation
+- [Stats](https://liki.hk/docs/reference.md#stats): `GET /api/stats`
+
+## Demo Pages
+
+- [BaZi Report Demo](https://liki.hk/zh/chart.html)
+- [He Pan Report Demo](https://liki.hk/zh/compatibility.html)
+- [Qi Ming Report Demo](https://liki.hk/zh/naming.html)
+- [Agent Chat](https://liki.hk/zh/chat.html)
