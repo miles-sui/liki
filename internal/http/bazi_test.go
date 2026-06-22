@@ -29,11 +29,11 @@ func TestComputeChart_Valid(t *testing.T) {
 	var env struct {
 		Data struct {
 			DaYun struct {
-				Zhus []json.RawMessage `json:"Pillars"`
-			} `json:"DaYun"`
+				Zhus []json.RawMessage `json:"zhu"`
+			} `json:"da_yun"`
 			FuYi struct {
-				QiangRuo string `json:"QiangRuo"`
-			} `json:"FuYi"`
+				QiangRuo string `json:"qiangruo"`
+			} `json:"fu_yi"`
 		} `json:"data"`
 	}
 	if err := json.NewDecoder(w.Body).Decode(&env); err != nil {
@@ -90,7 +90,7 @@ func TestBondCharts_Valid(t *testing.T) {
 		Data struct {
 			ZhuCross struct {
 				Pairs []json.RawMessage `json:"Pairs"`
-			} `json:"ZhuCross"`
+			} `json:"zhu_cross"`
 		} `json:"data"`
 	}
 	if err := json.NewDecoder(w.Body).Decode(&env); err != nil {
@@ -124,7 +124,7 @@ func TestBondCharts_InvalidA(t *testing.T) {
 // -- liuNian --
 
 func TestLiuNian_Valid(t *testing.T) {
-	body := `{"year":2025,` + bt + `}`
+	body := `{"year":2025,` + bt + `,"gender":"male"}`
 	r := httptest.NewRequest("POST", "/", strings.NewReader(body))
 	w := httptest.NewRecorder()
 	liuNian(w, r)
@@ -161,7 +161,7 @@ func TestLiuNian_MissingBirth(t *testing.T) {
 }
 
 func TestLiuNian_NegativeYear(t *testing.T) {
-	body := `{"year":-1,` + bt + `}`
+	body := `{"year":-1,` + bt + `,"gender":"male"}`
 	r := httptest.NewRequest("POST", "/", strings.NewReader(body))
 	w := httptest.NewRecorder()
 	liuNian(w, r)
@@ -173,7 +173,7 @@ func TestLiuNian_NegativeYear(t *testing.T) {
 // -- liuYue --
 
 func TestLiuYue_Valid(t *testing.T) {
-	body := `{"year":2025,"month":6,` + bt + `}`
+	body := `{"year":2025,"month":6,` + bt + `,"gender":"male"}`
 	r := httptest.NewRequest("POST", "/", strings.NewReader(body))
 	w := httptest.NewRecorder()
 	liuYue(w, r)
@@ -204,7 +204,7 @@ func TestLiuYue_Valid(t *testing.T) {
 }
 
 func TestLiuYue_MissingMonth(t *testing.T) {
-	body := `{"year":2025,` + bt + `}`
+	body := `{"year":2025,` + bt + `,"gender":"male"}`
 	r := httptest.NewRequest("POST", "/", strings.NewReader(body))
 	w := httptest.NewRecorder()
 	liuYue(w, r)
@@ -216,7 +216,7 @@ func TestLiuYue_MissingMonth(t *testing.T) {
 // -- liuRi --
 
 func TestLiuRi_Valid(t *testing.T) {
-	body := `{"date":"2025-06-15",` + bt + `}`
+	body := `{"year":2025,"month":6,"day":15,` + bt + `,"gender":"male"}`
 	r := httptest.NewRequest("POST", "/", strings.NewReader(body))
 	w := httptest.NewRecorder()
 	liuRi(w, r)
@@ -243,7 +243,7 @@ func TestLiuRi_Valid(t *testing.T) {
 }
 
 func TestLiuRi_InvalidDateFormat(t *testing.T) {
-	body := `{"date":"bad-date",` + bt + `}`
+	body := `{"year":0,"month":0,"day":0,` + bt + `,"gender":"male"}`
 	r := httptest.NewRequest("POST", "/", strings.NewReader(body))
 	w := httptest.NewRecorder()
 	liuRi(w, r)
@@ -265,7 +265,7 @@ func TestLiuRi_MissingBirth(t *testing.T) {
 // -- liuShi --
 
 func TestLiuShi_Valid(t *testing.T) {
-	body := `{"date":"2025-06-15","hour":12,` + bt + `}`
+	body := `{"year":2025,"month":6,"day":15,"hour":12,` + bt + `,"gender":"male"}`
 	r := httptest.NewRequest("POST", "/", strings.NewReader(body))
 	w := httptest.NewRecorder()
 	liuShi(w, r)
@@ -298,7 +298,7 @@ func TestLiuShi_MissingDate(t *testing.T) {
 }
 
 func TestLiuShi_HourOutOfRange(t *testing.T) {
-	body := `{"date":"2025-06-15","hour":25,` + bt + `}`
+	body := `{"year":2025,"month":6,"day":15,"hour":25,` + bt + `,"gender":"male"}`
 	r := httptest.NewRequest("POST", "/", strings.NewReader(body))
 	w := httptest.NewRecorder()
 	liuShi(w, r)
@@ -451,7 +451,7 @@ func TestBlackBox_BaZi_Consistency_SameChartFields(t *testing.T) {
 	}
 
 	// liunian 返回 year_stem, year_branch — 应该等于 chart 的 Year
-	lnBody := `{"year":2025,` + bt15 + `}`
+	lnBody := `{"year":2025,` + bt15 + `,"gender":"male"}`
 	lnr := httptest.NewRequest("POST", "/", strings.NewReader(lnBody))
 	lnw := httptest.NewRecorder()
 	liuNian(lnw, lnr)
@@ -485,13 +485,13 @@ func TestBlackBox_BaZi_Invariants(t *testing.T) {
 
 	var env struct {
 		Data struct {
-			Year  struct{ Gan, Zhi string } `json:"Year"`
-			Month struct{ Gan, Zhi string } `json:"Month"`
-			Day   struct{ Gan, Zhi string } `json:"Day"`
-			Hour  struct{ Gan, Zhi string } `json:"Hour"`
+			Year  struct{ Gan, Zhi string } `json:"nian"`
+			Month struct{ Gan, Zhi string } `json:"yue"`
+			Day   struct{ Gan, Zhi string } `json:"ri"`
+			Hour  struct{ Gan, Zhi string } `json:"shi"`
 			DaYun struct {
-				Zhus []struct{ Gan, Zhi string } `json:"Pillars"`
-			} `json:"DaYun"`
+				Zhus []struct{ Gan, Zhi string } `json:"zhu"`
+			} `json:"da_yun"`
 		} `json:"data"`
 	}
 	if err := json.NewDecoder(w.Body).Decode(&env); err != nil {
@@ -552,7 +552,7 @@ func TestBlackBox_Bond_Invariants(t *testing.T) {
 		Data struct {
 			ZhuCross struct {
 				Pairs []json.RawMessage `json:"Pairs"`
-			} `json:"ZhuCross"`
+			} `json:"zhu_cross"`
 		} `json:"data"`
 	}
 	if err := json.NewDecoder(w.Body).Decode(&env); err != nil {
@@ -626,19 +626,19 @@ func TestBlackBox_BaZi_ContainsNaYin(t *testing.T) {
 	raw := w.Body.String()
 	// 八字命盘应该有纳音、五行等信息
 	// 即使没有，至少应该包含基础结构
-	if !strings.Contains(raw, "Year") || !strings.Contains(raw, "Month") ||
-		!strings.Contains(raw, "Day") || !strings.Contains(raw, "Hour") {
+	if !strings.Contains(raw, "nian") || !strings.Contains(raw, "yue") ||
+		!strings.Contains(raw, "ri") || !strings.Contains(raw, "shi") {
 		t.Error("chart response missing pillar fields")
 	}
 }
 
 func TestBlackBox_LiuNian_DifferentYears(t *testing.T) {
-	body2025 := `{"year":2025,` + bt15 + `}`
+	body2025 := `{"year":2025,` + bt15 + `,"gender":"male"}`
 	r1 := httptest.NewRequest("POST", "/", strings.NewReader(body2025))
 	w1 := httptest.NewRecorder()
 	liuNian(w1, r1)
 
-	body2026 := `{"year":2026,` + bt15 + `}`
+	body2026 := `{"year":2026,` + bt15 + `,"gender":"male"}`
 	r2 := httptest.NewRequest("POST", "/", strings.NewReader(body2026))
 	w2 := httptest.NewRecorder()
 	liuNian(w2, r2)
@@ -692,20 +692,20 @@ func TestBlackBox_BaZi_GenderDifference_DaYun(t *testing.T) {
 		Data struct {
 			DaYun struct {
 				Zhus []struct {
-					Gan string `json:"Gan"`
-					Zhi string `json:"Zhi"`
-				} `json:"Pillars"`
-			} `json:"DaYun"`
+					Gan string `json:"gan"`
+					Zhi string `json:"zhi"`
+				} `json:"zhu"`
+			} `json:"da_yun"`
 		} `json:"data"`
 	}
 	var envF struct {
 		Data struct {
 			DaYun struct {
 				Zhus []struct {
-					Gan string `json:"Gan"`
-					Zhi string `json:"Zhi"`
-				} `json:"Pillars"`
-			} `json:"DaYun"`
+					Gan string `json:"gan"`
+					Zhi string `json:"zhi"`
+				} `json:"zhu"`
+			} `json:"da_yun"`
 		} `json:"data"`
 	}
 	if err := json.NewDecoder(wM.Body).Decode(&envM); err != nil {
@@ -731,7 +731,7 @@ func TestBlackBox_BaZi_GenderDifference_DaYun(t *testing.T) {
 }
 
 func TestEdge_LiuNian_NegativeYear(t *testing.T) {
-	body := `{"year":-1,` + bt15 + `}`
+	body := `{"year":-1,` + bt15 + `,"gender":"male"}`
 	r := httptest.NewRequest("POST", "/", strings.NewReader(body))
 	w := httptest.NewRecorder()
 	liuNian(w, r)
@@ -741,7 +741,7 @@ func TestEdge_LiuNian_NegativeYear(t *testing.T) {
 }
 
 func TestEdge_LiuYue_ZeroMonth(t *testing.T) {
-	body := `{"year":2025,"month":0,` + bt15 + `}`
+	body := `{"year":2025,"month":0,` + bt15 + `,"gender":"male"}`
 	r := httptest.NewRequest("POST", "/", strings.NewReader(body))
 	w := httptest.NewRecorder()
 	liuYue(w, r)
@@ -752,7 +752,7 @@ func TestEdge_LiuYue_ZeroMonth(t *testing.T) {
 
 func TestEdge_LiuShi_HourZero(t *testing.T) {
 	// hour=0 应该合法（子时）
-	body := `{"date":"2025-06-15","hour":0,` + bt15 + `}`
+	body := `{"year":2025,"month":6,"day":15,"hour":0,` + bt15 + `,"gender":"male"}`
 	r := httptest.NewRequest("POST", "/", strings.NewReader(body))
 	w := httptest.NewRecorder()
 	liuShi(w, r)
@@ -762,7 +762,7 @@ func TestEdge_LiuShi_HourZero(t *testing.T) {
 }
 
 func TestEdge_LiuShi_HourNegative(t *testing.T) {
-	body := `{"date":"2025-06-15","hour":-1,` + bt15 + `}`
+	body := `{"year":2025,"month":6,"day":15,"hour":-1,` + bt15 + `,"gender":"male"}`
 	r := httptest.NewRequest("POST", "/", strings.NewReader(body))
 	w := httptest.NewRecorder()
 	liuShi(w, r)
@@ -802,7 +802,7 @@ func TestEdge_CrossEndpoint_SameNianZhu(t *testing.T) {
 	}
 	var baziEnv struct {
 		Data struct {
-			Year struct{ Zhi string } `json:"Year"`
+			Year struct{ Zhi string } `json:"nian"`
 		} `json:"data"`
 	}
 	if err := json.NewDecoder(baziW.Body).Decode(&baziEnv); err != nil {
@@ -1046,7 +1046,7 @@ func TestEdge2_BothTimeAndLunar(t *testing.T) {
 }
 
 func TestEdge2_LiuNian_YearTooLow(t *testing.T) {
-	body := `{"year":1800,` + bt15 + `}`
+	body := `{"year":1800,` + bt15 + `,"gender":"male"}`
 	r := httptest.NewRequest("POST", "/", strings.NewReader(body))
 	w := httptest.NewRecorder()
 	liuNian(w, r)
@@ -1056,7 +1056,7 @@ func TestEdge2_LiuNian_YearTooLow(t *testing.T) {
 }
 
 func TestEdge2_LiuYue_NegativeMonth(t *testing.T) {
-	body := `{"year":2025,"month":-1,` + bt15 + `}`
+	body := `{"year":2025,"month":-1,` + bt15 + `,"gender":"male"}`
 	r := httptest.NewRequest("POST", "/", strings.NewReader(body))
 	w := httptest.NewRecorder()
 	liuYue(w, r)
@@ -1077,7 +1077,7 @@ func TestEdge2_BaZi_ChartLiunian_SameYearBranch(t *testing.T) {
 	}
 	var cEnv struct {
 		Data struct {
-			Year struct{ Gan, Zhi string } `json:"Year"`
+			Year struct{ Gan, Zhi string } `json:"nian"`
 		} `json:"data"`
 	}
 	if err := json.NewDecoder(cw.Body).Decode(&cEnv); err != nil {
@@ -1085,7 +1085,7 @@ func TestEdge2_BaZi_ChartLiunian_SameYearBranch(t *testing.T) {
 	}
 
 	// liunian 2025
-	lnBody := `{"year":2025,` + bt15 + `}`
+	lnBody := `{"year":2025,` + bt15 + `,"gender":"male"}`
 	lnr := httptest.NewRequest("POST", "/", strings.NewReader(lnBody))
 	lnw := httptest.NewRecorder()
 	liuNian(lnw, lnr)
@@ -1106,7 +1106,7 @@ func TestEdge2_BaZi_ChartLiunian_SameYearBranch(t *testing.T) {
 }
 
 func TestEd3_LiuShi_Hour24(t *testing.T) {
-	body := `{"date":"2025-06-15","hour":24,` + bt15 + `}`
+	body := `{"year":2025,"month":6,"day":15,"hour":24,` + bt15 + `,"gender":"male"}`
 	r := httptest.NewRequest("POST", "/", strings.NewReader(body))
 	w := httptest.NewRecorder()
 	liuShi(w, r)
@@ -1138,7 +1138,7 @@ func TestEd3_BaZi_Bond_NullA(t *testing.T) {
 func TestBug_LiuShi_HourZero_Rejected(t *testing.T) {
 	// Hour 0 (子时, midnight) is valid, but validation.Required on int
 	// treats 0 as blank.
-	body := `{"date":"2025-06-15","hour":0,` + bt15 + `}`
+	body := `{"year":2025,"month":6,"day":15,"hour":0,` + bt15 + `,"gender":"male"}`
 	r := httptest.NewRequest("POST", "/", strings.NewReader(body))
 	w := httptest.NewRecorder()
 	liuShi(w, r)
@@ -1154,7 +1154,7 @@ func TestBug_LiuShi_HourZero_Rejected(t *testing.T) {
 func TestBug_LiuYue_Year2200_Accepted(t *testing.T) {
 	// liuYueRequest validates Year with Max(2200), unlike all other
 	// year validators which use Max(2100). Is this intentional?
-	body := `{"year":2199,"month":6,` + bt15 + `}`
+	body := `{"year":2199,"month":6,` + bt15 + `,"gender":"male"}`
 	r := httptest.NewRequest("POST", "/", strings.NewReader(body))
 	w := httptest.NewRecorder()
 	liuYue(w, r)
@@ -1166,7 +1166,7 @@ func TestBug_LiuYue_Year2200_Accepted(t *testing.T) {
 
 func TestBug_LiuNian_Year2101_Rejected(t *testing.T) {
 	// liuNian uses Max(2100), so 2101 should be rejected
-	body := `{"year":2101,` + bt15 + `}`
+	body := `{"year":2101,` + bt15 + `,"gender":"male"}`
 	r := httptest.NewRequest("POST", "/", strings.NewReader(body))
 	w := httptest.NewRecorder()
 	liuNian(w, r)
@@ -1281,7 +1281,7 @@ func TestBug_XiaoYun_Count121_Rejected(t *testing.T) {
 }
 
 func TestBug_LiuShi_Hour24_Rejected(t *testing.T) {
-	body := `{"date":"2025-06-15","hour":24,` + bt15 + `}`
+	body := `{"year":2025,"month":6,"day":15,"hour":24,` + bt15 + `,"gender":"male"}`
 	r := httptest.NewRequest("POST", "/", strings.NewReader(body))
 	w := httptest.NewRecorder()
 	liuShi(w, r)
@@ -1307,7 +1307,7 @@ func TestBug_Bond_SamePerson(t *testing.T) {
 		Data struct {
 			ZhuCross struct {
 				Pairs []json.RawMessage `json:"Pairs"`
-			} `json:"ZhuCross"`
+			} `json:"zhu_cross"`
 		} `json:"data"`
 	}
 	if err := json.NewDecoder(w.Body).Decode(&env); err != nil {
@@ -1368,7 +1368,7 @@ func TestDomain_DaYun_Direction(t *testing.T) {
 					DaYun struct {
 						Direction string `json:"direction"`
 						StartAge  int    `json:"start_age"`
-					} `json:"DaYun"`
+					} `json:"da_yun"`
 				} `json:"data"`
 			}
 			if err := json.NewDecoder(w.Body).Decode(&env); err != nil {
@@ -1394,10 +1394,10 @@ func TestDomain_DayMaster_Equals_DayGan(t *testing.T) {
 	}
 	var env struct {
 		Data struct {
-			DayMaster string `json:"DayMaster"`
+			DayMaster string `json:"ri_yuan"`
 			Day       struct {
-				Gan string `json:"Gan"`
-			} `json:"Day"`
+				Gan string `json:"gan"`
+			} `json:"ri"`
 		} `json:"data"`
 	}
 	if err := json.NewDecoder(w.Body).Decode(&env); err != nil {
@@ -1422,25 +1422,25 @@ func TestDomain_NaYin_AllFourPillars(t *testing.T) {
 	var env struct {
 		Data struct {
 			Year struct {
-				NaYin string `json:"NaYin"`
-			} `json:"Year"`
+				NaYin string `json:"na_yin"`
+			} `json:"nian"`
 			Month struct {
-				NaYin string `json:"NaYin"`
-			} `json:"Month"`
+				NaYin string `json:"na_yin"`
+			} `json:"yue"`
 			Day struct {
-				NaYin string `json:"NaYin"`
-			} `json:"Day"`
+				NaYin string `json:"na_yin"`
+			} `json:"ri"`
 			Hour struct {
-				NaYin string `json:"NaYin"`
-			} `json:"Hour"`
+				NaYin string `json:"na_yin"`
+			} `json:"shi"`
 		} `json:"data"`
 	}
 	if err := json.NewDecoder(w.Body).Decode(&env); err != nil {
 		t.Fatal(err)
 	}
 	pillars := map[string]string{
-		"Year": env.Data.Year.NaYin, "Month": env.Data.Month.NaYin,
-		"Day": env.Data.Day.NaYin, "Hour": env.Data.Hour.NaYin,
+		"nian": env.Data.Year.NaYin, "yue": env.Data.Month.NaYin,
+		"ri": env.Data.Day.NaYin, "shi": env.Data.Hour.NaYin,
 	}
 	wuxing := []string{"金", "木", "水", "火", "土"}
 	for name, nayin := range pillars {
@@ -1484,7 +1484,7 @@ func TestDomain_NianZhu_LiChunBoundary(t *testing.T) {
 			}
 			var env struct {
 				Data struct {
-					Year struct{ Gan, Zhi string } `json:"Year"`
+					Year struct{ Gan, Zhi string } `json:"nian"`
 				} `json:"data"`
 			}
 			if err := json.NewDecoder(w.Body).Decode(&env); err != nil {
@@ -1510,32 +1510,32 @@ func TestDomain_TenGods_Present(t *testing.T) {
 		Data struct {
 			Year struct {
 				TenGods []struct {
-					TenGod string `json:"TenGod"`
-				} `json:"TenGods"`
-			} `json:"Year"`
+					TenGod string `json:"shi_shen"`
+				} `json:"shi_shens"`
+			} `json:"nian"`
 			Month struct {
 				TenGods []struct {
-					TenGod string `json:"TenGod"`
-				} `json:"TenGods"`
-			} `json:"Month"`
+					TenGod string `json:"shi_shen"`
+				} `json:"shi_shens"`
+			} `json:"yue"`
 			Day struct {
 				TenGods []struct {
-					TenGod string `json:"TenGod"`
-				} `json:"TenGods"`
-			} `json:"Day"`
+					TenGod string `json:"shi_shen"`
+				} `json:"shi_shens"`
+			} `json:"ri"`
 			Hour struct {
 				TenGods []struct {
-					TenGod string `json:"TenGod"`
-				} `json:"TenGods"`
-			} `json:"Hour"`
+					TenGod string `json:"shi_shen"`
+				} `json:"shi_shens"`
+			} `json:"shi"`
 		} `json:"data"`
 	}
 	if err := json.NewDecoder(w.Body).Decode(&env); err != nil {
 		t.Fatal(err)
 	}
 	pillars := map[string]int{
-		"Year": len(env.Data.Year.TenGods), "Month": len(env.Data.Month.TenGods),
-		"Day": len(env.Data.Day.TenGods), "Hour": len(env.Data.Hour.TenGods),
+		"nian": len(env.Data.Year.TenGods), "yue": len(env.Data.Month.TenGods),
+		"ri": len(env.Data.Day.TenGods), "shi": len(env.Data.Hour.TenGods),
 	}
 	for name, count := range pillars {
 		if count == 0 {
@@ -1559,23 +1559,23 @@ func TestDomain_HiddenStems_KnownValues(t *testing.T) {
 			Year struct {
 				HiddenStems struct {
 					Main string `json:"Main"`
-				} `json:"HiddenStems"`
-			} `json:"Year"`
+				} `json:"cang_gan"`
+			} `json:"nian"`
 			Month struct {
 				HiddenStems struct {
 					Main string `json:"Main"`
-				} `json:"HiddenStems"`
-			} `json:"Month"`
+				} `json:"cang_gan"`
+			} `json:"yue"`
 			Day struct {
 				HiddenStems struct {
 					Main string `json:"Main"`
-				} `json:"HiddenStems"`
-			} `json:"Day"`
+				} `json:"cang_gan"`
+			} `json:"ri"`
 			Hour struct {
 				HiddenStems struct {
 					Main string `json:"Main"`
-				} `json:"HiddenStems"`
-			} `json:"Hour"`
+				} `json:"cang_gan"`
+			} `json:"shi"`
 		} `json:"data"`
 	}
 	if err := json.NewDecoder(w.Body).Decode(&env); err != nil {
@@ -1602,7 +1602,7 @@ func TestDomain_WuxingCount_NonEmpty(t *testing.T) {
 	}
 	var env struct {
 		Data struct {
-			WuxingCount map[string]int `json:"WuxingCount"`
+			WuxingCount map[string]int `json:"wuxing_count"`
 		} `json:"data"`
 	}
 	if err := json.NewDecoder(w.Body).Decode(&env); err != nil {
@@ -1632,16 +1632,16 @@ func TestDomain_KongWang_XunLogic(t *testing.T) {
 		Data struct {
 			Year struct {
 				IsVoid bool `json:"IsVoid"`
-			} `json:"Year"`
+			} `json:"nian"`
 			Month struct {
 				IsVoid bool `json:"IsVoid"`
-			} `json:"Month"`
+			} `json:"yue"`
 			Day struct {
 				IsVoid bool `json:"IsVoid"`
-			} `json:"Day"`
+			} `json:"ri"`
 			Hour struct {
 				IsVoid bool `json:"IsVoid"`
-			} `json:"Hour"`
+			} `json:"shi"`
 		} `json:"data"`
 	}
 	if err := json.NewDecoder(w.Body).Decode(&env); err != nil {
@@ -1672,7 +1672,7 @@ func TestDomain_FuYi_Present(t *testing.T) {
 				Yong     string `json:"yong"`
 				Ji       string `json:"ji"`
 				Xi       string `json:"xi"`
-			} `json:"FuYi"`
+			} `json:"fu_yi"`
 		} `json:"data"`
 	}
 	if err := json.NewDecoder(w.Body).Decode(&env); err != nil {
@@ -1705,7 +1705,7 @@ func TestDomain_Bond_ZhuCross_16Pairs(t *testing.T) {
 					AStem  string `json:"AStem"`
 					BStem  string `json:"BStem"`
 				} `json:"Pairs"`
-			} `json:"ZhuCross"`
+			} `json:"zhu_cross"`
 		} `json:"data"`
 	}
 	if err := json.NewDecoder(w.Body).Decode(&env); err != nil {
@@ -1722,7 +1722,7 @@ func TestDomain_Bond_ZhuCross_16Pairs(t *testing.T) {
 }
 
 func TestDomain_LiuYue_MonthRange(t *testing.T) {
-	body := `{"year":2025,"month":6,` + bt15 + `}`
+	body := `{"year":2025,"month":6,` + bt15 + `,"gender":"male"}`
 	r := httptest.NewRequest("POST", "/", strings.NewReader(body))
 	w := httptest.NewRecorder()
 	liuYue(w, r)
@@ -1753,7 +1753,7 @@ func TestDomain_YueZhu_YinMonth(t *testing.T) {
 	}
 	var env struct {
 		Data struct {
-			Month struct{ Zhi string } `json:"Month"`
+			Month struct{ Zhi string } `json:"yue"`
 		} `json:"data"`
 	}
 	if err := json.NewDecoder(w.Body).Decode(&env); err != nil {
@@ -1775,7 +1775,7 @@ func TestDomain_ShiZhu_ChenShi(t *testing.T) {
 	}
 	var env struct {
 		Data struct {
-			Hour struct{ Zhi string } `json:"Hour"`
+			Hour struct{ Zhi string } `json:"shi"`
 		} `json:"data"`
 	}
 	if err := json.NewDecoder(w.Body).Decode(&env); err != nil {
@@ -1837,10 +1837,10 @@ func TestDomain_WangShuai_MonthRule(t *testing.T) {
 	}
 	var env struct {
 		Data struct {
-			WangShuai map[string]string `json:"WangShuai"`
+			WangShuai map[string]string `json:"wang_shuai"`
 			Month     struct {
-				Zhi string `json:"Zhi"`
-			} `json:"Month"`
+				Zhi string `json:"zhi"`
+			} `json:"yue"`
 		} `json:"data"`
 	}
 	if err := json.NewDecoder(w.Body).Decode(&env); err != nil {
@@ -1868,9 +1868,9 @@ func TestDomain_RiZhu_NotEmpty(t *testing.T) {
 	var env struct {
 		Data struct {
 			Day struct {
-				Gan string `json:"Gan"`
-				Zhi string `json:"Zhi"`
-			} `json:"Day"`
+				Gan string `json:"gan"`
+				Zhi string `json:"zhi"`
+			} `json:"ri"`
 		} `json:"data"`
 	}
 	if err := json.NewDecoder(w.Body).Decode(&env); err != nil {
@@ -1882,7 +1882,7 @@ func TestDomain_RiZhu_NotEmpty(t *testing.T) {
 }
 
 func TestDomain_LiuRi_DayGanZhi(t *testing.T) {
-	body := `{"date":"2025-06-15",` + bt15 + `}`
+	body := `{"year":2025,"month":6,"day":15,` + bt15 + `,"gender":"male"}`
 	r := httptest.NewRequest("POST", "/", strings.NewReader(body))
 	w := httptest.NewRecorder()
 	liuRi(w, r)
@@ -1913,15 +1913,15 @@ func TestDomain_TenGod_SpecificRelations(t *testing.T) {
 	}
 	var env struct {
 		Data struct {
-			DayMaster string `json:"DayMaster"`
+			DayMaster string `json:"ri_yuan"`
 			Year      struct {
-				Gan     string `json:"Gan"`
+				Gan     string `json:"gan"`
 				TenGods []struct {
-					TenGod string `json:"TenGod"`
+					TenGod string `json:"shi_shen"`
 					Name   string `json:"Name"`
 					Source string `json:"Source"`
-				} `json:"TenGods"`
-			} `json:"Year"`
+				} `json:"shi_shens"`
+			} `json:"nian"`
 		} `json:"data"`
 	}
 	if err := json.NewDecoder(w.Body).Decode(&env); err != nil {
@@ -1979,9 +1979,9 @@ func TestDomain_HourStem_WuShuDun(t *testing.T) {
 			var env struct {
 				Data struct {
 					Hour struct {
-						Gan string `json:"Gan"`
-						Zhi string `json:"Zhi"`
-					} `json:"Hour"`
+						Gan string `json:"gan"`
+						Zhi string `json:"zhi"`
+					} `json:"shi"`
 				} `json:"data"`
 			}
 			if err := json.NewDecoder(w.Body).Decode(&env); err != nil {
@@ -2012,7 +2012,7 @@ func TestDomain_LiuNian_ShiShen_Wuxing(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			body := `{"year":` + itoa(tt.year) + `,` + bt15 + `}`
+			body := `{"year":` + itoa(tt.year) + `,` + bt15 + `,"gender":"male"}`
 			r := httptest.NewRequest("POST", "/", strings.NewReader(body))
 			w := httptest.NewRecorder()
 			liuNian(w, r)
@@ -2061,7 +2061,7 @@ func TestDomain_LiuNian_NaYin(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			body := `{"year":` + itoa(tt.year) + `,` + bt15 + `}`
+			body := `{"year":` + itoa(tt.year) + `,` + bt15 + `,"gender":"male"}`
 			r := httptest.NewRequest("POST", "/", strings.NewReader(body))
 			w := httptest.NewRecorder()
 			liuNian(w, r)
@@ -2084,7 +2084,7 @@ func TestDomain_LiuNian_NaYin(t *testing.T) {
 }
 
 func TestDomain_LiuYue_ShiShen_Wuxing(t *testing.T) {
-	body := `{"year":2025,"month":6,` + bt15 + `}`
+	body := `{"year":2025,"month":6,` + bt15 + `,"gender":"male"}`
 	r := httptest.NewRequest("POST", "/", strings.NewReader(body))
 	w := httptest.NewRecorder()
 	liuYue(w, r)
@@ -2135,7 +2135,7 @@ func TestDomain_LiuYue_AllMonths_CorrectBranch(t *testing.T) {
 	}
 	for month, wantZhi := range wantBranches {
 		t.Run(wantZhi+"月", func(t *testing.T) {
-			body := `{"year":2025,"month":` + itoa(month) + `,` + bt15 + `}`
+			body := `{"year":2025,"month":` + itoa(month) + `,` + bt15 + `,"gender":"male"}`
 			r := httptest.NewRequest("POST", "/", strings.NewReader(body))
 			w := httptest.NewRecorder()
 			liuYue(w, r)
@@ -2158,7 +2158,7 @@ func TestDomain_LiuYue_AllMonths_CorrectBranch(t *testing.T) {
 }
 
 func TestDomain_LiuRi_ShiShen_Nayin(t *testing.T) {
-	body := `{"date":"2025-06-15",` + bt15 + `}`
+	body := `{"year":2025,"month":6,"day":15,` + bt15 + `,"gender":"male"}`
 	r := httptest.NewRequest("POST", "/", strings.NewReader(body))
 	w := httptest.NewRecorder()
 	liuRi(w, r)
@@ -2202,7 +2202,7 @@ func TestDomain_LiuRi_ShiShen_Nayin(t *testing.T) {
 }
 
 func TestDomain_LiuShi_HourStem(t *testing.T) {
-	body := `{"date":"2025-06-15","hour":8,` + bt15 + `}`
+	body := `{"year":2025,"month":6,"day":15,"hour":8,` + bt15 + `,"gender":"male"}`
 	r := httptest.NewRequest("POST", "/", strings.NewReader(body))
 	w := httptest.NewRecorder()
 	liuShi(w, r)
@@ -2245,7 +2245,7 @@ func TestDomain_LiuShi_AllHours_CorrectBranch(t *testing.T) {
 	}
 	for hour, wantZhi := range hourBranches {
 		t.Run(itoa(hour)+"时→"+wantZhi, func(t *testing.T) {
-			body := `{"date":"2025-06-15","hour":` + itoa(hour) + `,` + bt15 + `}`
+			body := `{"year":2025,"month":6,"day":15,"hour":` + itoa(hour) + `,` + bt15 + `,"gender":"male"}`
 			r := httptest.NewRequest("POST", "/", strings.NewReader(body))
 			w := httptest.NewRecorder()
 			liuShi(w, r)
@@ -2308,17 +2308,17 @@ func TestDomain_ShenSha_PerPillar(t *testing.T) {
 	var env struct {
 		Data struct {
 			Year struct {
-				ShenSha []struct{ Name, Category, Description string } `json:"ShenSha"`
-			} `json:"Year"`
+				ShenSha []struct{ Name, Category, Description string } `json:"shen_sha"`
+			} `json:"nian"`
 			Month struct {
-				ShenSha []struct{ Name, Category, Description string } `json:"ShenSha"`
-			} `json:"Month"`
+				ShenSha []struct{ Name, Category, Description string } `json:"shen_sha"`
+			} `json:"yue"`
 			Day struct {
-				ShenSha []struct{ Name, Category, Description string } `json:"ShenSha"`
-			} `json:"Day"`
+				ShenSha []struct{ Name, Category, Description string } `json:"shen_sha"`
+			} `json:"ri"`
 			Hour struct {
-				ShenSha []struct{ Name, Category, Description string } `json:"ShenSha"`
-			} `json:"Hour"`
+				ShenSha []struct{ Name, Category, Description string } `json:"shen_sha"`
+			} `json:"shi"`
 		} `json:"data"`
 	}
 	if err := json.NewDecoder(w.Body).Decode(&env); err != nil {
@@ -2359,23 +2359,23 @@ func TestDomain_TianYi_Star(t *testing.T) {
 	}
 	var env struct {
 		Data struct {
-			DayMaster string `json:"DayMaster"`
+			DayMaster string `json:"ri_yuan"`
 			Year      struct {
-				Zhi     string                  `json:"Zhi"`
-				ShenSha []struct{ Name string } `json:"ShenSha"`
-			} `json:"Year"`
+				Zhi     string                  `json:"zhi"`
+				ShenSha []struct{ Name string } `json:"shen_sha"`
+			} `json:"nian"`
 			Month struct {
-				Zhi     string                  `json:"Zhi"`
-				ShenSha []struct{ Name string } `json:"ShenSha"`
-			} `json:"Month"`
+				Zhi     string                  `json:"zhi"`
+				ShenSha []struct{ Name string } `json:"shen_sha"`
+			} `json:"yue"`
 			Day struct {
-				Zhi     string                  `json:"Zhi"`
-				ShenSha []struct{ Name string } `json:"ShenSha"`
-			} `json:"Day"`
+				Zhi     string                  `json:"zhi"`
+				ShenSha []struct{ Name string } `json:"shen_sha"`
+			} `json:"ri"`
 			Hour struct {
-				Zhi     string                  `json:"Zhi"`
-				ShenSha []struct{ Name string } `json:"ShenSha"`
-			} `json:"Hour"`
+				Zhi     string                  `json:"zhi"`
+				ShenSha []struct{ Name string } `json:"shen_sha"`
+			} `json:"shi"`
 		} `json:"data"`
 	}
 	if err := json.NewDecoder(w.Body).Decode(&env); err != nil {
@@ -2393,10 +2393,10 @@ func TestDomain_TianYi_Star(t *testing.T) {
 		Zhi     string
 		ShenSha []struct{ Name string }
 	}{
-		"Year":  {env.Data.Year.Zhi, env.Data.Year.ShenSha},
-		"Month": {env.Data.Month.Zhi, env.Data.Month.ShenSha},
-		"Day":   {env.Data.Day.Zhi, env.Data.Day.ShenSha},
-		"Hour":  {env.Data.Hour.Zhi, env.Data.Hour.ShenSha},
+		"nian":  {env.Data.Year.Zhi, env.Data.Year.ShenSha},
+		"yue": {env.Data.Month.Zhi, env.Data.Month.ShenSha},
+		"ri":   {env.Data.Day.Zhi, env.Data.Day.ShenSha},
+		"shi":  {env.Data.Hour.Zhi, env.Data.Hour.ShenSha},
 	}
 	for name, p := range pillars {
 		for _, s := range p.ShenSha {
@@ -2536,7 +2536,7 @@ func TestDomain_KuiGang_Check(t *testing.T) {
 		Data struct {
 			Hour struct {
 				IsKuiGang bool `json:"IsKuiGang"`
-			} `json:"Hour"`
+			} `json:"shi"`
 		} `json:"data"`
 	}
 	if err := json.NewDecoder(w.Body).Decode(&env); err != nil {
@@ -2565,16 +2565,16 @@ func TestDomain_IsSelfHe_Present(t *testing.T) {
 		Data struct {
 			Year struct {
 				IsSelfHe bool `json:"IsSelfHe"`
-			} `json:"Year"`
+			} `json:"nian"`
 			Month struct {
 				IsSelfHe bool `json:"IsSelfHe"`
-			} `json:"Month"`
+			} `json:"yue"`
 			Day struct {
 				IsSelfHe bool `json:"IsSelfHe"`
-			} `json:"Day"`
+			} `json:"ri"`
 			Hour struct {
 				IsSelfHe bool `json:"IsSelfHe"`
-			} `json:"Hour"`
+			} `json:"shi"`
 		} `json:"data"`
 	}
 	if err := json.NewDecoder(w.Body).Decode(&env); err != nil {
@@ -2585,8 +2585,8 @@ func TestDomain_IsSelfHe_Present(t *testing.T) {
 	// We just check the field exists — the 1984-02-15 chart:
 	// 甲子(不自我合), 丙寅(丙辛合→可能), 己卯(甲己合→可能), 戊辰(不自我合)
 	pillars := map[string]bool{
-		"Year": env.Data.Year.IsSelfHe, "Month": env.Data.Month.IsSelfHe,
-		"Day": env.Data.Day.IsSelfHe, "Hour": env.Data.Hour.IsSelfHe,
+		"nian": env.Data.Year.IsSelfHe, "yue": env.Data.Month.IsSelfHe,
+		"ri": env.Data.Day.IsSelfHe, "shi": env.Data.Hour.IsSelfHe,
 	}
 	for name, isSelfHe := range pillars {
 		t.Logf("%s: IsSelfHe=%v", name, isSelfHe)
@@ -2603,8 +2603,8 @@ func TestDomain_HeHui_Present(t *testing.T) {
 	}
 	var env struct {
 		Data struct {
-			HeHui     any    `json:"HeHui"`
-			GongJia   any    `json:"GongJia"`
+			HeHui     any    `json:"he_hui"`
+			GongJia   any    `json:"gong_jia"`
 			SanQiName string `json:"SanQiName"`
 		} `json:"data"`
 	}
@@ -2704,7 +2704,7 @@ func TestDomain_DaYun_StartAge(t *testing.T) {
 			DaYun struct {
 				StartAge  int    `json:"start_age"`
 				Direction string `json:"direction"`
-			} `json:"DaYun"`
+			} `json:"da_yun"`
 		} `json:"data"`
 	}
 	if err := json.NewDecoder(w.Body).Decode(&env); err != nil {
@@ -2735,7 +2735,7 @@ func TestDomain_DaYun_FemaleReverse(t *testing.T) {
 			DaYun struct {
 				StartAge  int    `json:"start_age"`
 				Direction string `json:"direction"`
-			} `json:"DaYun"`
+			} `json:"da_yun"`
 		} `json:"data"`
 	}
 	if err := json.NewDecoder(w.Body).Decode(&env); err != nil {
@@ -2813,7 +2813,7 @@ func TestDomain_Chart_GongJia(t *testing.T) {
 				PillarB int    `json:"pillar_b"`
 				Type    string `json:"type"`
 				Branch  string `json:"branch"`
-			} `json:"GongJia"`
+			} `json:"gong_jia"`
 		} `json:"data"`
 	}
 	if err := json.NewDecoder(w.Body).Decode(&env); err != nil {
@@ -2852,7 +2852,7 @@ func TestDomain_Chart_HeHui(t *testing.T) {
 				Type    string `json:"type"`
 				Name    string `json:"name"`
 				Element string `json:"element"`
-			} `json:"HeHui"`
+			} `json:"he_hui"`
 		} `json:"data"`
 	}
 	if err := json.NewDecoder(w.Body).Decode(&env); err != nil {
