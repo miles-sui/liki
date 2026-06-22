@@ -29,9 +29,15 @@ func openapiParams(tool string) json.RawMessage {
 				} `json:"content"`
 			} `json:"requestBody"`
 		} `json:"paths"`
+		XAgentTools map[string]struct {
+			Parameters json.RawMessage `json:"parameters"`
+		} `json:"x-agent-tools"`
 	}
 	if err := json.Unmarshal(doc.OpenAPIJSON, &api); err != nil {
 		return nil
+	}
+	if t, ok := api.XAgentTools[tool]; ok {
+		return t.Parameters
 	}
 	for _, methods := range api.Paths {
 		for _, op := range methods {
@@ -121,7 +127,7 @@ func NewChatToolRegistry() *ChatToolRegistry {
 	r.register("query_huangli_bond_month", queryHuangliBondMonthHandler, "八字合参按月择日")
 
 	// --- infra ---
-	r.register("get_city_coords", handleGetCityCoords, "根据城市名查询经纬度")
+	r.register("query_city", queryCity, "根据城市名查询经纬度")
 
 	return r
 }

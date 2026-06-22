@@ -18,7 +18,7 @@ type cityCoordsResult struct {
 	Country   string  `json:"country"`
 }
 
-func handleGetCityCoords(ctx context.Context, raw json.RawMessage) (json.RawMessage, error) {
+func queryCity(ctx context.Context, raw json.RawMessage) (json.RawMessage, error) {
 	var args struct {
 		City string `json:"city"`
 	}

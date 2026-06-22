@@ -1321,16 +1321,31 @@
         }
       }
     },
-    "/api/infra/city_coords": {
+    "/api/location": {
       "get": {
         "tags": [
           "agent"
         ],
-        "x-agent-tool": "get_city_coords",
+        "summary": "IP 定位",
+        "description": "基于请求 IP 返回城市级地理定位（后端调用 ip-api.com）。无需参数。",
+        "responses": {
+          "200": {
+            "description": "定位结果"
+          }
+        }
+      }
+    },
+    "/api/city": {
+      "get": {
+        "tags": [
+          "agent"
+        ],
+        "x-agent-tool": "query_city",
         "summary": "根据城市名查询经纬度",
+        "description": "基于 Nominatim 服务查询城市经纬度。",
         "parameters": [
           {
-            "name": "city",
+            "name": "name",
             "in": "query",
             "required": true,
             "schema": {

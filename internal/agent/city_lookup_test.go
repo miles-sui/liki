@@ -46,9 +46,9 @@ func TestHandleGetCityCoords_Valid(t *testing.T) {
 	defer func() { geoClient = orig }()
 
 	args := json.RawMessage(`{"city":"Beijing"}`)
-	result, err := handleGetCityCoords(context.Background(), args)
+	result, err := queryCity(context.Background(), args)
 	if err != nil {
-		t.Fatalf("handleGetCityCoords: %v", err)
+		t.Fatalf("queryCity: %v", err)
 	}
 	var r cityCoordsResult
 	if err := json.Unmarshal(result, &r); err != nil {
@@ -70,7 +70,7 @@ func TestHandleGetCityCoords_Valid(t *testing.T) {
 
 func TestHandleGetCityCoords_EmptyCityName(t *testing.T) {
 	args := json.RawMessage(`{"city":""}`)
-	_, err := handleGetCityCoords(context.Background(), args)
+	_, err := queryCity(context.Background(), args)
 	if err == nil {
 		t.Fatal("expected error for empty city")
 	}
@@ -81,7 +81,7 @@ func TestHandleGetCityCoords_EmptyCityName(t *testing.T) {
 
 func TestHandleGetCityCoords_InvalidJSON(t *testing.T) {
 	args := json.RawMessage(`not-json`)
-	_, err := handleGetCityCoords(context.Background(), args)
+	_, err := queryCity(context.Background(), args)
 	if err == nil {
 		t.Fatal("expected error for invalid JSON")
 	}
@@ -98,7 +98,7 @@ func TestHandleGetCityCoords_GeocodeHTTPError(t *testing.T) {
 	defer func() { geoClient = orig }()
 
 	args := json.RawMessage(`{"city":"Nowhere"}`)
-	_, err := handleGetCityCoords(context.Background(), args)
+	_, err := queryCity(context.Background(), args)
 	if err == nil {
 		t.Fatal("expected error for geocode failure")
 	}
@@ -114,7 +114,7 @@ func TestHandleGetCityCoords_GeocodeEmptyResults(t *testing.T) {
 	defer func() { geoClient = orig }()
 
 	args := json.RawMessage(`{"city":"Xyzzy"}`)
-	_, err := handleGetCityCoords(context.Background(), args)
+	_, err := queryCity(context.Background(), args)
 	if err == nil {
 		t.Fatal("expected error for empty results")
 	}
@@ -130,7 +130,7 @@ func TestHandleGetCityCoords_GeocodeMalformedJSON(t *testing.T) {
 	defer func() { geoClient = orig }()
 
 	args := json.RawMessage(`{"city":"X"}`)
-	_, err := handleGetCityCoords(context.Background(), args)
+	_, err := queryCity(context.Background(), args)
 	if err == nil {
 		t.Fatal("expected error for malformed response")
 	}

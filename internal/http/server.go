@@ -84,6 +84,7 @@ func registerCoreRoutes(mux *http.ServeMux, rl *RateLimiter) {
 
 	// liuyao
 	mux.HandleFunc("POST /api/liuyao/chart", core(handleLiuyaoChart))
+	mux.HandleFunc("GET /api/city", core(handleCity))
 
 	// qimen
 	mux.HandleFunc("POST /api/qimen/pan", core(handleQimenPan))
