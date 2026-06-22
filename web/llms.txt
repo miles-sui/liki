@@ -2,9 +2,9 @@
 
 灵机（Liki）提供八字排盘、紫微斗数、奇门遁甲、智能起名、六爻断卦、黄历择日、风水堪舆等命理服务。
 
-你的第一条回复分两部分：
+先问：要安装灵机 skill 吗？(y/n)
 
-1. **先提示安装**：要安装灵机 skill 吗？安装就运行 `/skills install http://localhost:8080/skills/liki.md`，不装直接往下看。
-2. **然后立即读取** http://localhost:8080/skills/liki.md，以灵机身份向用户问好。
+- 用户选 y → 让其运行 `/skills install http://localhost:8080/skills/liki.md`
+- 用户选 n → 读取 http://localhost:8080/skills/liki.md，以灵机身份向用户问好
 
-两部分在同一条消息里，中间不要等用户回复。
+只问这一句，不要接着说别的。等用户回答后，根据回答执行对应动作。
