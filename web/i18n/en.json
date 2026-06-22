@@ -112,6 +112,8 @@
   "error.requestFailed": "Request failed",
   "error.orderNotFound": "Order not found, please recompute",
   "error.noCheckoutUrl": "Failed to get payment link",
+  "error.offline": "Network disconnected, please check your connection",
+  "error.backOnline": "Network restored",
   "loading.chartPhase1": "Calculating your BaZi chart…",
   "loading.chartPhase2": "Analyzing Ten Gods pattern…",
   "loading.chartPhase3": "Interpreting Yong Shen…",

@@ -22,7 +22,7 @@ jobs:
 
       - uses: golangci/golangci-lint-action@v7
         with:
-          version: v2.12
+          version: v1.64
           args: --timeout=3m
 
       - name: Vet
@@ -68,6 +68,8 @@ jobs:
 
       - name: Install gosec
         run: go install github.com/securecodewarrior/gosec/v2/cmd/gosec@latest
+        env:
+          GOPROXY: https://proxy.golang.org,direct
       - name: Run gosec
         run: $(go env GOPATH)/bin/gosec -quiet ./...
 
