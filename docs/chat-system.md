@@ -444,6 +444,7 @@ Session 存内存，不落盘。原因：
 - 一旦出报告，order 已存 SQLite，order 是持久记录
 - 减少 SQLite 写入压力
 - 进程重启丢 session 可接受（聊天流程短，几分钟出报告）
+- 最多 500 个并发会话（`NewStore(30*time.Minute, 500)`），超出拒绝新会话
 
 ### 每轮是独立 HTTP 请求
 
@@ -459,7 +460,7 @@ agent 用 `ChatStreamWithTools`（SSE 流式），事件模型：
 - `phase`：工具执行进度
 - `thinking-delta`：LLM 推理内容（DeepSeek V4 Pro reasoning）
 
-工具参数 JSON Schema 从 `openapi.json` 提取，编译时嵌入，运行时注入 tool calling 的 `parameters` 字段。Agent 使用 5 个 tool（`get_city_coords`、`compute_chart`、`compute_bond`、`compute_naming`、`purchase`），HTTP API 共 28 个端点。`openapi.json`（v1.1.0）同时包含所有端点的响应 schema，供外部 AI agent 服务发现。
+工具参数 JSON Schema 从 `openapi.json` 提取（`x-agent-tools` + path schema），编译时嵌入 `doc.OpenAPIJSON`，运行时注入 tool calling 的 `parameters` 字段。Agent 注册了 29 个 tool（八字 8 + 紫微 6 + 起名 4 + 奇门/六爻各 1 + 八宅/玄空各 2 + 黄历 4 + 基础设施 1），加上 `purchase` 共 30 个可调用函数。`openapi.json`（v1.1.0）同时包含 32 个 HTTP 端点和 105 个 component schema，供外部 AI agent 服务发现。
 
 ### Agent 流式 + 节流渲染
 

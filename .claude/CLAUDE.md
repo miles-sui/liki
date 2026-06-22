@@ -30,7 +30,8 @@ make deploy-cn    # 仅国内
 ## Architecture
 
 ```
-doc.go              //go:embed data/prompts/chat.txt → doc.ChatPrompt
+doc.go              //go:embed openapi.json → doc.OpenAPIJSON
+                    //go:embed data/prompts/chat.txt → doc.ChatPrompt
                     //go:embed web/skills/report-chart.md → doc.ChartReportPrompt
                     //go:embed web/skills/report-bond.md → doc.BondReportPrompt
                     //go:embed web/skills/report-naming.md → doc.NamingReportPrompt
@@ -42,9 +43,8 @@ web/skills/         报告模板（嵌入 + 对外公开）
   report-chart.md   八字完整报告模板
   report-bond.md    合盘完整报告模板
   report-naming.md  起名完整报告模板
-internal/llm/data/tools/  LLM tool schema JSON（embed 到 llm 包）
 internal/
-  agent/            ChatAgent（Chat + GenerateFromData）。单 Agent，全部 5 个 tool
+  agent/            ChatAgent（Chat + GenerateFromData）。单 Agent，29 个 tool
   engine/           Gan-Zhi/Tianwen/BaZi/HuangLi/Fengshui/Qiming — 计算引擎
   payment/          支付服务（checkout/webhook/download/report）+ Store
   llm/              DeepSeek 客户端 + tool schema JSON
@@ -93,13 +93,13 @@ internal/
 
 ### LLM
 - 当前模型: DeepSeek V4 Pro。选型标准: 最新旗舰、支持 tool-calling + SSE streaming。
-- 单一 Agent 架构: 1 个 ChatAgent，统一 prompt + 全部 5 个 tool。
-  - tools: `get_city_coords`, `compute_chart`, `compute_bond`, `compute_naming`, `purchase`
+- 单一 Agent 架构: 1 个 ChatAgent，统一 prompt + 29 个 tool（八字/紫微/起名/奇门/六爻/风水/黄历 + query_city）。
+  - tools 注册在 `NewChatToolRegistry()`，共 29 个，覆盖全部产品线
+  - purchase 由 ChatAgent 硬编码处理，不在 tool registry 中
   - 流程: Chat（收集 → compute_* → teaser → Q&A(~8轮, 最多推荐购买 3 次) → purchase → done）
   - compute 工具返回 `{"_product":"...","data":{...}}`, LLM 根据 _product 选择报告格式
   - 购买由 LLM 自然引导，purchase tool 触发订单创建。
-- Tool schema 在 `internal/llm/data/tools/`（JSON，go:embed），handler 在 `internal/agent/tools.go`。
-- Agent 不 import engine 包。Tool handler 通过闭包捕获 `*engine.Service`。
+- Tool schema 从 `doc.OpenAPIJSON`（openapi.json）提取，`openapiParams()` 解析 `x-agent-tools` 和 path schema。
 - 公开索引: `web/llms.txt`（Caddy 静态 serve，llms.txt spec 格式）。
 - Go 代码中无 LLM prompt，只有 UI 进度文案。
 - 多语言：前端 `lang` 字段传入 → `langToLocale()` 映射（zh→zh-Hans, hk→zh-Hant, en→en）→ `strings.ReplaceAll({locale})` 替换 prompt 中的 `{locale}` 占位符。报告页暂无语言选择，默认 zh-Hans。
@@ -142,4 +142,3 @@ internal/
 - web/skills/report-bond.md — 合盘报告模板（GenerateFromData 用）
 - web/skills/report-naming.md — 起名报告模板（GenerateFromData 用）
 - data/prompts/chat.txt — 统一系统 prompt（收集 + 3 产品 teaser + Q&A + 购买引导）
-- internal/llm/data/tools/ — tool schema JSON 文件

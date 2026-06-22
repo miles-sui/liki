@@ -115,7 +115,7 @@ pending ──(webhook)──→ paid
   ├─ agent.Chat() → ChatStreamWithTools
   │
   ├─ LLM 追问收集参数
-  │    └─ get_city_coords tool → 城市经纬度确认
+  │    └─ query_city tool → 城市经纬度确认
   │
   ├─ 参数齐全 → LLM 决定调 compute_* tool
   │    └─ tool handler 调用 engine.ComputeChart/ComputeBond 等

@@ -43,7 +43,7 @@ ChatAgent (单一实例)
      └─ LLM 生成完整报告（支付后 webhook 触发）
 ```
 
-当前注册的 tool：`get_city_coords`, `compute_chart`, `compute_bond`, `compute_naming`, `purchase`。
+当前注册了 29 个 tool（八字 8 + 紫微 6 + 起名 4 + 奇门 1 + 八宅 2 + 玄空 2 + 六爻 1 + 黄历 4 + `query_city`），`purchase` 由 ChatAgent 硬编码处理。详见 `NewChatToolRegistry()`。
 
 ## 注入策略
 
@@ -54,5 +54,5 @@ ChatAgent (单一实例)
 
 1. `internal/engine/{name}/` — 实现 engine 计算
 2. `internal/agent/tools.go` — 注册 tool handler
-3. `internal/llm/data/tools/` — 加 tool schema JSON
+3. `openapi.json` `x-agent-tools` — 加 tool schema JSON（`openapiParams()` 解析后注册到 `NewChatToolRegistry()`）
 4. `web/skills/` — 加报告模板 prompt（如需要），同时嵌入 + 对外公开
