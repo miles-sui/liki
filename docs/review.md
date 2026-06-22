@@ -168,8 +168,8 @@ pending ──(webhook)──→ paid
 | 页面 | 框架 | 状态方式 | 一致性 |
 |---|---|---|---|
 | `chat.js` | Vue 3 | `phase` + `substate` enum | ✅ |
-| `report.js` | Alpine | `phase` enum | ✅ |
-| `index.html` | Alpine | 静态 | ✅ |
+| `report.js` | Lit-html | `phase` enum | ✅ |
+| `index.html` | Vue 3 | 静态 | ✅ |
 
 ### 4.3 i18n
 
@@ -196,7 +196,7 @@ pending ──(webhook)──→ paid
 | StreamRenderer 抽象 | ✅ | content→html 不变量的显式编码 |
 | Phase enum 状态机 | ✅ (server + chat.js + report.js) | |
 | 状态机显式不变量 | ✅ (flush 后 content≡html) | |
-| 响应式 UI (Vue 3 / Alpine) | ✅ | 声明式，框架自动 DOM 同步 |
+| 响应式 UI (Vue 3) | ✅ | 声明式，框架自动 DOM 同步 |
 | 统一错误 envelope | ✅ | `{"error":{"code":"...","message":"..."}}` |
 | 分层架构 | ✅ | Handler → Service → Store |
 | Lazy generation + cache | ✅ | llm_json 首次付费时生成并缓存 |
