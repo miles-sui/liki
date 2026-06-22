@@ -66,8 +66,10 @@ jobs:
       - name: Run govulncheck
         run: go run golang.org/x/vuln/cmd/govulncheck@latest ./...
 
+      - name: Install gosec
+        run: go install github.com/securecodewarrior/gosec/v2/cmd/gosec@latest
       - name: Run gosec
-        run: go run github.com/securecodewarrior/gosec/v2/cmd/gosec@latest -quiet ./...
+        run: $(go env GOPATH)/bin/gosec -quiet ./...
 
       - name: Run Trivy
         uses: aquasecurity/trivy-action@v0.36.0

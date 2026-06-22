@@ -1,5 +1,4 @@
-# Liki golangci-lint configuration.
-# Run: golangci-lint run
+version: "2"
 
 run:
   timeout: 3m
