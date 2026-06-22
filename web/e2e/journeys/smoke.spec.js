@@ -61,11 +61,11 @@ const PAGES = [
     checks: [
       { selector: '.brand', text: '靈機對話' },
     ] },
-  // Legal pages — marker + console check only (Web Component shadow DOM may contain i18n keys)
-  { path: '/zh/about.html',    marker: '[data-i18n]',    name: 'about (vanilla)', noI18nCheck: true },
-  { path: '/zh/contact.html',  marker: '[data-i18n]',    name: 'contact (vanilla)', noI18nCheck: true },
-  { path: '/zh/privacy.html',  marker: '[data-i18n]',    name: 'privacy (vanilla)', noI18nCheck: true },
-  { path: '/zh/terms.html',    marker: '[data-i18n]',    name: 'terms (vanilla)', noI18nCheck: true },
+  // Legal pages — marker renders, i18n resolves, keys don't leak
+  { path: '/zh/about.html',    marker: '[data-i18n]',    name: 'about (vanilla)' },
+  { path: '/zh/contact.html',  marker: '[data-i18n]',    name: 'contact (vanilla)' },
+  { path: '/zh/privacy.html',  marker: '[data-i18n]',    name: 'privacy (vanilla)' },
+  { path: '/zh/terms.html',    marker: '[data-i18n]',    name: 'terms (vanilla)' },
   // Static resources
   { path: '/skills/liki.md',   marker: null,             name: 'skills',   resource: true },
   { path: '/llms.txt',         marker: null,             name: 'llms.txt', resource: true },
