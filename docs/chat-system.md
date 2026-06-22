@@ -218,7 +218,7 @@ data: {"type":"text-delta","content":"。请问您的出生年月日是什么？
 [用户下一轮 POST：1990年5月20日 北京]
 
 data: {"type":"thinking"}
-data: {"type":"phase","content":"正在查询地理信息…","data":{"phase":"collect","tool":"get_city_coords","status":"tool_done"}}
+data: {"type":"phase","content":"正在查询地理信息…","data":{"phase":"collect","tool":"query_city","status":"tool_done"}}
 data: {"type":"text-delta","content":"请问出生时辰和性别？"}
 
 [用户下一轮 POST：下午3点 男]
@@ -243,13 +243,13 @@ data: {"type":"text-delta","content":"请提供您的出生年月日时、出生
 [用户 POST：甲方信息]
 
 data: {"type":"thinking"}
-data: {"type":"phase","content":"正在查询地理信息…","data":{"phase":"collect","tool":"get_city_coords","status":"tool_done"}}
+data: {"type":"phase","content":"正在查询地理信息…","data":{"phase":"collect","tool":"query_city","status":"tool_done"}}
 data: {"type":"text-delta","content":"请提供另一方的出生信息"}
 
 [用户 POST：乙方信息]
 
 data: {"type":"thinking"}
-data: {"type":"phase","content":"正在查询地理信息…","data":{"phase":"collect","tool":"get_city_coords","status":"tool_done"}}
+data: {"type":"phase","content":"正在查询地理信息…","data":{"phase":"collect","tool":"query_city","status":"tool_done"}}
 data: {"type":"phase","content":"正在计算命理数据…"}
 data: {"type":"phase","content":"正在生成分析报告…"}
 data: {"type":"thinking"}
@@ -278,7 +278,7 @@ Browser                    http/agent.go                 agent.Chat()           
   │                             │─ chat.Chat(ctx, locale, msgs, onEvent, …) →    │
   │  ←══ SSE: thinking ════════│←══ onEvent(ev) ════════│─ ChatStreamWithTools() →│
   │  ←══ SSE: text-delta ══════│←══ onEvent(ev) ════════│  ← text-delta ────────│
-  │  ←══ SSE: phase ═══════════│←══ onEvent(ev) ════════│  ← phase ─────────────│  get_city_coords
+  │  ←══ SSE: phase ═══════════│←══ onEvent(ev) ════════│  ← phase ─────────────│  query_city
   │                             │                         │                      │                  │
   │                             │                         │  no tool call:       │                  │
   │                             │─ sess.SetMessages(msgs) │  return, no purchase │                  │
@@ -423,7 +423,7 @@ ChatSystemPrompt（`data/prompts/chat.txt`）需覆盖以下领域约束：
   - 性别（男命顺排大运、女命逆排大运）
 
 城市查找：
-  get_city_coords 查经纬度 → 根据国家代码和日期推时区
+  query_city 查经纬度 → 根据国家代码和日期推时区
   查不到 → 请用户提供时区
 
 时辰降级：
@@ -455,11 +455,11 @@ Session 存内存，不落盘。原因：
 ### Agent 流式 tool-calling
 
 agent 用 `ChatStreamWithTools`（SSE 流式），事件模型：
-- `text-delta`：LLM 追问文本实时流式输出，用户不再面对空白等待
-- `phase`：工具执行进度（"正在查询地理信息…"）
+- `text-delta`：LLM 追问文本实时流式输出
+- `phase`：工具执行进度
 - `thinking-delta`：LLM 推理内容（DeepSeek V4 Pro reasoning）
 
-LLM 的追问就是 text-delta 流。
+工具参数 JSON Schema 从 `openapi.json` 提取，编译时嵌入，运行时注入 tool calling 的 `parameters` 字段。29 个工具全部有对应 HTTP 端点。
 
 ### Agent 流式 + 节流渲染
 
