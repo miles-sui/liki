@@ -83,6 +83,14 @@ docs/               设计文档
 - [`docs/review.md`](docs/review.md) — 全系统复盘
 - [`docs/terminology.md`](docs/terminology.md) — 命理术语表
 
+## English
+
+**Liki** is an LLM-powered Chinese metaphysics assistant. Users chat in natural language — the AI collects birth information, computes charts, and generates analysis reports. It covers BaZi (Eight Characters), Zi Wei Dou Shu (Purple Star Astrology), Qi Men Dun Jia (Mystical Doors), intelligent naming, Liu Yao (Hexagram divination), Chinese Almanac (Huangli), and Feng Shui.
+
+Built with Go 1.26 + SQLite + Caddy (backend), vanilla HTML + Vue 3 + Alpine.js (frontend), DeepSeek V4 Pro (LLM with streaming tool-calling over SSE), Dodo Payments, and Resend email.
+
+External AI agents can discover the service via `llms.txt` → `liki.md` → `openapi.json` → report templates. No account required — reports are accessed by order ID.
+
 ## License
 
 AGPL-3.0 — 自由使用、修改、分发，网络服务也需开源。

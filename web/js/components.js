@@ -107,7 +107,7 @@
         '<div class="max-w-4xl mx-auto px-4 flex flex-wrap items-center justify-between gap-4">' +
         '<div class="text-left">' +
         '<p class="text-stone-600 text-sm" data-i18n="index.footer">灵机 Liki · AI命理助手</p>' +
-        '<p class="text-stone-500 text-xs mt-0.5" data-i18n="site.footer">&copy; 2026 Liki. All rights reserved.</p>' +
+        '<p class="text-stone-500 text-xs mt-0.5" data-i18n="site.footer">&copy; 2026 Liki. All rights reserved.</p><p class="text-stone-400 text-xs mt-0.5"><a href="https://github.com/miles-sui/liki" target="_blank" rel="noopener" class="hover:text-stone-600 transition-colors">GitHub</a></p>' +
         '</div>' +
         '<p class="text-xs text-stone-500 flex flex-wrap gap-3">' +
         '<a href="about.html" class="hover:text-stone-600 transition-colors" data-i18n="footer.about">关于我们</a>' +
