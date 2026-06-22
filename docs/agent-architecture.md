@@ -45,6 +45,24 @@ ChatAgent (单一实例)
 
 当前注册了 29 个 tool（八字 8 + 紫微 6 + 起名 4 + 奇门 1 + 八宅 2 + 玄空 2 + 六爻 1 + 黄历 4 + `query_city`），`purchase` 由 ChatAgent 硬编码处理。详见 `NewChatToolRegistry()`。
 
+## 提示词组织
+
+Agent 使用两种 prompt，来源和用途不同：
+
+| Prompt | 来源 | 注入点 | 用途 |
+|---|---|---|---|
+| 系统 prompt | `doc.ChatPrompt`（`data/prompts/chat.txt`） | `ChatAgent.ensureSystemPrompt()` | 定义产品检测、参数收集规则、对话行为 |
+| 报告模板 | `doc.ChartReportPrompt` 等（`web/skills/report-*.md`） | `GenerateFromData()` | 完整报告格式：数据结构、领域知识、章节规范 |
+
+**系统 prompt** 在每次 Chat 调用时作为 messages[0] 注入，与对话历史一起发给 LLM。它只定义对话行为，不包含报告格式——teaser 报告由 LLM 自由生成简短摘要。
+
+**报告模板** 仅在支付完成后使用。`GenerateFromData()` 将 engine 计算结果的 JSON 与对应产品的报告模板拼接，一次性发给 LLM 生成完整报告。模板中的数据结构必须严格对齐 engine 输出字段。
+
+两种 prompt 分离的理由：
+- 系统 prompt 短（~6KB），每次都发，需精炼
+- 报告模板长（~10-20KB），只在最后用一次，可详尽
+- 报告模板同时对外公开（`/skills/report-*.md`），系统 prompt 不对外
+
 ## 注入策略
 
 当前（Phase 1）：统一注入，单次 `ChatStreamWithTools`，所有 prompt + tool 一次性发给 LLM。
