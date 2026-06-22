@@ -1,0 +1,1350 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Liki API",
+    "description": "灵机（Liki）AI命理助手 — 八字排盘、紫微斗数、奇门遁甲、智能起名、六爻、黄历、风水等命理服务 API。\n\n所有 POST 接口请求/响应均为 JSON。\n成功：`{\"data\":{...}}`\n错误：`{\"error\":{\"code\":\"...\",\"message\":\"...\"}}`",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://liki.hk",
+      "description": "生产"
+    },
+    {
+      "url": "http://localhost:8080",
+      "description": "本地开发"
+    }
+  ],
+  "tags": [
+    {
+      "name": "bazi",
+      "description": "八字命理"
+    },
+    {
+      "name": "ziwei",
+      "description": "紫微斗数"
+    },
+    {
+      "name": "qiming",
+      "description": "智能起名"
+    },
+    {
+      "name": "qimen",
+      "description": "奇门遁甲"
+    },
+    {
+      "name": "huangli",
+      "description": "黄历择日"
+    },
+    {
+      "name": "fengshui",
+      "description": "风水"
+    },
+    {
+      "name": "liuyao",
+      "description": "六爻占卜"
+    },
+    {
+      "name": "agent",
+      "description": "AI 对话"
+    }
+  ],
+  "components": {
+    "schemas": {
+      "TimePoint": {
+        "type": "object",
+        "description": "出生时间地点",
+        "properties": {
+          "time": {
+            "type": "string",
+            "format": "date-time",
+            "description": "出生时间（RFC3339），如 1984-02-04T06:00:00+08:00"
+          },
+          "longitude": {
+            "type": "number",
+            "description": "出生地经度，用于真太阳时校正。北京≈116.4，上海≈121.5"
+          }
+        },
+        "required": [
+          "time",
+          "longitude"
+        ]
+      },
+      "Gender": {
+        "type": "string",
+        "enum": [
+          "male",
+          "female"
+        ],
+        "description": "性别"
+      },
+      "Person": {
+        "type": "object",
+        "description": "命主信息",
+        "properties": {
+          "birth": {
+            "$ref": "#/components/schemas/TimePoint"
+          },
+          "gender": {
+            "$ref": "#/components/schemas/Gender"
+          }
+        },
+        "required": [
+          "birth",
+          "gender"
+        ]
+      }
+    }
+  },
+  "paths": {
+    "/api/bazi/chart": {
+      "post": {
+        "tags": [
+          "bazi"
+        ],
+        "summary": "排八字命盘",
+        "description": "返回四柱、十神、藏干、纳音、神煞、用神（扶抑+调候）、格局、身强身弱、大运。",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Person"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "八字命盘"
+          }
+        },
+        "x-agent-tool": "compute_chart"
+      }
+    },
+    "/api/bazi/bond": {
+      "post": {
+        "tags": [
+          "bazi"
+        ],
+        "summary": "八字合盘",
+        "description": "返回双方日主、天干关系（合/生/克）、地支关系（六合/三合/六冲）、纳音配合、五行互补。",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "a": {
+                    "$ref": "#/components/schemas/Person"
+                  },
+                  "b": {
+                    "$ref": "#/components/schemas/Person"
+                  }
+                },
+                "required": [
+                  "a",
+                  "b"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "合盘结果"
+          }
+        },
+        "x-agent-tool": "compute_bond"
+      }
+    },
+    "/api/bazi/liunian": {
+      "post": {
+        "tags": [
+          "bazi"
+        ],
+        "summary": "流年运势",
+        "description": "返回流年干支与命局的十神、神煞、伏吟反吟。",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "year": {
+                    "type": "integer",
+                    "description": "目标年份"
+                  },
+                  "birth": {
+                    "$ref": "#/components/schemas/TimePoint"
+                  },
+                  "gender": {
+                    "$ref": "#/components/schemas/Gender"
+                  }
+                },
+                "required": [
+                  "year",
+                  "birth",
+                  "gender"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "流年运势"
+          }
+        },
+        "x-agent-tool": "compute_liunian"
+      }
+    },
+    "/api/bazi/liuyue": {
+      "post": {
+        "tags": [
+          "bazi"
+        ],
+        "summary": "流月运势",
+        "description": "返回流月干支与命局的十神、神煞。",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "year": {
+                    "type": "integer",
+                    "description": "目标年份"
+                  },
+                  "month": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 12,
+                    "description": "目标月份"
+                  },
+                  "birth": {
+                    "$ref": "#/components/schemas/TimePoint"
+                  },
+                  "gender": {
+                    "$ref": "#/components/schemas/Gender"
+                  }
+                },
+                "required": [
+                  "year",
+                  "month",
+                  "birth",
+                  "gender"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "流月运势"
+          }
+        },
+        "x-agent-tool": "compute_liuyue"
+      }
+    },
+    "/api/bazi/liuri": {
+      "post": {
+        "tags": [
+          "bazi"
+        ],
+        "summary": "流日运势",
+        "description": "返回流日干支、十神、纳音。",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "year": {
+                    "type": "integer",
+                    "description": "目标年份"
+                  },
+                  "month": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 12,
+                    "description": "目标月份"
+                  },
+                  "day": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 31,
+                    "description": "目标日期"
+                  },
+                  "birth": {
+                    "$ref": "#/components/schemas/TimePoint"
+                  },
+                  "gender": {
+                    "$ref": "#/components/schemas/Gender"
+                  }
+                },
+                "required": [
+                  "year",
+                  "month",
+                  "day",
+                  "birth",
+                  "gender"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "流日运势"
+          }
+        },
+        "x-agent-tool": "compute_liuri"
+      }
+    },
+    "/api/bazi/liushi": {
+      "post": {
+        "tags": [
+          "bazi"
+        ],
+        "summary": "流时运势",
+        "description": "返回流时干支、十神。hour 为时辰（0-23）。",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "year": {
+                    "type": "integer",
+                    "description": "目标年份"
+                  },
+                  "month": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 12,
+                    "description": "目标月份"
+                  },
+                  "day": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 31,
+                    "description": "目标日期"
+                  },
+                  "hour": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 23,
+                    "description": "时辰"
+                  },
+                  "birth": {
+                    "$ref": "#/components/schemas/TimePoint"
+                  },
+                  "gender": {
+                    "$ref": "#/components/schemas/Gender"
+                  }
+                },
+                "required": [
+                  "year",
+                  "month",
+                  "day",
+                  "hour",
+                  "birth",
+                  "gender"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "流时运势"
+          }
+        },
+        "x-agent-tool": "compute_liushi"
+      }
+    },
+    "/api/bazi/xiaoyun": {
+      "post": {
+        "tags": [
+          "bazi"
+        ],
+        "summary": "小运",
+        "description": "返回小运流年列表。count 默认 5。",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "birth": {
+                    "$ref": "#/components/schemas/TimePoint"
+                  },
+                  "gender": {
+                    "$ref": "#/components/schemas/Gender"
+                  },
+                  "count": {
+                    "type": "integer",
+                    "description": "返回年数，默认 5"
+                  }
+                },
+                "required": [
+                  "birth",
+                  "gender"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "小运"
+          }
+        },
+        "x-agent-tool": "compute_xiaoyun"
+      }
+    },
+    "/api/bazi/xiaoxian": {
+      "post": {
+        "tags": [
+          "bazi"
+        ],
+        "summary": "小限",
+        "description": "返回小限列表。count 默认 16。",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "gender": {
+                    "$ref": "#/components/schemas/Gender"
+                  },
+                  "count": {
+                    "type": "integer",
+                    "description": "返回年数，默认 16"
+                  }
+                },
+                "required": [
+                  "gender"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "小限"
+          }
+        },
+        "x-agent-tool": "compute_xiaoxian"
+      }
+    },
+    "/api/ziwei/chart": {
+      "post": {
+        "tags": [
+          "ziwei"
+        ],
+        "summary": "紫微斗数排盘",
+        "description": "返回十二宫星曜分布、亮度、四化。",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Person"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "紫微命盘"
+          }
+        },
+        "x-agent-tool": "compute_ziwei"
+      }
+    },
+    "/api/ziwei/daxian": {
+      "post": {
+        "tags": [
+          "ziwei"
+        ],
+        "summary": "紫微斗数大限",
+        "description": "返回十年大限各宫吉凶。chart 为 compute_ziwei 返回的完整 chart 对象。",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "chart": {
+                    "type": "object",
+                    "description": "紫微盘完整数据"
+                  }
+                },
+                "required": [
+                  "chart"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "大限"
+          }
+        },
+        "x-agent-tool": "compute_ziwei_daxian"
+      }
+    },
+    "/api/ziwei/liunian": {
+      "post": {
+        "tags": [
+          "ziwei"
+        ],
+        "summary": "紫微流年",
+        "description": "返回流年命盘及各宫变化。",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "liu_year": {
+                    "type": "integer",
+                    "description": "流年年份"
+                  },
+                  "chart": {
+                    "type": "object",
+                    "description": "紫微盘完整数据"
+                  }
+                },
+                "required": [
+                  "liu_year",
+                  "chart"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "紫微流年"
+          }
+        },
+        "x-agent-tool": "compute_ziwei_liunian"
+      }
+    },
+    "/api/ziwei/liuyue": {
+      "post": {
+        "tags": [
+          "ziwei"
+        ],
+        "summary": "紫微流月",
+        "description": "返回流月命盘及各宫变化。",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "liu_year": {
+                    "type": "integer",
+                    "description": "流年年份"
+                  },
+                  "lunar_month": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 12,
+                    "description": "农历月份"
+                  },
+                  "chart": {
+                    "type": "object",
+                    "description": "紫微盘完整数据"
+                  }
+                },
+                "required": [
+                  "liu_year",
+                  "lunar_month",
+                  "chart"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "紫微流月"
+          }
+        },
+        "x-agent-tool": "compute_ziwei_liuyue"
+      }
+    },
+    "/api/ziwei/liuri": {
+      "post": {
+        "tags": [
+          "ziwei"
+        ],
+        "summary": "紫微流日",
+        "description": "返回流日命盘及各宫变化。",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "liu_year": {
+                    "type": "integer",
+                    "description": "流年年份"
+                  },
+                  "lunar_month": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 12,
+                    "description": "农历月份"
+                  },
+                  "lunar_day": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 30,
+                    "description": "农历日期"
+                  },
+                  "chart": {
+                    "type": "object",
+                    "description": "紫微盘完整数据"
+                  }
+                },
+                "required": [
+                  "liu_year",
+                  "lunar_month",
+                  "lunar_day",
+                  "chart"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "紫微流日"
+          }
+        },
+        "x-agent-tool": "compute_ziwei_liuri"
+      }
+    },
+    "/api/ziwei/bond": {
+      "post": {
+        "tags": [
+          "ziwei"
+        ],
+        "summary": "紫微合盘",
+        "description": "返回双方命盘交互分析。a 和 b 各为 compute_ziwei 返回的 chart 对象。",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "a": {
+                    "type": "object",
+                    "description": "甲方紫微盘"
+                  },
+                  "b": {
+                    "type": "object",
+                    "description": "乙方紫微盘"
+                  }
+                },
+                "required": [
+                  "a",
+                  "b"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "紫微合盘"
+          }
+        },
+        "x-agent-tool": "compute_ziwei_bond"
+      }
+    },
+    "/api/qimen/pan": {
+      "post": {
+        "tags": [
+          "qimen"
+        ],
+        "summary": "奇门排盘",
+        "description": "返回天盘、人盘、神盘、九星八门格局。kind 默认 \"shi\"（时家奇门），可选 \"ri\"（日家）、\"yue\"（月家）、\"nian\"（年家）。",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "birth": {
+                    "$ref": "#/components/schemas/TimePoint"
+                  },
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "shi",
+                      "ri",
+                      "yue",
+                      "nian"
+                    ],
+                    "description": "奇门类型，默认 shi"
+                  }
+                },
+                "required": [
+                  "birth"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "奇门盘"
+          }
+        },
+        "x-agent-tool": "compute_qimen"
+      }
+    },
+    "/api/qiming/wuge": {
+      "post": {
+        "tags": [
+          "qiming"
+        ],
+        "summary": "起名 — 五格",
+        "description": "返回三才五格组合 + 可用字库。yong_shen 取值 木/火/土/金/水（从八字用神获取）。第四步之前不可并行。",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "surname": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2,
+                    "description": "姓氏"
+                  },
+                  "yong_shen": {
+                    "type": "string",
+                    "enum": [
+                      "木",
+                      "火",
+                      "土",
+                      "金",
+                      "水"
+                    ],
+                    "description": "用神五行"
+                  },
+                  "xi_shen": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "enum": [
+                        "木",
+                        "火",
+                        "土",
+                        "金",
+                        "水"
+                      ]
+                    },
+                    "description": "喜神五行（可选）"
+                  }
+                },
+                "required": [
+                  "surname",
+                  "yong_shen"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "五格组合 + 字库"
+          }
+        },
+        "x-agent-tool": "compute_naming_wuge"
+      }
+    },
+    "/api/qiming/compose": {
+      "post": {
+        "tags": [
+          "qiming"
+        ],
+        "summary": "起名 — 组名",
+        "description": "从上一步五格组合中选取 combos 生成候选名字。",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "surname": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2,
+                    "description": "姓氏"
+                  },
+                  "combos": {
+                    "type": "array",
+                    "description": "五格组合（从 wuge 返回的 combos 中选取）"
+                  },
+                  "yong_chars": {
+                    "type": "object",
+                    "description": "用神字库（从 wuge 返回的 yong_chars）"
+                  },
+                  "xi_chars": {
+                    "type": "object",
+                    "description": "喜神字库（从 wuge 返回的 xi_chars）"
+                  }
+                },
+                "required": [
+                  "surname",
+                  "combos",
+                  "yong_chars"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "候选名字列表"
+          }
+        },
+        "x-agent-tool": "compute_naming_compose"
+      }
+    },
+    "/api/qiming/detail": {
+      "post": {
+        "tags": [
+          "qiming"
+        ],
+        "summary": "起名 — 详析",
+        "description": "对候选名字逐一详析，返回五格数理、三才配置、五行、生肖关系、评分。",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "surname": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2,
+                    "description": "姓氏"
+                  },
+                  "names": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "候选名字列表"
+                  }
+                },
+                "required": [
+                  "surname",
+                  "names"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "名字详析"
+          }
+        },
+        "x-agent-tool": "compute_naming_detail"
+      }
+    },
+    "/api/qiming/evaluate": {
+      "post": {
+        "tags": [
+          "qiming"
+        ],
+        "summary": "起名 — 评估",
+        "description": "用户自选名字时评估单名。",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "surname": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2,
+                    "description": "姓氏"
+                  },
+                  "given_name": {
+                    "type": "string",
+                    "description": "名字"
+                  },
+                  "yong_shen": {
+                    "type": "string",
+                    "enum": [
+                      "木",
+                      "火",
+                      "土",
+                      "金",
+                      "水"
+                    ],
+                    "description": "用神五行"
+                  }
+                },
+                "required": [
+                  "surname",
+                  "given_name",
+                  "yong_shen"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "名字评估"
+          }
+        },
+        "x-agent-tool": "compute_naming_evaluate"
+      }
+    },
+    "/api/huangli/date": {
+      "get": {
+        "tags": [
+          "huangli"
+        ],
+        "summary": "按日查宜忌",
+        "description": "查询指定日期的黄历宜忌。",
+        "parameters": [
+          {
+            "name": "date",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "日期 YYYY-MM-DD"
+          },
+          {
+            "name": "event",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "事项（如 嫁娶/开业/搬家）"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "黄历日期"
+          }
+        },
+        "x-agent-tool": "query_huangli_date"
+      }
+    },
+    "/api/huangli/month": {
+      "get": {
+        "tags": [
+          "huangli"
+        ],
+        "summary": "按月查宜忌",
+        "description": "返回当月每日宜忌汇总。",
+        "parameters": [
+          {
+            "name": "month",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "月份 YYYY-MM"
+          },
+          {
+            "name": "event",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "事项"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "当月黄历"
+          }
+        },
+        "x-agent-tool": "query_huangli_month"
+      }
+    },
+    "/api/huangli/bond/date": {
+      "post": {
+        "tags": [
+          "huangli"
+        ],
+        "summary": "八字合参择日",
+        "description": "基于命主八字筛选单日宜忌。",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "birth": {
+                    "$ref": "#/components/schemas/TimePoint"
+                  },
+                  "event_type": {
+                    "type": "string",
+                    "description": "事项"
+                  },
+                  "date": {
+                    "type": "string",
+                    "description": "日期 YYYY-MM-DD"
+                  }
+                },
+                "required": [
+                  "birth",
+                  "event_type",
+                  "date"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "择日结果"
+          }
+        },
+        "x-agent-tool": "query_huangli_bond_date"
+      }
+    },
+    "/api/huangli/bond/month": {
+      "post": {
+        "tags": [
+          "huangli"
+        ],
+        "summary": "八字合参择月",
+        "description": "基于命主八字筛选当月吉日。",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "birth": {
+                    "$ref": "#/components/schemas/TimePoint"
+                  },
+                  "event_type": {
+                    "type": "string",
+                    "description": "事项"
+                  },
+                  "month": {
+                    "type": "string",
+                    "description": "月份 YYYY-MM"
+                  }
+                },
+                "required": [
+                  "birth",
+                  "event_type",
+                  "month"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "择月结果"
+          }
+        },
+        "x-agent-tool": "query_huangli_bond_month"
+      }
+    },
+    "/api/bazhai/chart": {
+      "post": {
+        "tags": [
+          "fengshui"
+        ],
+        "summary": "八宅风水",
+        "description": "综合命卦与飞星分析。",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Person"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "八宅风水"
+          }
+        },
+        "x-agent-tool": "compute_bazhai"
+      }
+    },
+    "/api/bazhai/minggua": {
+      "post": {
+        "tags": [
+          "fengshui"
+        ],
+        "summary": "命卦查询",
+        "description": "返回东四命/西四命 + 命卦 + 四吉四凶方。",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "gender": {
+                    "$ref": "#/components/schemas/Gender"
+                  },
+                  "birth_year": {
+                    "type": "integer",
+                    "description": "出生年份"
+                  }
+                },
+                "required": [
+                  "gender",
+                  "birth_year"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "命卦"
+          }
+        },
+        "x-agent-tool": "compute_minggua"
+      }
+    },
+    "/api/xuankong/sanyuan": {
+      "get": {
+        "tags": [
+          "fengshui"
+        ],
+        "summary": "三元九运查询",
+        "description": "返回当前三元九运的时间表。",
+        "parameters": [
+          {
+            "name": "year",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "年份"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "三元九运"
+          }
+        },
+        "x-agent-tool": "compute_sanyuan_yun"
+      }
+    },
+    "/api/xuankong/chart": {
+      "post": {
+        "tags": [
+          "fengshui"
+        ],
+        "summary": "玄空飞星",
+        "description": "返回山向飞星盘。sit_mountain/face_mountain 为坐向（0-23）。",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "birth": {
+                    "$ref": "#/components/schemas/TimePoint"
+                  },
+                  "sit_mountain": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 23,
+                    "description": "山向"
+                  },
+                  "face_mountain": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 23,
+                    "description": "朝向"
+                  }
+                },
+                "required": [
+                  "birth",
+                  "sit_mountain",
+                  "face_mountain"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "玄空飞星盘"
+          }
+        },
+        "x-agent-tool": "compute_xuankong"
+      }
+    },
+    "/api/liuyao/chart": {
+      "post": {
+        "tags": [
+          "liuyao"
+        ],
+        "summary": "六爻起卦",
+        "description": "返回六爻卦象、六亲、六兽、用神分析、断卦。",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "birth": {
+                    "$ref": "#/components/schemas/TimePoint"
+                  },
+                  "yong_shen": {
+                    "type": "string",
+                    "description": "用神六亲（如 妻财/官鬼/父母/兄弟/子孙），可选"
+                  },
+                  "fixed": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 5,
+                    "description": "固定爻位（0-5），可选"
+                  }
+                },
+                "required": [
+                  "birth"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "六爻卦象"
+          }
+        },
+        "x-agent-tool": "compute_liuyao"
+      }
+    },
+    "/api/agent/chat": {
+      "post": {
+        "tags": [
+          "agent"
+        ],
+        "summary": "AI 对话（SSE）",
+        "description": "流式对话接口，返回 SSE 事件流。事件类型：text-delta/phase/thinking/done/error。",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "message": {
+                    "type": "string",
+                    "description": "用户消息"
+                  },
+                  "session_id": {
+                    "type": "string",
+                    "description": "会话 ID（可选，用于续接历史）"
+                  }
+                },
+                "required": [
+                  "message"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "SSE 事件流",
+            "content": {
+              "text/event-stream": {}
+            }
+          }
+        }
+      }
+    },
+    "/api/agent/greeting": {
+      "get": {
+        "tags": [
+          "agent"
+        ],
+        "summary": "获取欢迎语",
+        "responses": {
+          "200": {
+            "description": "欢迎语"
+          }
+        }
+      }
+    },
+    "/api/infra/city_coords": {
+      "get": {
+        "tags": [
+          "agent"
+        ],
+        "x-agent-tool": "get_city_coords",
+        "summary": "根据城市名查询经纬度",
+        "parameters": [
+          {
+            "name": "city",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "城市名称"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "经纬度"
+          }
+        }
+      }
+    }
+  }
+}

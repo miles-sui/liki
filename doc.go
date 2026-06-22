@@ -2,6 +2,9 @@ package doc
 
 import _ "embed"
 
+
+//go:embed openapi.json
+var OpenAPIJSON []byte
 //go:embed data/prompts/chat.txt
 var ChatPrompt string
 

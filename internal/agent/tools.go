@@ -9,8 +9,62 @@ import (
 	"liki/internal/engine/bazi"
 	"liki/internal/engine/ganzhi"
 	"liki/internal/engine/tianwen"
+	doc "liki"
 	"liki/internal/llm"
 )
+
+// openapiParams extracts the JSON Schema parameters for the given tool name.
+func openapiParams(tool string) json.RawMessage {
+	var api struct {
+		Paths map[string]map[string]struct {
+			XAgentTool string `json:"x-agent-tool"`
+			Parameters []struct {
+				Name     string          `json:"name"`
+				Required bool            `json:"required"`
+				Schema   json.RawMessage `json:"schema"`
+			} `json:"parameters"`
+			RequestBody struct {
+				Content map[string]struct {
+					Schema json.RawMessage `json:"schema"`
+				} `json:"content"`
+			} `json:"requestBody"`
+		} `json:"paths"`
+	}
+	if err := json.Unmarshal(doc.OpenAPIJSON, &api); err != nil {
+		return nil
+	}
+	for _, methods := range api.Paths {
+		for _, op := range methods {
+			if op.XAgentTool != tool {
+				continue
+			}
+			if s, ok := op.RequestBody.Content["application/json"]; ok {
+				return s.Schema
+			}
+			if len(op.Parameters) > 0 {
+				props := map[string]any{}
+				required := []string{}
+				for _, p := range op.Parameters {
+					var ps map[string]any
+					json.Unmarshal(p.Schema, &ps)
+					props[p.Name] = ps
+					if p.Required {
+						required = append(required, p.Name)
+					}
+				}
+				schema := map[string]any{
+					"type":       "object",
+					"properties": props,
+					"required":   required,
+				}
+				b, _ := json.Marshal(schema)
+				return json.RawMessage(b)
+			}
+			return nil
+		}
+	}
+	return nil
+}
 
 type ChatToolRegistry struct {
 	handlers map[string]func(context.Context, json.RawMessage) (json.RawMessage, error)
@@ -74,14 +128,18 @@ func NewChatToolRegistry() *ChatToolRegistry {
 
 func (r *ChatToolRegistry) register(name string, h func(context.Context, json.RawMessage) (json.RawMessage, error), desc string) {
 	r.handlers[name] = h
-	fn, err := json.Marshal(struct {
-		Name        string `json:"name"`
-		Description string `json:"description"`
-	}{Name: name, Description: desc})
+	fn := map[string]any{
+		"name":        name,
+		"description": desc,
+	}
+	if params := openapiParams(name); params != nil {
+		fn["parameters"] = params
+	}
+	b, err := json.Marshal(fn)
 	if err != nil {
 		panic("marshal tool def: " + err.Error())
 	}
-	r.defs = append(r.defs, fn)
+	r.defs = append(r.defs, b)
 }
 
 func (r *ChatToolRegistry) Execute(ctx context.Context, name string, args json.RawMessage) (json.RawMessage, error) {

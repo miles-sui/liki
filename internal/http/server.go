@@ -26,6 +26,7 @@ func RegisterRoutes(mux *http.ServeMux, deps ServerDeps, buildTime string, rl *R
 	mux.HandleFunc("POST /api/orders/{id}/retry", handleRetryOrder(deps.Payment))
 	mux.HandleFunc("GET /api/reports/{id}", handleReport(deps.Payment))
 	mux.HandleFunc("GET /api/health", handleHealth())
+	mux.HandleFunc("GET /openapi.json", handleOpenAPI())
 	mux.HandleFunc("POST /api/analytics/pageview", handlePageView(deps.Analytics))
 	mux.HandleFunc("GET /api/stats", handleStats(deps.Analytics))
 	mux.HandleFunc("GET /api/version", handleVersion(buildTime))
