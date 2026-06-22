@@ -379,7 +379,7 @@ func TestBlackBox_CrossEndpoint_BaZi_ZiWei_YearBranch(t *testing.T) {
 	}
 	var bzEnv struct {
 		Data struct {
-			Year struct{ Zhi string } `json:"Year"`
+			Year struct{ Zhi string } `json:"nian"`
 		} `json:"data"`
 	}
 	if err := json.NewDecoder(bzw.Body).Decode(&bzEnv); err != nil {
@@ -898,7 +898,7 @@ func TestDomain_Bazi_Ziwei_YearGanConsistency(t *testing.T) {
 	}
 	var bzEnv struct {
 		Data struct {
-			Year struct{ Gan string } `json:"Year"`
+			Year struct{ Gan string } `json:"nian"`
 		} `json:"data"`
 	}
 	if err := json.NewDecoder(w.Body).Decode(&bzEnv); err != nil {

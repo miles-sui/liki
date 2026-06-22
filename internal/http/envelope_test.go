@@ -73,7 +73,7 @@ func TestEnvelope_ErrorFormat_HasCodeAndMessage(t *testing.T) {
 		name string
 		body string
 	}{
-		{"missing gender", `{` + envelopeBBT + `,"gender":"male"}`},
+		{"missing gender", `{` + envelopeBBT + `}`},
 		{"invalid gender", `{` + envelopeBBT + `,"gender":"x"}`},
 		{"missing birth", `{"gender":"male"}`},
 		{"empty time", `{"birth":{"time":"","longitude":116.4},"gender":"male"}`},
@@ -245,7 +245,7 @@ func TestBlackBox_ErrorFormat_Consistent(t *testing.T) {
 		name string
 		body string
 	}{
-		{"missing gender", `{` + bt15 + `,"gender":"male"}`},
+		{"missing gender", `{` + bt15 + `}`},
 		{"invalid gender", `{` + bt15 + `,"gender":"x"}`},
 		{"missing birth", `{"gender":"male"}`},
 		{"empty time", `{"birth":{"time":"","longitude":116.4},"gender":"male"}`},
@@ -383,7 +383,7 @@ func TestEdge_AllErrorsReturnEnvelope(t *testing.T) {
 		handler http.HandlerFunc
 		body    string
 	}{
-		{"bazi chart no gender", computeChart, `{` + bt15 + `,"gender":"male"}`},
+		{"bazi chart no gender", computeChart, `{` + bt15 + `}`},
 		{"bazi bond no b", bondCharts, `{"a":{` + bt15 + `,"gender":"male"}}`},
 		{"bazi liunian no year", liuNian, `{` + bt15 + `,"gender":"male"}`},
 		{"bazi liuyue no month", liuYue, `{"year":2025,` + bt15 + `,"gender":"male"}`},
@@ -391,10 +391,10 @@ func TestEdge_AllErrorsReturnEnvelope(t *testing.T) {
 		{"bazi liushi no date", liuShi, `{"hour":12,` + bt15 + `,"gender":"male"}`},
 		{"bazi xiaoyun no count", xiaoYun, `{` + bt15 + `,"gender":"male"}`},
 		{"bazi xiaoxian no count", xiaoXian, `{"gender":"female"}`},
-		{"ziwei chart no gender", computeZiweiChart, `{` + bt15 + `,"gender":"male"}`},
+		{"ziwei chart no gender", computeZiweiChart, `{` + bt15 + `}`},
 		{"qimen pan no birth", handleQimenPan, `{"kind":"shi"}`},
 		{"bazhai minggua no year", bazhaiMingGua, `{"gender":"male"}`},
-		{"bazhai chart no gender", bazhaiChart, `{` + bt15 + `,"gender":"male"}`},
+		{"bazhai chart no gender", bazhaiChart, `{` + bt15 + `}`},
 		{"xuankong chart no mountains", xuankongChart, `{` + bt15 + `,"gender":"male"}`},
 		{"liuyao no birth", handleLiuyaoChart, `{"yong_shen":"世爻"}`},
 		{"huangli bond date no date", huangliBondDate, `{` + bt15 + `,"event_type":"嫁娶"}`},

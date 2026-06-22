@@ -434,7 +434,7 @@ func TestDomain_Qiming_Wuge_ReturnsAll(t *testing.T) {
 			Combos  []struct {
 				Stroke1 int    `json:"stroke1"`
 				Stroke2 int    `json:"stroke2"`
-				SanCai  string `json:"sancai"`
+				SanCai  string `json:"san_cai"`
 				Fortune string `json:"fortune"`
 			} `json:"combos"`
 		} `json:"data"`
