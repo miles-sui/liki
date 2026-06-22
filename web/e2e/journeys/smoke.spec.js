@@ -61,6 +61,27 @@ const PAGES = [
     checks: [
       { selector: '.brand', text: '靈機對話' },
     ] },
+  // Legal pages — zh locale
+  { path: '/zh/about.html',    marker: '[data-i18n]',    name: 'about (vanilla)',
+    checks: [
+      { selector: 'h2', text: '什么是灵机' },
+    ] },
+  { path: '/zh/contact.html',  marker: '[data-i18n]',    name: 'contact (vanilla)',
+    checks: [
+      { selector: 'h2', text: '电子邮件' },
+    ] },
+  { path: '/zh/privacy.html',  marker: '[data-i18n]',    name: 'privacy (vanilla)',
+    checks: [
+      { selector: 'h2', text: '信息收集' },
+    ] },
+  { path: '/zh/terms.html',    marker: '[data-i18n]',    name: 'terms (vanilla)',
+    checks: [
+      { selector: 'h2', text: '接受条款' },
+    ] },
+  // Static resources
+  { path: '/skills/liki.md',   marker: null,             name: 'skills',   resource: true },
+  { path: '/llms.txt',         marker: null,             name: 'llms.txt', resource: true },
+  { path: '/openapi.json',     marker: null,             name: 'openapi',  resource: true },
 ];
 
 // i18n key pattern: if a raw key like "site.name" or "index.hero.subtitle" appears
@@ -68,7 +89,7 @@ const PAGES = [
 const I18N_KEY_RE = /\b[a-z]{2,}\.[a-z]{2,}\.[a-z]+\b|\b[a-z]{2,}\.[a-z]{2,}\b/;
 
 test.describe('Smoke — all pages render without errors or warnings', () => {
-  for (const { path, marker, name, checks } of PAGES) {
+  for (const { path, marker, name, checks, resource } of PAGES) {
     test(`${name}: ${path}`, async ({ page }) => {
       const consoleProblems = [];
       page.on('console', msg => {
@@ -80,7 +101,13 @@ test.describe('Smoke — all pages render without errors or warnings', () => {
         consoleProblems.push(`[uncaught] ${err.message}`);
       });
 
-      await page.goto(path);
+      const resp = await page.goto(path);
+
+      // Static resources: just verify HTTP 200.
+      if (resource) {
+        expect(resp.status()).toBe(200);
+        return;
+      }
 
       // Framework must initialize: Web Components [data-i18n] or Vue .chat-shell.
       await expect(page.locator(marker).first()).toBeVisible({ timeout: 10000 });

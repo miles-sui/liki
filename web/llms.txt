@@ -1,101 +1,18 @@
-# Liki (灵机)
+# Liki — AI 命理助手
 
-> Liki is an AI Chinese metaphysics assistant. Services: BaZi chart, He Pan (bond), Qi Ming (naming).
-> All stateless computation APIs are free. Agent Chat uses paid reports.
+灵机（Liki），AI 命理助手。
 
-## Skill
+## 接口
 
-Install the Liki Agent Skill to become a Liki Chinese metaphysics assistant (命理助手).
+OpenAPI: /openapi.json
+产品说明: /skills/liki.md
 
-### Install
+## 产品
 
-1. Load [liki.md](https://liki.hk/skills/liki.md) as your system prompt
-2. Report templates for full report generation: [chart](https://liki.hk/skills/report-chart.md) | [bond](https://liki.hk/skills/report-bond.md) | [naming](https://liki.hk/skills/report-naming.md)
-3. Verify: collect birth info → call the corresponding API → generate interpretation using the templates
-
-### Update
-
-liki.md starts with a version line (`version: 1.0.0`). At the start of each session, compare your locally cached version with the server version. If the server version is newer, reload the full skill.
-
-## Quick start for AI agents
-
-- All `POST` APIs accept JSON, return `{"data":{...}}`.
-- All errors return `{"error":{"code":"...","message":"..."}}`.
-- `birth` = `{"time": "RFC3339", "longitude": float}`, e.g. `{"time":"1984-02-04T06:00:00+08:00","longitude":116.4}`.
-- `gender` = `"male"` or `"female"`.
-- Base URL: `https://liki.hk`
-
-## BaZi (八字)
-
-- [BaZi Chart](https://liki.hk/docs/bazi.md): `POST /api/bazi/chart` — Si Zhu, Shi Shen, Cang Gan, Na Yin, Shen Sha, Yong Shen, Ge Ju, Wang Shuai, Tiao Hou, Da Yun
-- [He Pan](https://liki.hk/docs/bazi.md#bazi-bond): `POST /api/bazi/bond` — Cross-chart Gan-Zhi, Shi Shen, Na Yin, Shen Sha analysis
-- [Liu Nian](https://liki.hk/docs/bazi.md#bazi-liunian): `POST /api/bazi/liunian` — Yearly fortune (流年)
-- [Liu Yue](https://liki.hk/docs/bazi.md#bazi-liuyue): `POST /api/bazi/liuyue` — Monthly fortune (流月)
-- [Liu Ri](https://liki.hk/docs/bazi.md#bazi-liuri): `POST /api/bazi/liuri` — Daily fortune (流日)
-- [Liu Shi](https://liki.hk/docs/bazi.md#bazi-liushi): `POST /api/bazi/liushi` — Hourly fortune (流时)
-- [Xiao Yun](https://liki.hk/docs/bazi.md#bazi-xiaoyun): `POST /api/bazi/xiaoyun` — Minor fortune (小运)
-- [Xiao Xian](https://liki.hk/docs/bazi.md#bazi-xiaoxian): `POST /api/bazi/xiaoxian` — Minor boundary (小限)
-
-## ZiWei (紫微斗数)
-
-- [ZiWei Chart](https://liki.hk/docs/ziwei.md): `POST /api/ziwei/chart` — ZiWei Dou Shu chart with stars, palaces, brightness
-- [Da Xian](https://liki.hk/docs/ziwei.md#daxian): `POST /api/ziwei/daxian` — Decade cycles (大限)
-- [Liu Nian](https://liki.hk/docs/ziwei.md#liunian): `POST /api/ziwei/liunian` — Yearly cycle (流年)
-- [Liu Yue](https://liki.hk/docs/ziwei.md#liuyue): `POST /api/ziwei/liuyue` — Monthly cycle (流月)
-- [Liu Ri](https://liki.hk/docs/ziwei.md#liuri): `POST /api/ziwei/liuri` — Daily cycle (流日)
-- [He Pan](https://liki.hk/docs/ziwei.md#bond): `POST /api/ziwei/bond` — Cross-chart analysis (合盘)
-
-## Qi Men (奇门遁甲)
-
-- [Qi Men Pan](https://liki.hk/docs/qimen.md): `POST /api/qimen/pan` — Qi Men Dun Jia chart with Tian Pan, Ren Pan, Shen Pan (时/日/月/年)
-
-## Liu Yao (六爻)
-
-- [Liu Yao Chart](https://liki.hk/docs/liuyao.md): `POST /api/liuyao/chart` — Six-line divination with Yong Shen, Liu Qin, Liu Shou
-
-## Qi Ming (起名)
-
-- [Wu Ge](https://liki.hk/docs/qiming.md): `POST /api/qiming/wuge` — Auspicious stroke combos for a surname
-- [Compose](https://liki.hk/docs/qiming.md#compose): `POST /api/qiming/compose` — Compose name candidates from character pools
-- [Detail](https://liki.hk/docs/qiming.md#detail): `POST /api/qiming/detail` — Wu Ge, San Cai, phonetic details for names
-- [Evaluate](https://liki.hk/docs/qiming.md#evaluate): `POST /api/qiming/evaluate` — Single name Wu Xing evaluation
-
-## Huang Li (黄历)
-
-- [Date](https://liki.hk/docs/huangli.md): `GET /api/huangli/date` — Single-day almanac with Yi/Ji, Shen Sha, 28 Xiu
-- [Month](https://liki.hk/docs/huangli.md#huangli-month): `GET /api/huangli/month` — Month-range almanac
-- [Bond Date](https://liki.hk/docs/huangli.md#huangli-bond-date): `POST /api/huangli/bond/date` — Birth + almanac single-day selection (择日)
-- [Bond Month](https://liki.hk/docs/huangli.md#huangli-bond-month): `POST /api/huangli/bond/month` — Birth + almanac month-range selection (择月)
-
-## Feng Shui (风水)
-
-- [Ming Gua](https://liki.hk/docs/fengshui.md#minggua): `POST /api/bazhai/minggua` — BaZhai fate trigram (命卦)
-- [BaZhai Chart](https://liki.hk/docs/fengshui.md#bazhai-chart): `POST /api/bazhai/chart` — BaZhai combined analysis with flying stars
-- [San Yuan Jiu Yun](https://liki.hk/docs/fengshui.md#sanyuan-jiuyun): `GET /api/xuankong/sanyuan` — San Yuan Jiu Yun timetable (三元九运)
-- [XuanKong Chart](https://liki.hk/docs/fengshui.md#xuankong-chart): `POST /api/xuankong/chart` — XuanKong flying stars chart (玄空飞星)
-
-## Agent (Restricted)
-
-Agent endpoints are restricted to the Liki frontend (Origin: liki.hk). External access returns 403. See [Access Policy](https://liki.hk/docs/reference.md#access-policy).
-
-## Payment
-
-- [Checkout](https://liki.hk/docs/reference.md#checkout): `POST /api/payments/checkout` — Create payment checkout
-- [Order Status](https://liki.hk/docs/reference.md#order-status): `GET /api/orders/{id}/status`
-- [Report](https://liki.hk/docs/reference.md#report): `GET /api/reports/{id}` — Get generated report
-
-## Reference & System
-
-- [Reference Data](https://liki.hk/docs/reference.md): Tian Gan, Di Zhi, Na Yin, Shen Sha, 28 Xiu, Ba Gua, 24 Mountains, Wu Xing
-- [Errors](https://liki.hk/docs/reference.md#errors): Error envelope format and codes
-- [Health](https://liki.hk/docs/reference.md#health): `GET /api/health`
-- [Version](https://liki.hk/docs/reference.md#version): `GET /api/version`
-- [Location](https://liki.hk/docs/reference.md#location): `GET /api/location` — IP geolocation
-- [Stats](https://liki.hk/docs/reference.md#stats): `GET /api/stats`
-
-## Demo Pages
-
-- [BaZi Report Demo](https://liki.hk/zh/chart.html)
-- [He Pan Report Demo](https://liki.hk/zh/compatibility.html)
-- [Qi Ming Report Demo](https://liki.hk/zh/naming.html)
-- [Agent Chat](https://liki.hk/zh/chat.html)
+- 八字：命盘、合盘、流年、流月、流日、流时、小运
+- 紫微斗数：命盘、大限、流年、流月、流日、合盘
+- 奇门遁甲：时家、日家、月家、年家奇门
+- 智能起名：五格、组名、详析、评估
+- 六爻：起卦断卦
+- 黄历：择日、择月、八字合参择日
+- 风水：八宅命卦、八宅飞星、玄空飞星、三元九运

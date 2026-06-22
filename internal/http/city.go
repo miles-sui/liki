@@ -3,6 +3,7 @@ package handler
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"time"
 )
@@ -31,22 +32,22 @@ func handleCity(w http.ResponseWriter, r *http.Request) {
 }
 
 func geocodeNominatim(ctx context.Context, query string) (cityCoordsResult, error) {
-	u := "https://nominatim.openstreetmap.org/search?" + "q=" + query +
+	u := "https://nominatim.openstreetmap.org/search?q=" + query +
 		"&format=json&limit=1&accept-language=zh&addressdetails=1"
 	req, err := http.NewRequestWithContext(ctx, "GET", u, nil)
 	if err != nil {
-		return cityCoordsResult{}, err
+		return cityCoordsResult{}, fmt.Errorf("geocode: new request: %w", err)
 	}
 	req.Header.Set("User-Agent", "Liki/1.0 (lingji.app)")
 
 	resp, err := geoClient.Do(req)
 	if err != nil {
-		return cityCoordsResult{}, err
+		return cityCoordsResult{}, fmt.Errorf("geocode: get: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return cityCoordsResult{}, err
+		return cityCoordsResult{}, fmt.Errorf("geocode: status %d", resp.StatusCode)
 	}
 
 	var results []struct {
@@ -58,10 +59,10 @@ func geocodeNominatim(ctx context.Context, query string) (cityCoordsResult, erro
 		} `json:"address"`
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&results); err != nil {
-		return cityCoordsResult{}, err
+		return cityCoordsResult{}, fmt.Errorf("geocode: decode: %w", err)
 	}
 	if len(results) == 0 {
-		return cityCoordsResult{}, err
+		return cityCoordsResult{}, fmt.Errorf("geocode: no results for %s", query)
 	}
 
 	r := results[0]
