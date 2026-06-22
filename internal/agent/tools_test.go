@@ -917,3 +917,91 @@ func TestToolRegistry_Execute_QueryHuangliBondMonth(t *testing.T) {
 		t.Errorf("month = %q, want 2025-06", env.Data.Month)
 	}
 }
+
+func TestToolSchemas_HaveParameters(t *testing.T) {
+	r := NewChatToolRegistry()
+	schemas := r.Schemas()
+
+	if len(schemas) != 29 {
+		t.Errorf("schema count = %d, want 29", len(schemas))
+	}
+
+	toolsWithoutParams := []string{}
+	for _, s := range schemas {
+		var fn map[string]any
+		if err := json.Unmarshal(s.Function, &fn); err != nil {
+			t.Errorf("invalid schema JSON: %v", err)
+			continue
+		}
+		if fn["name"] == nil {
+			t.Error("tool missing name")
+		}
+		if fn["description"] == nil {
+			t.Errorf("tool %v missing description", fn["name"])
+		}
+		if fn["parameters"] == nil {
+			toolsWithoutParams = append(toolsWithoutParams, fn["name"].(string))
+		}
+	}
+
+	if len(toolsWithoutParams) > 0 {
+		t.Errorf("tools without parameters: %v", toolsWithoutParams)
+	}
+}
+
+func TestOpenApiParams_QueryCity(t *testing.T) {
+	params := openapiParams("query_city")
+	if params == nil {
+		t.Fatal("query_city schema not found in openapi.json")
+	}
+
+	var schema map[string]any
+	if err := json.Unmarshal(params, &schema); err != nil {
+		t.Fatal("invalid parameters JSON:", err)
+	}
+
+	required, ok := schema["required"].([]any)
+	if !ok || len(required) != 1 || required[0] != "name" {
+		t.Errorf("required = %v, want [city]", required)
+	}
+
+	props := schema["properties"].(map[string]any)
+	city, ok := props["name"].(map[string]any)
+	if !ok || city["type"] != "string" {
+		t.Error("name param must be type string")
+	}
+}
+
+func TestOpenApiParams_ComputeChart(t *testing.T) {
+	params := openapiParams("compute_chart")
+	if params == nil {
+		t.Fatal("compute_chart schema not found")
+	}
+	// compute_chart uses $ref to Person — verify non-empty
+	if len(params) == 0 {
+		t.Error("empty parameters")
+	}
+}
+func TestOpenApiParams_ComputeLiuRi(t *testing.T) {
+	params := openapiParams("compute_liuri")
+	if params == nil {
+		t.Fatal("compute_liuri schema not found")
+	}
+
+	var schema map[string]any
+	json.Unmarshal(params, &schema)
+
+	props := schema["properties"].(map[string]any)
+	keys := []string{"year", "month", "day", "birth", "gender"}
+	for _, k := range keys {
+		if props[k] == nil {
+			t.Errorf("compute_liuri missing property: %s", k)
+		}
+	}
+}
+
+func TestOpenApiParams_UnknownTool(t *testing.T) {
+	if p := openapiParams("nonexistent_tool"); p != nil {
+		t.Error("unknown tool should return nil")
+	}
+}
