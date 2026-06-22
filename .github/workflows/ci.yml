@@ -20,10 +20,10 @@ jobs:
           go-version: '1.26'
           cache: true
 
-      - name: Lint
-        run: |
-          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin
-          $(go env GOPATH)/bin/golangci-lint run --timeout=3m
+      - uses: golangci/golangci-lint-action@v7
+        with:
+          version: v2.12
+          args: --timeout=3m
 
       - name: Vet
         run: go vet ./...
@@ -70,7 +70,7 @@ jobs:
         run: go run github.com/securecodewarrior/gosec/v2/cmd/gosec@latest -quiet ./...
 
       - name: Run Trivy
-        uses: aquasecurity/trivy-action@0.24.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           scan-type: fs
           scan-ref: .
