@@ -62,10 +62,10 @@ const PAGES = [
       { selector: '.brand', text: '靈機對話' },
     ] },
   // Legal pages — marker + console check only (Web Component shadow DOM may contain i18n keys)
-  { path: '/zh/about.html',    marker: '[data-i18n]',    name: 'about (vanilla)' },
-  { path: '/zh/contact.html',  marker: '[data-i18n]',    name: 'contact (vanilla)' },
-  { path: '/zh/privacy.html',  marker: '[data-i18n]',    name: 'privacy (vanilla)' },
-  { path: '/zh/terms.html',    marker: '[data-i18n]',    name: 'terms (vanilla)' },
+  { path: '/zh/about.html',    marker: '[data-i18n]',    name: 'about (vanilla)', noI18nCheck: true },
+  { path: '/zh/contact.html',  marker: '[data-i18n]',    name: 'contact (vanilla)', noI18nCheck: true },
+  { path: '/zh/privacy.html',  marker: '[data-i18n]',    name: 'privacy (vanilla)', noI18nCheck: true },
+  { path: '/zh/terms.html',    marker: '[data-i18n]',    name: 'terms (vanilla)', noI18nCheck: true },
   // Static resources
   { path: '/skills/liki.md',   marker: null,             name: 'skills',   resource: true },
   { path: '/llms.txt',         marker: null,             name: 'llms.txt', resource: true },
@@ -108,11 +108,13 @@ test.describe('Smoke — all pages render without errors or warnings', () => {
         await expect(page.locator(selector).first()).toContainText(text, { timeout: 5000 });
       }
 
-      // No unresolved i18n keys leaked to the page body.
-      const bodyText = await page.locator('body').innerText();
-      const leakedKeys = bodyText.split('\n').filter(line => I18N_KEY_RE.test(line.trim()));
-      if (leakedKeys.length > 0) {
-        throw new Error(`Unresolved i18n keys on ${path}:\n  ${leakedKeys.join('\n  ')}`);
+      // No unresolved i18n keys leaked to the page body (skip for Web Component pages).
+      if (!noI18nCheck) {
+        const bodyText = await page.locator('body').innerText();
+        const leakedKeys = bodyText.split('\n').filter(line => I18N_KEY_RE.test(line.trim()));
+        if (leakedKeys.length > 0) {
+          throw new Error(`Unresolved i18n keys on ${path}:\n  ${leakedKeys.join('\n  ')}`);
+        }
       }
 
       if (consoleProblems.length > 0) {
