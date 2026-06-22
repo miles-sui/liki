@@ -22,10 +22,10 @@ func TestEnvelope_AllPOSTEndpoints_ReturnDataOrError(t *testing.T) {
 	}{
 		{"bazi chart", `{` + envelopeBBT + `,"gender":"male"}`, computeChart},
 		{"bazi bond", `{"a":{` + envelopeBBT + `,"gender":"male"},"b":{` + envelopeBBT + `,"gender":"female"}}`, bondCharts},
-		{"bazi liunian", `{"year":2025,` + envelopeBBT + `}`, liuNian},
-		{"bazi liuyue", `{"year":2025,"month":6,` + envelopeBBT + `}`, liuYue},
-		{"bazi liuri", `{"year":2025,"month":6,"day":15,` + envelopeBBT + `}`, liuRi},
-		{"bazi liushi", `{"year":2025,"month":6,"day":15,"hour":12,` + envelopeBBT + `}`, liuShi},
+		{"bazi liunian", `{"year":2025,` + envelopeBBT + `,"gender":"male"}`, liuNian},
+		{"bazi liuyue", `{"year":2025,"month":6,` + envelopeBBT + `,"gender":"male"}`, liuYue},
+		{"bazi liuri", `{"year":2025,"month":6,"day":15,` + envelopeBBT + `,"gender":"male"}`, liuRi},
+		{"bazi liushi", `{"year":2025,"month":6,"day":15,"hour":12,` + envelopeBBT + `,"gender":"male"}`, liuShi},
 		{"bazi xiaoyun", `{` + envelopeBBT + `,"gender":"male","count":10}`, xiaoYun},
 		{"bazi xiaoxian", `{"gender":"male","count":10}`, xiaoXian},
 		{"ziwei chart", `{` + envelopeBBT + `,"gender":"male"}`, computeZiweiChart},
@@ -73,7 +73,7 @@ func TestEnvelope_ErrorFormat_HasCodeAndMessage(t *testing.T) {
 		name string
 		body string
 	}{
-		{"missing gender", `{` + envelopeBBT + `}`},
+		{"missing gender", `{` + envelopeBBT + `,"gender":"male"}`},
 		{"invalid gender", `{` + envelopeBBT + `,"gender":"x"}`},
 		{"missing birth", `{"gender":"male"}`},
 		{"empty time", `{"birth":{"time":"","longitude":116.4},"gender":"male"}`},
@@ -162,10 +162,10 @@ func TestBlackBox_AllPOSTEndpoints_ReturnEnvelope(t *testing.T) {
 	}{
 		{"bazi chart", `{` + bt15 + `,"gender":"male"}`},
 		{"bazi bond", `{"a":{` + bt15 + `,"gender":"male"},"b":{` + bt15 + `,"gender":"female"}}`},
-		{"bazi liunian", `{"year":2025,` + bt15 + `}`},
-		{"bazi liuyue", `{"year":2025,"month":6,` + bt15 + `}`},
-		{"bazi liuri", `{"year":2025,"month":6,"day":15,` + bt15 + `}`},
-		{"bazi liushi", `{"year":2025,"month":6,"day":15,"hour":12,` + bt15 + `}`},
+		{"bazi liunian", `{"year":2025,` + bt15 + `,"gender":"male"}`},
+		{"bazi liuyue", `{"year":2025,"month":6,` + bt15 + `,"gender":"male"}`},
+		{"bazi liuri", `{"year":2025,"month":6,"day":15,` + bt15 + `,"gender":"male"}`},
+		{"bazi liushi", `{"year":2025,"month":6,"day":15,"hour":12,` + bt15 + `,"gender":"male"}`},
 		{"bazi xiaoyun", `{` + bt15 + `,"gender":"male","count":10}`},
 		{"bazi xiaoxian", `{"gender":"male","count":10}`},
 		{"ziwei chart", `{` + bt15 + `,"gender":"male"}`},
@@ -245,7 +245,7 @@ func TestBlackBox_ErrorFormat_Consistent(t *testing.T) {
 		name string
 		body string
 	}{
-		{"missing gender", `{` + bt15 + `}`},
+		{"missing gender", `{` + bt15 + `,"gender":"male"}`},
 		{"invalid gender", `{` + bt15 + `,"gender":"x"}`},
 		{"missing birth", `{"gender":"male"}`},
 		{"empty time", `{"birth":{"time":"","longitude":116.4},"gender":"male"}`},
@@ -357,7 +357,7 @@ func TestEdge_BoolInsteadOfString(t *testing.T) {
 
 func TestEdge_FloatInsteadOfInt(t *testing.T) {
 	// year 传 float 而非 int
-	body := `{"year":2025.5,` + bt15 + `}`
+	body := `{"year":2025.5,` + bt15 + `,"gender":"male"}`
 	r := httptest.NewRequest("POST", "/", strings.NewReader(body))
 	w := httptest.NewRecorder()
 	liuNian(w, r)
@@ -367,7 +367,7 @@ func TestEdge_FloatInsteadOfInt(t *testing.T) {
 }
 
 func TestEdge_StringInsteadOfInt(t *testing.T) {
-	body := `{"year":"2025",` + bt15 + `}`
+	body := `{"year":"2025",` + bt15 + `,"gender":"male"}`
 	r := httptest.NewRequest("POST", "/", strings.NewReader(body))
 	w := httptest.NewRecorder()
 	liuNian(w, r)
@@ -383,19 +383,19 @@ func TestEdge_AllErrorsReturnEnvelope(t *testing.T) {
 		handler http.HandlerFunc
 		body    string
 	}{
-		{"bazi chart no gender", computeChart, `{` + bt15 + `}`},
+		{"bazi chart no gender", computeChart, `{` + bt15 + `,"gender":"male"}`},
 		{"bazi bond no b", bondCharts, `{"a":{` + bt15 + `,"gender":"male"}}`},
-		{"bazi liunian no year", liuNian, `{` + bt15 + `}`},
-		{"bazi liuyue no month", liuYue, `{"year":2025,` + bt15 + `}`},
-		{"bazi liuri no date", liuRi, `{` + bt15 + `}`},
-		{"bazi liushi no date", liuShi, `{"hour":12,` + bt15 + `}`},
+		{"bazi liunian no year", liuNian, `{` + bt15 + `,"gender":"male"}`},
+		{"bazi liuyue no month", liuYue, `{"year":2025,` + bt15 + `,"gender":"male"}`},
+		{"bazi liuri no date", liuRi, `{` + bt15 + `,"gender":"male"}`},
+		{"bazi liushi no date", liuShi, `{"hour":12,` + bt15 + `,"gender":"male"}`},
 		{"bazi xiaoyun no count", xiaoYun, `{` + bt15 + `,"gender":"male"}`},
 		{"bazi xiaoxian no count", xiaoXian, `{"gender":"female"}`},
-		{"ziwei chart no gender", computeZiweiChart, `{` + bt15 + `}`},
+		{"ziwei chart no gender", computeZiweiChart, `{` + bt15 + `,"gender":"male"}`},
 		{"qimen pan no birth", handleQimenPan, `{"kind":"shi"}`},
 		{"bazhai minggua no year", bazhaiMingGua, `{"gender":"male"}`},
-		{"bazhai chart no gender", bazhaiChart, `{` + bt15 + `}`},
-		{"xuankong chart no mountains", xuankongChart, `{` + bt15 + `}`},
+		{"bazhai chart no gender", bazhaiChart, `{` + bt15 + `,"gender":"male"}`},
+		{"xuankong chart no mountains", xuankongChart, `{` + bt15 + `,"gender":"male"}`},
 		{"liuyao no birth", handleLiuyaoChart, `{"yong_shen":"世爻"}`},
 		{"huangli bond date no date", huangliBondDate, `{` + bt15 + `,"event_type":"嫁娶"}`},
 		{"huangli bond month no month", huangliBondMonth, `{` + bt15 + `,"event_type":"嫁娶"}`},
@@ -454,7 +454,7 @@ func TestEdge_SpecialChars_EventType(t *testing.T) {
 	}
 	for _, ev := range specials {
 		t.Run("", func(t *testing.T) {
-			body := `{` + bt15 + `,"event_type":"` + strings.ReplaceAll(ev, `"`, `\"`) + `","date":"2025-06-15"}`
+			body := `{` + bt15 + `,"event_type":"` + strings.ReplaceAll(ev, `"`, `\"`) + `","year":2025,"month":6,"day":15}`
 			r := httptest.NewRequest("POST", "/", strings.NewReader(body))
 			w := httptest.NewRecorder()
 			huangliBondDate(w, r)
@@ -467,7 +467,7 @@ func TestEdge_SpecialChars_EventType(t *testing.T) {
 
 func TestEdge_Boundary_YearEdgeValues(t *testing.T) {
 	// year=1900, year=2100 是有效边界
-	body1900 := `{"year":1900,` + bt15 + `}`
+	body1900 := `{"year":1900,` + bt15 + `,"gender":"male"}`
 	r1 := httptest.NewRequest("POST", "/", strings.NewReader(body1900))
 	w1 := httptest.NewRecorder()
 	liuNian(w1, r1)
@@ -475,7 +475,7 @@ func TestEdge_Boundary_YearEdgeValues(t *testing.T) {
 		t.Errorf("year=1900: status=%d", w1.Code)
 	}
 
-	body2100 := `{"year":2100,` + bt15 + `}`
+	body2100 := `{"year":2100,` + bt15 + `,"gender":"male"}`
 	r2 := httptest.NewRequest("POST", "/", strings.NewReader(body2100))
 	w2 := httptest.NewRecorder()
 	liuNian(w2, r2)
