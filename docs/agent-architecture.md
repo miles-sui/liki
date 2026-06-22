@@ -55,4 +55,4 @@ ChatAgent (单一实例)
 1. `internal/engine/{name}/` — 实现 engine 计算
 2. `internal/agent/tools.go` — 注册 tool handler
 3. `internal/llm/data/tools/` — 加 tool schema JSON
-4. `data/prompts/` — 加解读 prompt（如需要）
+4. `web/skills/` — 加报告模板 prompt（如需要），同时嵌入 + 对外公开

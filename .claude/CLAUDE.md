@@ -31,15 +31,17 @@ make deploy-cn    # 仅国内
 
 ```
 doc.go              //go:embed data/prompts/chat.txt → doc.ChatPrompt
-                    //go:embed data/prompts/chart-report.txt → doc.ChartReportPrompt
-                    //go:embed data/prompts/bond-report.txt → doc.BondReportPrompt
-                    //go:embed data/prompts/naming-report.txt → doc.NamingReportPrompt
+                    //go:embed web/skills/report-chart.md → doc.ChartReportPrompt
+                    //go:embed web/skills/report-bond.md → doc.BondReportPrompt
+                    //go:embed web/skills/report-naming.md → doc.NamingReportPrompt
 cmd/lingji/         Entry point
-data/prompts/       LLM 提示词（嵌入，不对外）
-  chat.txt          统一系统 prompt：收集 + 3 产品 teaser 格式 + Q&A 引导
-  chart-report.txt  八字完整报告模板 (5 章)，无 tool
-  bond-report.txt   合盘完整报告模板，无 tool
-  naming-report.txt 起名完整报告模板，无 tool
+data/prompts/       LLM 系统 prompt（嵌入，不对外）
+  chat.txt          统一系统 prompt：收集 + 3 产品 teaser + Q&A 引导
+web/skills/         报告模板（嵌入 + 对外公开）
+  liki.md           产品 skill 文件（角色、工作流、API 调用）
+  report-chart.md   八字完整报告模板
+  report-bond.md    合盘完整报告模板
+  report-naming.md  起名完整报告模板
 internal/llm/data/tools/  LLM tool schema JSON（embed 到 llm 包）
 internal/
   agent/            ChatAgent（Chat + GenerateFromData）。单 Agent，全部 5 个 tool
@@ -136,11 +138,8 @@ internal/
 - docs/terminology.md — 命理术语表
 - web/llms.txt — 公开 AI agent 服务索引（llms.txt spec）
 - web/skills/liki.md — 对外 skill 文件（角色、工作流、API 调用、报告模板）
-- web/skills/report-chart.md — 八字报告模板
-- web/skills/report-bond.md — 合盘报告模板
-- web/skills/report-naming.md — 起名报告模板
+- web/skills/report-chart.md — 八字报告模板（GenerateFromData 用）
+- web/skills/report-bond.md — 合盘报告模板（GenerateFromData 用）
+- web/skills/report-naming.md — 起名报告模板（GenerateFromData 用）
 - data/prompts/chat.txt — 统一系统 prompt（收集 + 3 产品 teaser + Q&A + 购买引导）
-- data/prompts/chart-report.txt — 八字完整报告 prompt（GenerateFromData 用）
-- data/prompts/bond-report.txt — 合盘完整报告 prompt（GenerateFromData 用）
-- data/prompts/naming-report.txt — 起名完整报告 prompt（GenerateFromData 用）
 - internal/llm/data/tools/ — tool schema JSON 文件
