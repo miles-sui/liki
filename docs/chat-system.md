@@ -459,7 +459,7 @@ agent 用 `ChatStreamWithTools`（SSE 流式），事件模型：
 - `phase`：工具执行进度
 - `thinking-delta`：LLM 推理内容（DeepSeek V4 Pro reasoning）
 
-工具参数 JSON Schema 从 `openapi.json` 提取，编译时嵌入，运行时注入 tool calling 的 `parameters` 字段。29 个工具全部有对应 HTTP 端点。
+工具参数 JSON Schema 从 `openapi.json` 提取，编译时嵌入，运行时注入 tool calling 的 `parameters` 字段。Agent 使用 5 个 tool（`get_city_coords`、`compute_chart`、`compute_bond`、`compute_naming`、`purchase`），HTTP API 共 28 个端点。`openapi.json`（v1.1.0）同时包含所有端点的响应 schema，供外部 AI agent 服务发现。
 
 ### Agent 流式 + 节流渲染
 

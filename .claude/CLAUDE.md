@@ -134,8 +134,11 @@ internal/
 - docs/database.md — 数据库设计
 - docs/review.md — 全系统复盘
 - docs/terminology.md — 命理术语表
-- web/docs/*.md — API 文档（权威）
 - web/llms.txt — 公开 AI agent 服务索引（llms.txt spec）
+- web/skills/liki.md — 对外 skill 文件（角色、工作流、API 调用、报告模板）
+- web/skills/report-chart.md — 八字报告模板
+- web/skills/report-bond.md — 合盘报告模板
+- web/skills/report-naming.md — 起名报告模板
 - data/prompts/chat.txt — 统一系统 prompt（收集 + 3 产品 teaser + Q&A + 购买引导）
 - data/prompts/chart-report.txt — 八字完整报告 prompt（GenerateFromData 用）
 - data/prompts/bond-report.txt — 合盘完整报告 prompt（GenerateFromData 用）
