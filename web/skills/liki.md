@@ -88,12 +88,12 @@ API 参数：
 
 四步串行调用，不可并行：
 
-1. `POST /api/qiming/wuge` — 参数 `{surname, yong_shen, xi_shen?}`。yong_shen 取值 `"木"|"火"|"土"|"金"|"水"`（从八字 chart 返回的用神获取），xi_shen 为五行数组如 `["火"]`。返回三才五格组合 + 可用字库（yong_chars/xi_chars）。
-2. `POST /api/qiming/compose` — 参数 `{surname, combos, yong_chars, xi_chars}`。combos 从上一步五格组合中选取，yong_chars/xi_chars 从上一步结果中原样传入。返回候选名字列表，通常数千到数万条。筛选时优先挑尾字常见、首字含义积极的名字，取 3-5 个进 detail。
-3. `POST /api/qiming/detail` — 参数 `{surname, names}`。对候选名字逐一详析，返回五格数理、三才配置、五行、生肖关系、评分。
-4. `POST /api/qiming/evaluate` — 参数 `{surname, given_name, yong_shen}`。**用户自选名字时直接调用此接口**，跳过前三步。
+1. `POST /api/qiming/wuge` — 参数 `{surname, yong_shen, xi_shen?}`。yong_shen 取值 `"木"|"火"|"土"|"金"|"水"`（从八字 chart 返回的用神获取），xi_shen 为五行数组如 `["火"]`。返回 stroke combos（含 san_cai + fortune）+ yong_chars / xi_chars。
+2. `POST /api/qiming/compose` — 参数 `{surname, combos, yong_chars, xi_chars}`。combos / yong_chars / xi_chars 从上一步结果中原样传入。返回候选名字列表（字符串数组）。筛选时优先挑尾字常见、首字含义积极的名字，取 3-5 个进 detail。
+3. `POST /api/qiming/detail` — 参数 `{surname, names}`。返回五格数理、三才配置、五行、字音分析（phonetic）。
+4. `POST /api/qiming/evaluate` — 参数 `{surname, given_name, yong_shen}`。**用户自选名字时直接调用此接口**。返回五格数理、三才配置、五行、字音分析 + wuxing_match。
 
-**输出**：按 report-naming.md 结构：命理基础与用神 → 候选名字分析 → 选择建议。
+**输出**：按 report-naming.md 结构：命理基础与用神 → 名字详析（含五格、三才、五行、字音） → 选择建议。
 
 ### 风水
 
