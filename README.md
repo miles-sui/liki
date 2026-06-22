@@ -74,6 +74,11 @@ docs/               设计文档
 | `/skills/report-bond.md` | 合盘报告模板 |
 | `/skills/report-naming.md` | 起名报告模板 |
 
+**在你的 AI 助手中使用：**
+
+- **Claude Code** — 运行 `/skills install https://liki.hk/skills/liki.md` 安装灵机 skill
+- **ChatGPT / 通用 LLM 平台** — 让 AI 读取 `https://liki.hk/llms.txt`，会自动发现并配置为灵机
+
 ## 文档
 
 - [`docs/architecture.md`](docs/architecture.md) — 系统架构与提示词体系
@@ -90,6 +95,10 @@ docs/               设计文档
 Built with Go 1.26 + SQLite + Caddy (backend), vanilla HTML + Vue 3 + Alpine.js (frontend), DeepSeek V4 Pro (LLM with streaming tool-calling over SSE), Dodo Payments, and Resend email.
 
 External AI agents can discover the service via `llms.txt` → `liki.md` → `openapi.json` → report templates. No account required — reports are accessed by order ID.
+
+**Use in your AI assistant:**
+- **Claude Code**: `/skills install https://liki.hk/skills/liki.md`
+- **ChatGPT / other LLMs**: point your agent to `https://liki.hk/llms.txt` — it discovers and configures itself
 
 ## License
 
