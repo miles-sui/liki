@@ -139,12 +139,23 @@ jobs:
       - name: Start servers
         run: |
           ./bin/lingji -addr :8081 -db /tmp/lingji-ci.db &
+          # Wait for Go server to be ready before starting Caddy (avoids 503 on reverse_proxy)
+          for i in $(seq 1 10); do
+            if curl -sf http://localhost:8081/api/health 2>/dev/null | grep -q '"ok"'; then
+              echo "Go server ready"
+              break
+            fi
+            sleep 1
+          done
+          if [ "$i" = "10" ]; then echo "Go server failed to start" >&2; exit 1; fi
           ./caddy run --config deploy/lingji/Caddyfile.local &
-          # Wait for Caddy to be ready (serving static files on :8080)
+          # Wait for Caddy to be ready (static files + API proxy)
           for i in $(seq 1 30); do
             if curl -sf http://localhost:8080/zh/ 2>/dev/null | grep -q '<html'; then
-              echo "Server ready"
-              break
+              if curl -sf http://localhost:8080/api/health 2>/dev/null | grep -q '"ok"'; then
+                echo "Server ready"
+                break
+              fi
             fi
             sleep 2
           done

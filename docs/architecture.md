@@ -180,13 +180,46 @@ openapi.json            ← API schema + tool params + 响应 schema（公开 + 
 | `doc.BondReportPrompt` | `web/skills/report-bond.md` | 公开 | `GenerateFromData("bond")` 完整报告；`/skills/report-bond.md` |
 | `doc.NamingReportPrompt` | `web/skills/report-naming.md` | 公开 | `GenerateFromData("naming")` 完整报告；`/skills/report-naming.md` |
 
-### 两类 Prompt 的分工
+### 双入口、共用后端
 
-**系统 prompt（chat.txt）**：ChatAgent 对话专用。定义产品检测规则、必要参数、城市查找、时辰降级、起名特殊要求。不包含完整报告格式——teaser 由 LLM 自由生成简短预览，完整报告由 GenerateFromData 用报告模板生成。
+两个入口覆盖两类使用场景，入口不同，后端完全复用：
 
-**报告模板（report-*.md）**：完整报告的格式规范。包含数据结构定义、领域知识、报告章节结构、输出规则。供两类场景使用：
-1. `GenerateFromData()` — 支付后 webhook 触发，LLM 按模板生成完整报告
-2. 外部 AI agent — 通过 `/skills/report-*.md` 了解报告格式，实现第三方集成
+```
+web 服务                                  外部 AI agent
+─────────                                 ─────────────
+chat.txt（内部）                            liki.md（公开）
+  │                                          │
+  └─ ChatAgent.Chat()                        └─ 按流程调 API
+       │                                          │
+       ├─ teaser（LLM 自由生成）                  ├─ 调 API 拿到数据
+       │                                          │
+       └─ purchase ──→ GenerateFromData()          └─ 读 report-*.md ──→ 生成报告
+                              │
+                              ▼
+                    ┌─────────────────┐
+                    │   共用后端       │
+                    │  · openapi.json │  API schema
+                    │  · report-*.md  │  领域知识 + 报告格式
+                    │  · Engine 层    │  纯 Go 计算
+                    └─────────────────┘
+```
+
+差异仅在入口：
+
+| | web 服务 | skill |
+|---|---|---|
+| 入口文件 | chat.txt（内部，go:embed） | liki.md（公开，Caddy serve） |
+| 读取方式 | Go 代码注入 system prompt | Agent 自行 fetch |
+| 报告生成 | GenerateFromData 代码注入模板 | Agent 读 report-*.md 后生成 |
+| 收费 | 有（teaser → purchase → 报告） | 无 |
+
+### 报告模板（report-*.md）
+
+报告格式和领域知识的唯一真源。包含数据来源、领域知识（五行推导、三才判断等）、报告章节结构、输出规则。两个入口共用：
+- web 服务：`GenerateFromData()` 代码注入
+- skill：liki.md 通过 URL 指向，agent 调完 API 后读取
+
+skill 文件和报告模板均对外公开 serve，同时 go:embed 嵌入供内部使用。
 
 ### 外部 Agent 发现路径
 
@@ -206,6 +239,12 @@ Agent 的 29 个 tool 的 JSON Schema 不存为独立文件。`openapiParams()` 
 这使得 `openapi.json` 成为唯一的 schema 真源：HTTP handler 用它做参数校验，LLM tool calling 用它生成 `parameters` 字段，外部 agent 用它做服务发现。
 
 ## 关键设计决策
+
+### Skill 与报告模板分离
+
+- **liki.md** 只管流程：角色、工作流、参数收集、API 调用规则、行为边界。不重复领域知识。
+- **report-*.md** 是领域知识和报告格式的唯一真源。liki.md 通过 URL 指向它们，agent 和 GenerateFromData 共用同一份。
+- 起名流程中，五行和音韵由算法处理，LLM 只做算法做不了的事：字义筛选、性别适配、典故查找、风格多样性。
 
 ### 原子化引擎
 

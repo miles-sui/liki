@@ -2,11 +2,16 @@
 
 ## 架构
 
-四个原子端点，供 agent/LLM 自由编排。确定性计算归后端，偏好判断归 LLM。
+四个原子端点，供 agent/LLM 按 liki.md 规定的流程编排。确定性计算归后端，偏好判断归 LLM。
 
 ```
-PrepareWuGe → LLM 筛字 → ComposeNames → LLM 筛名 → DetailNames → LLM 精排
+wuge → LLM 筛字库（去生僻/拗口/消极）→ compose → LLM 选 8 名（首要性别、覆盖多风格、典故加分）→ detail → 读 report-naming.md 生成报告
 ```
+
+设计原则：
+- 五行和音韵由算法处理，LLM 不重复判断
+- LLM 专注于算法做不了的事：字义筛选、性别适配、典故查找、风格多样性
+- 报告模板（report-naming.md）是起名报告的唯一真源，skill agent 和 GenerateFromData 共用
 
 ## API
 
