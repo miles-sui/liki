@@ -13,8 +13,7 @@ make build
 scripts/dev-lingji.sh
 
 # Pre-commit — 按顺序跑
-make check                         # go vet + go test ./...
-golangci-lint run                  # 本地需装 golangci-lint
+make check                         # golangci-lint + go vet + go test ./...
 
 # 部署后测试 — 四层正交：API → 页面 → 渲染 → 流程
 make test-api URL=http://localhost:8080       # API 层：57 项 HTTP 状态码 + 响应体字段

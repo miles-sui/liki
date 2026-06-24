@@ -16,7 +16,10 @@ test:
 vet:
 	go vet ./...
 
-check: vet test
+lint:
+	golangci-lint run --timeout=3m
+
+check: lint vet test
 
 hooks:
 	git config core.hooksPath .githooks
