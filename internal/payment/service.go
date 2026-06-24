@@ -167,17 +167,21 @@ func (s *Service) handleEvent(ctx context.Context, event *WebhookEvent) error {
 		}
 
 		if email != "" {
-			customerHTML := fmt.Sprintf(`<p>感谢购买！<a href="%s/report/%s">点击查看完整报告</a></p>
-				<p>请保存此链接以便日后查阅。如有疑问请回复此邮件。</p>`, s.ReturnURL, orderID)
+			now := time.Now().In(time.FixedZone("CST", 8*3600)).Format("2006-01-02 15:04:05")
+		customerHTML := fmt.Sprintf(`<p>感谢购买！<a href="%s/report/%s">点击查看完整报告</a></p>
+				<p>请保存此链接以便日后查阅。如有疑问请回复此邮件。</p>
+				<p><small>订单时间：%s CST</small></p>`, s.ReturnURL, orderID, now)
 			go func() { if err := s.Email.SendReport(s.bgCtx, email, product.EmailSubject(), customerHTML); err != nil { slog.Error("send customer report", "err", err) } }()
 		}
 
 		if s.AdminEmail != "" {
-			adminHTML := fmt.Sprintf(
-				`<p>新订单 <strong>%s</strong> | 产品: %s | 金额: ¥%.2f | 用户: %s</p>
-				<p><a href="%s/report/%s">查看报告</a></p>`,
-				orderID, product, float64(event.Data.Amount)/100, email, s.ReturnURL, orderID,
-			)
+			now := time.Now().In(time.FixedZone("CST", 8*3600)).Format("2006-01-02 15:04:05")
+		adminHTML := fmt.Sprintf(
+			`<p>新订单 <strong>%s</strong> | %s</p>
+			<p>产品: %s | 金额: ¥%.2f | 用户: %s</p>
+			<p><a href="%s/report/%s">查看报告</a></p>`,
+			orderID, now, product, float64(event.Data.Amount)/100, email, s.ReturnURL, orderID,
+		)
 			go func() {
 				if err := s.Email.SendReport(s.bgCtx, s.AdminEmail,
 					fmt.Sprintf("[灵机] %s · %s", product, orderID), adminHTML); err != nil {
