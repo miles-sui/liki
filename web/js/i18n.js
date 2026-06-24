@@ -14,7 +14,7 @@
     .use(i18nextHttpBackend)
     .use(i18nextBrowserLanguageDetector)
     .init({
-      fallbackLng: 'zh',
+      fallbackLng: 'hk',
       keySeparator: false,
       nsSeparator: false,
       load: 'languageOnly',
@@ -24,7 +24,7 @@
 
   document.documentElement.lang = i18next.language;
 
-  var l = i18next.language || 'zh';
+  var l = i18next.language || 'hk';
 
   // ── DOM localization ──
   function localizeDOM() {

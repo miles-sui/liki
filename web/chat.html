@@ -1,22 +1,22 @@
 <!DOCTYPE html>
-<html lang="zh" data-i18n-title="chat.title" data-i18n-title-suffix="site.name">
+<html lang="hk" data-i18n-title="chat.title" data-i18n-title-suffix="site.name">
 <head>
 <meta charset="UTF-8">
     <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-<meta name="description" data-i18n-content="chat.metaDesc" content="灵机（Liki）是一款 AI命理助手，用自然语言描述需求即可排盘、合盘、起名。">
-<meta property="og:title" content="灵机对话 · 灵机 Liki">
-<meta property="og:description" content="灵机（Liki）是一款 AI命理助手，用自然语言描述需求即可排盘、合盘、起名。">
+<meta name="description" data-i18n-content="chat.metaDesc" content="靈機（Liki）是一款 AI命理助手，用自然語言描述需求即可排盤、合盤、起名。">
+<meta property="og:title" content="靈機對話 · 靈機 Liki">
+<meta property="og:description" content="靈機（Liki）是一款 AI命理助手，用自然語言描述需求即可排盤、合盤、起名。">
 <meta property="og:url" content="https://liki.hk/chat.html">
 <meta property="og:type" content="website">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="灵机对话 · 灵机 Liki">
-<meta name="twitter:description" content="灵机（Liki）是一款 AI命理助手，用自然语言描述需求即可排盘、合盘、起名。">
+<meta name="twitter:title" content="靈機對話 · 靈機 Liki">
+<meta name="twitter:description" content="靈機（Liki）是一款 AI命理助手，用自然語言描述需求即可排盤、合盤、起名。">
 	<meta property="og:image" content="https://liki.hk/img/og-image.png">
 	<meta property="og:image:width" content="1200">
 	<meta property="og:image:height" content="630">
 	<meta name="twitter:image" content="https://liki.hk/img/og-image.png">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>灵机对话 · 灵机 Liki</title>
+<title>靈機對話 · 靈機 Liki</title>
 <script defer src="/js/vue.runtime.global.prod.js"></script>
 <script defer src="/js/chat-template.js"></script>
 <script defer src="/js/marked.min.js"></script>
@@ -29,7 +29,7 @@
 </head>
 <body class="bg-stone-50">
 <div id="app" v-cloak>
-<a href="#main" class="skip-link">跳到主要内容</a>
+<a href="#main" class="skip-link">跳到主要內容</a>
 <div class="chat-shell">
 
   <!-- Header -->
@@ -63,7 +63,7 @@
         </div>
         <!-- Buy card -->
         <div v-if="m.role === 'buy' && !m._dismissed" class="buy-card">
-          <button class="bc-dismiss" @click="dismissBuy(m)" aria-label="关闭">&times;</button>
+          <button class="bc-dismiss" @click="dismissBuy(m)" aria-label="關閉">&times;</button>
           <div class="bc-price"><span v-text="m.currency"></span>{{ (m.displayAmount / 100).toFixed(2) }} <small>{{ t('chat.unlockLabel') }}</small></div>
           <button class="btn-buy" @click="goPayment()" :disabled="buyLoading">
             <span v-show="!buyLoading">{{ t('chat.viewReport') }}</span>

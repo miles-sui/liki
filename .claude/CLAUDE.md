@@ -107,6 +107,7 @@ internal/
 - Tool schema 从 `doc.OpenAPIJSON`（openapi.json）提取，`openapiParams()` 解析 `x-agent-tools` 和 path schema。
 - 公开索引: `web/llms.txt`（Caddy 静态 serve，llms.txt spec 格式）。
 - Go 代码中无 LLM prompt，只有 UI 进度文案。
+- **LLM 面向内容统一用简体中文**（prompt、skill、llms.txt）。简体字对 LLM tokenizer 更准确（字形与训练语料一致，无繁简歧义）。用户界面语言策略独立，不相互影响。
 - 多语言：前端 `lang` 字段传入 → `langToLocale()` 映射（zh→zh-Hans, hk→zh-Hant, en→en）→ `strings.ReplaceAll({locale})` 替换 prompt 中的 `{locale}` 占位符。报告页暂无语言选择，默认 zh-Hans。
 
 ### 流程
