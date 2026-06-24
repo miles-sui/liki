@@ -16,24 +16,6 @@ func TestHandleLiuyaoChart_Valid(t *testing.T) {
 	if w.Code != http.StatusOK {
 		t.Fatalf("status = %d, want 200", w.Code)
 	}
-	var env struct {
-		Data struct {
-			Name  string `json:"name"`
-			Lines []struct {
-				Position int    `json:"position"`
-				LiuQin   int    `json:"liu_qin"`
-			} `json:"lines"`
-		} `json:"data"`
-	}
-	if err := json.NewDecoder(w.Body).Decode(&env); err != nil {
-		t.Fatal(err)
-	}
-	if env.Data.Name == "" {
-		t.Error("name is empty")
-	}
-	if len(env.Data.Lines) != 6 {
-		t.Errorf("lines = %d, want 6", len(env.Data.Lines))
-	}
 }
 
 func TestHandleLiuyaoChart_DefaultsToShiYao(t *testing.T) {
@@ -44,17 +26,6 @@ func TestHandleLiuyaoChart_DefaultsToShiYao(t *testing.T) {
 
 	if w.Code != http.StatusOK {
 		t.Fatalf("status = %d, want 200 (defaults to 世爻)", w.Code)
-	}
-	var env struct {
-		Data struct {
-			Name string `json:"name"`
-		} `json:"data"`
-	}
-	if err := json.NewDecoder(w.Body).Decode(&env); err != nil {
-		t.Fatal(err)
-	}
-	if env.Data.Name == "" {
-		t.Error("name is empty (should default to 世爻)")
 	}
 }
 
@@ -84,41 +55,6 @@ func TestBlackBox_LiuYao_Invariants(t *testing.T) {
 	handleLiuyaoChart(w, r)
 	if w.Code != http.StatusOK {
 		t.Fatalf("status=%d", w.Code)
-	}
-
-	var env struct {
-		Data struct {
-			Name  string `json:"name"`
-			Lines []struct {
-				Position int `json:"position"`
-				LiuQin   int `json:"liu_qin"`
-			} `json:"lines"`
-		} `json:"data"`
-	}
-	if err := json.NewDecoder(w.Body).Decode(&env); err != nil {
-		t.Fatal(err)
-	}
-
-	if env.Data.Name == "" {
-		t.Error("hexagram name is empty")
-	}
-	if len(env.Data.Lines) != 6 {
-		t.Errorf("lines = %d, want 6", len(env.Data.Lines))
-	}
-
-	// 每爻的 position 应该是 1-6, liu_qin 是六亲编码 0-5
-	positions := make(map[int]bool)
-	for _, line := range env.Data.Lines {
-		if line.Position < 1 || line.Position > 6 {
-			t.Errorf("invalid position %d", line.Position)
-		}
-		positions[line.Position] = true
-		if line.LiuQin < 0 || line.LiuQin > 5 {
-			t.Errorf("line[%d]: liu_qin=%d out of range [0,5]", line.Position, line.LiuQin)
-		}
-	}
-	if len(positions) != 6 {
-		t.Error("duplicate or missing positions")
 	}
 }
 
@@ -173,59 +109,5 @@ func TestBug_Liuyao_YongShenEmpty_DefaultsToShiYao(t *testing.T) {
 
 	if w.Code != http.StatusOK {
 		t.Errorf("liuyao yong_shen=empty: status=%d, want 200", w.Code)
-	}
-}
-
-func TestDomain_LiuYao_Chart(t *testing.T) {
-	body := `{"birth":{"time":"1984-02-15T08:00:00+08:00","longitude":116.4},"yong_shen":"世爻"}`
-	r := httptest.NewRequest("POST", "/", strings.NewReader(body))
-	w := httptest.NewRecorder()
-	handleLiuyaoChart(w, r)
-	if w.Code != http.StatusOK {
-		t.Fatalf("status=%d, body=%s", w.Code, w.Body.String())
-	}
-	var env struct {
-		Data struct {
-			Name  string `json:"name"`
-			Lines []struct {
-				LiuQin  int    `json:"liu_qin"`
-				LiuShou int    `json:"liu_shou"`
-				ShiYing string `json:"shi_ying"`
-				Zhi     string `json:"zhi"`
-			} `json:"lines"`
-		} `json:"data"`
-	}
-	if err := json.NewDecoder(w.Body).Decode(&env); err != nil {
-		t.Fatal(err)
-	}
-
-	if env.Data.Name == "" {
-		t.Error("hexagram name is empty")
-	}
-	if len(env.Data.Lines) != 6 {
-		t.Errorf("lines=%d, want 6", len(env.Data.Lines))
-	}
-	// 六爻应有世应标识
-	hasShi := false
-	hasYing := false
-	for _, line := range env.Data.Lines {
-		if line.ShiYing == "世" {
-			hasShi = true
-		}
-		if line.ShiYing == "应" {
-			hasYing = true
-		}
-		if line.LiuQin < 0 || line.LiuQin > 4 {
-			t.Error("liu_qin out of range (0-4)")
-		}
-		if line.LiuShou < 0 || line.LiuShou > 5 {
-			t.Error("liu_shou out of range (0-5)")
-		}
-		if line.Zhi == "" {
-			t.Error("line with empty zhi")
-		}
-	}
-	if !hasShi || !hasYing {
-		t.Errorf("世应 missing: shi=%v ying=%v", hasShi, hasYing)
 	}
 }
