@@ -1,4 +1,4 @@
-.PHONY: build vet clean check dev smoke deploy us cn test-setup test-js test-frontend-watch test-e2e test-smoke test-render test-frontend test-integration test-all
+.PHONY: build vet clean check dev smoke deploy us cn test-setup test-js test-frontend-watch test-e2e test-smoke test-render test-frontend test-integration test-all check-deploy
 
 build:
 	BUILD_TIME=$$(date -u '+%Y-%m-%dT%H:%M:%SZ'); \
@@ -32,6 +32,19 @@ deploy:
 
 us cn:
 	@:
+
+# 部署后一键验证：API → 页面 → 流程
+check-deploy:
+	@echo "=== 1/3 API 冒烟 ==="
+	@scripts/smoke-lingji.sh $(URL) || { echo "❌ API smoke failed"; exit 1; }
+	@echo ""
+	@echo "=== 2/3 浏览器冒烟 ==="
+	@cd web && BASE_URL=$(URL) npx playwright test --config e2e/playwright.config.js journeys/smoke.spec.js || { echo "❌ Browser smoke failed"; exit 1; }
+	@echo ""
+	@echo "=== 3/3 E2E ==="
+	@cd web && BASE_URL=$(URL) npx playwright test --config e2e/playwright.config.js || { echo "❌ E2E failed"; exit 1; }
+	@echo ""
+	@echo "✅ All checks passed."
 
 # ---- Frontend test targets ----
 

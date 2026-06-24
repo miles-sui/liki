@@ -16,15 +16,16 @@ scripts/dev-lingji.sh
 make check                         # go vet + go test ./...
 golangci-lint run                  # 本地需装 golangci-lint
 
-# 冒烟测试 (服务器运行中)
-scripts/smoke-lingji.sh            # API 冒烟
-make test-smoke URL=http://localhost:8080     # 浏览器冒烟：访问所有页面，检查 console error
-make test-e2e URL=http://localhost:8080       # 完整 E2E
+# 测试 (服务器运行中)
+make smoke URL=http://localhost:8080          # API 冒烟：57 项 HTTP 状态码 + 响应体字段
+make test-smoke URL=http://localhost:8080     # 浏览器冒烟：所有页面可访问，无 console error
+make test-e2e URL=http://localhost:8080       # 完整 E2E：用户操作链（chat→支付→报告）
+make check-deploy URL=http://localhost:8080   # 一键：依次跑上面三个，任一步失败即停
 
 # 部署
 make deploy       # 两台
-make deploy-us    # 仅海外
-make deploy-cn    # 仅国内
+make deploy us    # 仅海外
+make deploy cn    # 仅国内
 ```
 
 ## Architecture
