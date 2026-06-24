@@ -263,7 +263,10 @@ func TestCheckToolRegistry_VerifyChartData_NumberAndBool(t *testing.T) {
 		"path":     "score",
 		"expected": "95",
 	}
-	args, _ := json.Marshal(argsMap)
+	args, err := json.Marshal(argsMap)
+	if err != nil {
+		t.Fatal(err)
+	}
 	result, err := r.Execute(context.Background(), "verify_chart_data", args)
 	if err != nil {
 		t.Fatalf("number: %v", err)
@@ -285,7 +288,10 @@ func TestCheckToolRegistry_VerifyChartData_NumberAndBool(t *testing.T) {
 		"path":     "active",
 		"expected": "true",
 	}
-	args2, _ := json.Marshal(argsMap2)
+	args2, err := json.Marshal(argsMap2)
+	if err != nil {
+		t.Fatal(err)
+	}
 	result2, err := r.Execute(context.Background(), "verify_chart_data", args2)
 	if err != nil {
 		t.Fatalf("bool: %v", err)
@@ -323,7 +329,10 @@ func TestCheckToolRegistry_VerifyStructure_HasLiuNianTrue(t *testing.T) {
 		"product":     "chart",
 		"has_liunian": true,
 	}
-	args, _ := json.Marshal(argsMap)
+	args, err := json.Marshal(argsMap)
+	if err != nil {
+		t.Fatal(err)
+	}
 	result, err := r.Execute(context.Background(), "verify_structure", args)
 	if err != nil {
 		t.Fatalf("verify_structure: %v", err)
@@ -345,7 +354,10 @@ func TestCheckToolRegistry_VerifyStructure_MultipleMissing(t *testing.T) {
 		"sections": []string{"一、格局总论"},
 		"product":  "chart",
 	}
-	args, _ := json.Marshal(argsMap)
+	args, err := json.Marshal(argsMap)
+	if err != nil {
+		t.Fatal(err)
+	}
 	result, err := r.Execute(context.Background(), "verify_structure", args)
 	if err != nil {
 		t.Fatalf("verify_structure: %v", err)

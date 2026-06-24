@@ -673,6 +673,9 @@ func TestRetryReportGeneration_PaidNoJSON(t *testing.T) {
 
 	// Verify paid, no llm_json.
 	order, err := store.GetOrder(context.Background(), "order-1")
+	if err != nil {
+		t.Fatalf("setup GetOrder: %v", err)
+	}
 	if order.Status != OrderPaid || order.LlmJSON != "" {
 		t.Fatalf("setup: status=%s llm_json=%q, want paid+empty", order.Status, order.LlmJSON)
 	}

@@ -373,7 +373,9 @@ func TestHandleCheckout_AutoProvider(t *testing.T) {
 			var env struct {
 				Data payment.CheckoutResult `json:"data"`
 			}
-			json.NewDecoder(w.Body).Decode(&env)
+			if err := json.NewDecoder(w.Body).Decode(&env); err != nil {
+				t.Fatalf("decode: %v", err)
+			}
 			if tt.wantCallX {
 				if env.Data.SessionID != "xunhu_sess" {
 					t.Errorf("session_id = %q, want xunhu_sess", env.Data.SessionID)

@@ -102,7 +102,7 @@ func verifyTerminology(ctx context.Context, args json.RawMessage) (json.RawMessa
 		Terms []string `json:"terms"`
 	}
 	if err := json.Unmarshal(args, &input); err != nil {
-		return json.RawMessage(`{"unknown":["invalid input"]}`), nil
+		return json.RawMessage(`{"unknown":["invalid input"]}`), nil //nolint:nilerr
 	}
 
 	var unknown []string
@@ -114,7 +114,10 @@ func verifyTerminology(ctx context.Context, args json.RawMessage) (json.RawMessa
 	if unknown == nil {
 		unknown = []string{}
 	}
-	out, _ := json.Marshal(map[string]any{"unknown": unknown})
+	out, err := json.Marshal(map[string]any{"unknown": unknown})
+	if err != nil {
+		return nil, err
+	}
 	return out, nil
 }
 
@@ -126,12 +129,15 @@ func verifyChartData(ctx context.Context, args json.RawMessage) (json.RawMessage
 		Expected string          `json:"expected"`
 	}
 	if err := json.Unmarshal(args, &input); err != nil {
-		return json.RawMessage(`{"match":false,"actual":"","error":"invalid input"}`), nil
+		return json.RawMessage(`{"match":false,"actual":"","error":"invalid input"}`), nil //nolint:nilerr
 	}
 
 	actual := gjsonGet(input.Chart, input.Path)
 	match := actual == input.Expected
-	out, _ := json.Marshal(map[string]any{"match": match, "actual": actual})
+	out, err := json.Marshal(map[string]any{"match": match, "actual": actual})
+	if err != nil {
+		return nil, err
+	}
 	return out, nil
 }
 
@@ -143,7 +149,7 @@ func verifyStructure(ctx context.Context, args json.RawMessage) (json.RawMessage
 		HasLiuNian *bool   `json:"has_liunian"`
 	}
 	if err := json.Unmarshal(args, &input); err != nil {
-		return json.RawMessage(`{"missing":["invalid input"]}`), nil
+		return json.RawMessage(`{"missing":["invalid input"]}`), nil //nolint:nilerr
 	}
 
 	required, ok := reportSections[Product(input.Product)]
@@ -156,7 +162,6 @@ func verifyStructure(ctx context.Context, args json.RawMessage) (json.RawMessage
 		if slices.Contains(input.Sections, sec) {
 			continue
 		}
-		// Check if this is a conditional section that's not needed
 		if cond, isCond := conditionalSections[sec]; isCond {
 			if cond == "has_liunian" && input.HasLiuNian != nil && !*input.HasLiuNian {
 				continue
@@ -167,7 +172,10 @@ func verifyStructure(ctx context.Context, args json.RawMessage) (json.RawMessage
 	if missing == nil {
 		missing = []string{}
 	}
-	out, _ := json.Marshal(map[string]any{"missing": missing})
+	out, err := json.Marshal(map[string]any{"missing": missing})
+	if err != nil {
+		return nil, err
+	}
 	return out, nil
 }
 
@@ -199,7 +207,10 @@ func gjsonGet(data json.RawMessage, path string) string {
 	case bool:
 		return fmt.Sprintf("%v", v)
 	default:
-		b, _ := json.Marshal(v)
+		b, err := json.Marshal(v)
+		if err != nil {
+			return ""
+		}
 		return string(b)
 	}
 }

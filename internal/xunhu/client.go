@@ -132,7 +132,10 @@ func (c *Client) VerifyWebhook(rawBody []byte, headers http.Header) (*payment.We
 		return nil, fmt.Errorf("xunhu: signature mismatch")
 	}
 
-	amount, _ := strconv.Atoi(values.Get("total_fee"))
+	amount, err := strconv.Atoi(values.Get("total_fee"))
+	if err != nil {
+		amount = 0
+	}
 	eventType := values.Get("trade_status")
 	if eventType == "TRADE_SUCCESS" {
 		eventType = "payment.succeeded"
