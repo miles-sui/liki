@@ -26,7 +26,7 @@ func TestSendReport_ServerError(t *testing.T) {
 
 	err := c.SendReport(ctx, "to@example.com", "Test", "<p>Hello</p>")
 	if err == nil {
-		t.Fatal("expected error with bad API key")
+		t.Fatal("expected error for non-2xx response")
 	}
 	t.Logf("expected error: %v", err)
 }

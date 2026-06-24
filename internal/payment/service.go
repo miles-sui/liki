@@ -173,13 +173,14 @@ func (s *Service) handleEvent(ctx context.Context, event *WebhookEvent) error {
 		}
 
 		if s.AdminEmail != "" {
-			now := time.Now().UTC().Format("2006-01-02 15:04:05")
 			adminHTML := fmt.Sprintf(
-			`<p>新订单 <strong>%s</strong> | %s</p>
-			<p>产品: %s | 金额: ¥%.2f | 用户: %s</p>
-			<p><a href="%s/report/%s">查看报告</a></p>`,
-			orderID, now, product, float64(event.Data.Amount)/100, email, s.ReturnURL, orderID,
-		)
+				`<p>新订单 <strong>%s</strong> | %s</p>
+				<p>产品: %s | 金额: ¥%.2f | 用户: %s</p>
+				<p><a href="%s/report/%s">查看报告</a></p>`,
+				orderID, time.Now().UTC().Format(time.DateTime),
+				product, float64(event.Data.Amount)/100, email,
+				s.ReturnURL, orderID,
+			)
 			go func() {
 				if err := s.Email.SendReport(s.bgCtx, s.AdminEmail,
 					fmt.Sprintf("[灵机] %s · %s", product, orderID), adminHTML); err != nil {

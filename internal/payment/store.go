@@ -166,8 +166,8 @@ func (s *Store) GetOrder(ctx context.Context, orderID string) (*Order, error) {
 	}
 	o.Product = agent.Product(productStr)
 		var err2, err3 error
-	o.CreatedAt, err2 = time.Parse("2006-01-02 15:04:05", ca)
-	o.UpdatedAt, err3 = time.Parse("2006-01-02 15:04:05", ua)
+	o.CreatedAt, err2 = time.Parse(time.DateTime, ca)
+	o.UpdatedAt, err3 = time.Parse(time.DateTime, ua)
 	if err2 != nil || err3 != nil {
 		slog.Warn("payment: parse order timestamps", "orderID", orderID, "created_at", ca, "updated_at", ua, "err", fmt.Errorf("created: %w, updated: %w", err2, err3))
 	}
@@ -195,7 +195,7 @@ func (s *Store) UpdateLlmJSON(ctx context.Context, orderID, llmJSON string) erro
 }
 
 func (s *Store) CleanStale(ctx context.Context, maxAge time.Duration) error {
-	cutoff := time.Now().Add(-maxAge).UTC().Format("2006-01-02 15:04:05")
+	cutoff := time.Now().Add(-maxAge).UTC().Format(time.DateTime)
 	_, err := s.db.ExecContext(ctx,
 		`DELETE FROM orders WHERE status = 'pending' AND created_at < ?`, cutoff)
 	return err
