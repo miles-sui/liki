@@ -174,7 +174,7 @@ func (s *Service) handleEvent(ctx context.Context, event *WebhookEvent) error {
 
 		if s.AdminEmail != "" {
 			now := time.Now().UTC().Format("2006-01-02 15:04:05")
-		adminHTML := fmt.Sprintf(
+			adminHTML := fmt.Sprintf(
 			`<p>新订单 <strong>%s</strong> | %s</p>
 			<p>产品: %s | 金额: ¥%.2f | 用户: %s</p>
 			<p><a href="%s/report/%s">查看报告</a></p>`,

@@ -251,6 +251,18 @@ func TestHandleWebhook_BothProvidersFail(t *testing.T) {
 	}
 }
 
+func TestHandleWebhook_EmptyOrderID(t *testing.T) {
+	svc, _, dodoMock, _ := newTestSvc(t)
+	dodoMock.verifyEvent = &WebhookEvent{
+		Type: "payment.succeeded",
+		Data: WebhookEventData{OrderID: "", PaymentID: "pay-1", Amount: 990},
+	}
+	err := svc.HandleWebhook(context.Background(), []byte(`{}`), http.Header{})
+	if err == nil {
+		t.Fatal("expected error for empty order_id")
+	}
+}
+
 func TestHandleWebhook_NonPaymentEvent(t *testing.T) {
 	svc, _, dodoMock, _ := newTestSvc(t)
 	dodoMock.verifyEvent = &WebhookEvent{Type: "checkout.created", Data: WebhookEventData{}}
@@ -596,8 +608,17 @@ func TestStartReportGeneration_RetriggersAfterCompletion(t *testing.T) {
 	svc.StartReportGeneration("order-1", agent.ProductChart, `{"x":1}`)
 	<-cllm.doneCh // wait for first gen LLM call to return
 
-	// Yield to let the goroutine finish UpdateLlmJSONIfEmpty + deferred map cleanup.
-	time.Sleep(10 * time.Millisecond)
+	// Poll generating map until the goroutine finishes cleanup.
+	// Avoid time.Sleep which is flaky on slow CI runners.
+	for i := 0; i < 100; i++ {
+		svc.generatingMu.Lock()
+		_, ok := svc.generating["order-1"]
+		svc.generatingMu.Unlock()
+		if !ok {
+			break
+		}
+		time.Sleep(time.Millisecond)
+	}
 
 	svc.StartReportGeneration("order-1", agent.ProductChart, `{"x":1}`)
 	<-cllm.doneCh // wait for second gen
@@ -618,6 +639,15 @@ func TestGenerateFullReport_Success(t *testing.T) {
 
 	svc.StartReportGeneration("order-1", agent.ProductChart, `{"chart":"data"}`)
 	<-cllm.doneCh
+	for i := 0; i < 100; i++ {
+		svc.generatingMu.Lock()
+		_, ok := svc.generating["order-1"]
+		svc.generatingMu.Unlock()
+		if !ok {
+			break
+		}
+		time.Sleep(time.Millisecond)
+	}
 
 	order, err := store.GetOrder(context.Background(), "order-1")
 	if err != nil {
@@ -747,8 +777,17 @@ func TestRetryReportGeneration_PaidNoJSON(t *testing.T) {
 		t.Errorf("llmJSON = %q, want empty (bg generation not yet complete)", llmJSON)
 	}
 
-	// Wait for background generation.
+	// Wait for background generation and DB write to complete.
 	<-cllm.doneCh
+	for i := 0; i < 100; i++ {
+		svc.generatingMu.Lock()
+		_, ok := svc.generating["order-1"]
+		svc.generatingMu.Unlock()
+		if !ok {
+			break
+		}
+		time.Sleep(time.Millisecond)
+	}
 
 	order, orderErr := store.GetOrder(context.Background(), "order-1")
 	if orderErr != nil {
@@ -776,6 +815,15 @@ func TestRetryReportGeneration_PaidWithJSON(t *testing.T) {
 		t.Fatalf("HandleWebhook: %v", err)
 	}
 	<-cllm.doneCh // wait for webhook-triggered generation
+	for i := 0; i < 100; i++ {
+		svc.generatingMu.Lock()
+		_, ok := svc.generating["order-1"]
+		svc.generatingMu.Unlock()
+		if !ok {
+			break
+		}
+		time.Sleep(time.Millisecond)
+	}
 
 	// Now retry: must NOT trigger new generation since llm_json exists.
 	genCountBefore := cllm.callCount()

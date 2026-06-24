@@ -170,7 +170,7 @@ func TestCreateCheckout_Timeout(t *testing.T) {
 	defer srv.Close()
 
 	c := newTestClient(srv)
-	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
+	ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
 	defer cancel()
 
 	_, err := c.CreateCheckout(ctx, agent.ProductChart, 990, "order-1", "", "https://liki.hk/return")
