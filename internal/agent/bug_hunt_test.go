@@ -9,10 +9,8 @@ import (
 const btAgent = `"birth":{"time":"1984-02-15T08:00:00+08:00","longitude":116.4}`
 
 // ============================================================
-// BUG HUNT: agent tool handlers have NO input validation.
-// Unlike HTTP handlers (which use decodeAndValidate), the
-// agent tool handlers just json.Unmarshal and call engines.
-// Invalid inputs may produce garbage results or crash.
+// Regression tests: agent tool input validation.
+// Each test sends invalid input and asserts the tool rejects it.
 // ============================================================
 
 // --- compute_chart: invalid gender ---
@@ -20,37 +18,18 @@ const btAgent = `"birth":{"time":"1984-02-15T08:00:00+08:00","longitude":116.4}`
 func TestBugAgent_ComputeChart_InvalidGender(t *testing.T) {
 	r := NewChatToolRegistry()
 	args := json.RawMessage(`{` + btAgent + `,"gender":"other"}`)
-	result, err := r.Execute(context.Background(), "compute_chart", args)
-	if err != nil {
-		t.Fatalf("error: %v", err)
-	}
-	// BUG CONFIRMED: invalid gender silently accepted.
-	var env struct {
-		Product string `json:"_product"`
-	}
-	if err := json.Unmarshal(result, &env); err != nil {
-		t.Fatal(err)
-	}
-	if env.Product == "chart" {
-		t.Log("BUG CONFIRMED: compute_chart accepts invalid gender='other'")
+	_, err := r.Execute(context.Background(), "compute_chart", args)
+	if err == nil {
+		t.Error("BUG: compute_chart accepts invalid gender='other'")
 	}
 }
 
 func TestBugAgent_ComputeChart_EmptyGender(t *testing.T) {
 	r := NewChatToolRegistry()
 	args := json.RawMessage(`{` + btAgent + `,"gender":""}`)
-	result, err := r.Execute(context.Background(), "compute_chart", args)
-	if err != nil {
-		t.Fatalf("error: %v", err)
-	}
-	var env struct {
-		Product string `json:"_product"`
-	}
-	if err := json.Unmarshal(result, &env); err != nil {
-		t.Fatal(err)
-	}
-	if env.Product == "chart" {
-		t.Log("BUG CONFIRMED: compute_chart accepts empty gender=''")
+	_, err := r.Execute(context.Background(), "compute_chart", args)
+	if err == nil {
+		t.Error("BUG: compute_chart accepts empty gender=''")
 	}
 }
 
@@ -59,7 +38,7 @@ func TestBugAgent_ComputeChart_MissingBirth(t *testing.T) {
 	args := json.RawMessage(`{"gender":"male"}`)
 	_, err := r.Execute(context.Background(), "compute_chart", args)
 	if err == nil {
-		t.Log("BUG CONFIRMED: compute_chart accepts missing birth")
+		t.Error("BUG: compute_chart accepts missing birth")
 	} else {
 		t.Logf("OK: compute_chart rejects missing birth: %v", err)
 	}
@@ -72,7 +51,7 @@ func TestBugAgent_ComputeChart_EmptyTime(t *testing.T) {
 	args := json.RawMessage(`{"birth":{"time":"","longitude":116.4},"gender":"male"}`)
 	_, err := r.Execute(context.Background(), "compute_chart", args)
 	if err == nil {
-		t.Log("BUG CONFIRMED: compute_chart accepts empty birth.time")
+		t.Error("BUG: compute_chart accepts empty birth.time")
 	} else {
 		t.Logf("OK: rejects empty time: %v", err)
 	}
@@ -85,7 +64,7 @@ func TestBugAgent_ComputeBond_MissingB(t *testing.T) {
 	args := json.RawMessage(`{"a":{` + btAgent + `,"gender":"male"}}`)
 	_, err := r.Execute(context.Background(), "compute_bond", args)
 	if err == nil {
-		t.Log("BUG CONFIRMED: compute_bond accepts missing 'b' (zero-value birth)")
+		t.Error("BUG: compute_bond accepts missing 'b' (zero-value birth)")
 	} else {
 		t.Logf("OK: rejects missing b: %v", err)
 	}
@@ -98,7 +77,7 @@ func TestBugAgent_ComputeBond_MissingA(t *testing.T) {
 	args := json.RawMessage(`{"b":{` + btAgent + `,"gender":"female"}}`)
 	_, err := r.Execute(context.Background(), "compute_bond", args)
 	if err == nil {
-		t.Log("BUG CONFIRMED: compute_bond accepts missing 'a'")
+		t.Error("BUG: compute_bond accepts missing 'a'")
 	} else {
 		t.Logf("OK: rejects missing a: %v", err)
 	}
@@ -120,19 +99,9 @@ func TestBugAgent_ComputeLiunian_MissingYear(t *testing.T) {
 func TestBugAgent_ComputeLiunian_NegativeYear(t *testing.T) {
 	r := NewChatToolRegistry()
 	args := json.RawMessage(`{"year":-1,` + btAgent + `}`)
-	result, err := r.Execute(context.Background(), "compute_liunian", args)
-	if err != nil {
-		t.Logf("compute_liunian year=-1 error: %v", err)
-		return
-	}
-	var env struct {
-		Product string `json:"_product"`
-	}
-	if err := json.Unmarshal(result, &env); err != nil {
-		t.Fatal(err)
-	}
-	if env.Product == "liunian" {
-		t.Log("BUG CONFIRMED: compute_liunian accepts negative year=-1")
+	_, err := r.Execute(context.Background(), "compute_liunian", args)
+	if err == nil {
+		t.Error("BUG: compute_liunian accepts negative year=-1")
 	}
 }
 
@@ -152,19 +121,9 @@ func TestBugAgent_ComputeLiuyue_MissingMonth(t *testing.T) {
 func TestBugAgent_ComputeLiushi_HourOutOfRange(t *testing.T) {
 	r := NewChatToolRegistry()
 	args := json.RawMessage(`{"date":"2025-06-15","hour":25,"birth":{"time":"1984-02-15T08:00:00+08:00","longitude":116.4}}`)
-	result, err := r.Execute(context.Background(), "compute_liushi", args)
-	if err != nil {
-		t.Logf("compute_liushi hour=25 error: %v", err)
-		return
-	}
-	var env struct {
-		Product string `json:"_product"`
-	}
-	if err := json.Unmarshal(result, &env); err != nil {
-		t.Fatal(err)
-	}
-	if env.Product == "liushi" {
-		t.Log("BUG CONFIRMED: compute_liushi accepts hour=25 (out of range)")
+	_, err := r.Execute(context.Background(), "compute_liushi", args)
+	if err == nil {
+		t.Error("BUG: compute_liushi accepts hour=25 (out of range)")
 	}
 }
 
@@ -173,83 +132,17 @@ func TestBugAgent_ComputeLiushi_HourOutOfRange(t *testing.T) {
 func TestBugAgent_ComputeLiuyao_InvalidYongShen(t *testing.T) {
 	r := NewChatToolRegistry()
 	args := json.RawMessage(`{` + btAgent + `,"yong_shen":"invalid"}`)
-	result, err := r.Execute(context.Background(), "compute_liuyao", args)
-	if err != nil {
-		t.Logf("compute_liuyao invalid yong_shen error: %v", err)
-		return
-	}
-	// BUG: invalid yong_shen maps to zero-value YongShen(0), which is NOT in yongShenMap
-	// So it will pass YongShen(0) to liuyao.ComputeChart — is this valid?
-	var env struct {
-		Product string          `json:"_product"`
-		Data    json.RawMessage `json:"data"`
-	}
-	if err := json.Unmarshal(result, &env); err != nil {
-		t.Fatal(err)
-	}
-	if env.Product == "liuyao" {
-		var chart struct {
-			Name string `json:"name"`
-		}
-		if err := json.Unmarshal(env.Data, &chart); err != nil {
-			t.Fatal(err)
-		}
-		t.Logf("BUG CONFIRMED: compute_liuyao accepts invalid yong_shen='invalid', name=%q", chart.Name)
+	_, err := r.Execute(context.Background(), "compute_liuyao", args)
+	if err == nil {
+		t.Error("BUG: compute_liuyao accepts invalid yong_shen='invalid'")
 	}
 }
 
-// --- compute_xiaoyun: missing count ---
-
-func TestBugAgent_ComputeXiaoyun_MissingCount(t *testing.T) {
-	r := NewChatToolRegistry()
-	args := json.RawMessage(`{` + btAgent + `,"gender":"male"}`)
-	result, err := r.Execute(context.Background(), "compute_xiaoyun", args)
-	if err != nil {
-		t.Fatalf("error: %v", err)
-	}
-	var env struct {
-		Product string          `json:"_product"`
-		Data    json.RawMessage `json:"data"`
-	}
-	if err := json.Unmarshal(result, &env); err != nil {
-		t.Fatal(err)
-	}
-	// count=0 — engine may return empty slice or compute default
-	var pillars []json.RawMessage
-	if err := json.Unmarshal(env.Data, &pillars); err != nil {
-		t.Fatal(err)
-	}
-	t.Logf("compute_xiaoyun missing count: results=%d", len(pillars))
-}
-
-// --- compute_xiaoxian: missing count ---
-
-func TestBugAgent_ComputeXiaoxian_MissingCount(t *testing.T) {
-	r := NewChatToolRegistry()
-	args := json.RawMessage(`{"gender":"female"}`)
-	result, err := r.Execute(context.Background(), "compute_xiaoxian", args)
-	if err != nil {
-		t.Fatalf("error: %v", err)
-	}
-	var env struct {
-		Product string          `json:"_product"`
-		Data    json.RawMessage `json:"data"`
-	}
-	if err := json.Unmarshal(result, &env); err != nil {
-		t.Fatal(err)
-	}
-	var entries []json.RawMessage
-	if err := json.Unmarshal(env.Data, &entries); err != nil {
-		t.Fatal(err)
-	}
-	t.Logf("compute_xiaoxian missing count: results=%d", len(entries))
-}
 
 // --- compute_ziwei_bond: missing b ---
 
 func TestBugAgent_ComputeZiweiBond_MissingB(t *testing.T) {
 	r := NewChatToolRegistry()
-	// Need a valid chart for A
 	chartArgs := json.RawMessage(`{` + btAgent + `,"gender":"male"}`)
 	chartResult, err := r.Execute(context.Background(), "compute_ziwei", chartArgs)
 	if err != nil {
@@ -263,19 +156,9 @@ func TestBugAgent_ComputeZiweiBond_MissingB(t *testing.T) {
 	}
 
 	args := json.RawMessage(`{"a":` + string(chartEnv.Data) + `}`)
-	result, err := r.Execute(context.Background(), "compute_ziwei_bond", args)
-	if err != nil {
-		t.Logf("compute_ziwei_bond missing b error: %v", err)
-		return
-	}
-	var env struct {
-		Product string `json:"_product"`
-	}
-	if err := json.Unmarshal(result, &env); err != nil {
-		t.Fatal(err)
-	}
-	if env.Product == "ziwei_bond" {
-		t.Log("BUG CONFIRMED: compute_ziwei_bond accepts missing 'b'")
+	_, err = r.Execute(context.Background(), "compute_ziwei_bond", args)
+	if err == nil {
+		t.Error("BUG: compute_ziwei_bond accepts missing 'b'")
 	}
 }
 
@@ -284,63 +167,21 @@ func TestBugAgent_ComputeZiweiBond_MissingB(t *testing.T) {
 func TestBugAgent_ComputeZiweiBond_EmptyCharts(t *testing.T) {
 	r := NewChatToolRegistry()
 	args := json.RawMessage(`{"a":{},"b":{}}`)
-	result, err := r.Execute(context.Background(), "compute_ziwei_bond", args)
-	if err != nil {
-		t.Logf("compute_ziwei_bond empty charts error: %v", err)
-		return
-	}
-	var env struct {
-		Product string `json:"_product"`
-	}
-	if err := json.Unmarshal(result, &env); err != nil {
-		t.Fatal(err)
-	}
-	if env.Product == "ziwei_bond" {
-		t.Log("BUG CONFIRMED: compute_ziwei_bond accepts empty charts {}")
+	_, err := r.Execute(context.Background(), "compute_ziwei_bond", args)
+	if err == nil {
+		t.Error("BUG: compute_ziwei_bond accepts empty charts {}")
 	}
 }
 
-// --- compute_ziwei_daxian: empty chart ---
-
-func TestBugAgent_ComputeZiweiDaxian_EmptyChart(t *testing.T) {
-	r := NewChatToolRegistry()
-	args := json.RawMessage(`{"chart":{}}`)
-	result, err := r.Execute(context.Background(), "compute_ziwei_daxian", args)
-	if err != nil {
-		t.Logf("compute_ziwei_daxian empty chart error: %v", err)
-		return
-	}
-	var env struct {
-		Product string          `json:"_product"`
-		Data    json.RawMessage `json:"data"`
-	}
-	if err := json.Unmarshal(result, &env); err != nil {
-		t.Fatal(err)
-	}
-	var steps []json.RawMessage
-	if err := json.Unmarshal(env.Data, &steps); err != nil {
-		t.Fatal(err)
-	}
-	t.Logf("compute_ziwei_daxian empty chart: steps=%d", len(steps))
-}
 
 // --- compute_ziwei: invalid gender ---
 
 func TestBugAgent_ComputeZiwei_InvalidGender(t *testing.T) {
 	r := NewChatToolRegistry()
 	args := json.RawMessage(`{` + btAgent + `,"gender":"unknown"}`)
-	result, err := r.Execute(context.Background(), "compute_ziwei", args)
-	if err != nil {
-		t.Fatalf("error: %v", err)
-	}
-	var env struct {
-		Product string `json:"_product"`
-	}
-	if err := json.Unmarshal(result, &env); err != nil {
-		t.Fatal(err)
-	}
-	if env.Product == "ziwei" {
-		t.Log("BUG CONFIRMED: compute_ziwei accepts invalid gender='unknown'")
+	_, err := r.Execute(context.Background(), "compute_ziwei", args)
+	if err == nil {
+		t.Error("BUG: compute_ziwei accepts invalid gender='unknown'")
 	}
 }
 
@@ -349,19 +190,9 @@ func TestBugAgent_ComputeZiwei_InvalidGender(t *testing.T) {
 func TestBugAgent_ComputeQimen_InvalidKind(t *testing.T) {
 	r := NewChatToolRegistry()
 	args := json.RawMessage(`{"birth":{"time":"1984-02-15T08:00:00+08:00","longitude":116.4},"kind":"xun"}`)
-	result, err := r.Execute(context.Background(), "compute_qimen", args)
-	if err != nil {
-		t.Logf("compute_qimen kind=xun error: %v", err)
-		return
-	}
-	var env struct {
-		Product string `json:"_product"`
-	}
-	if err := json.Unmarshal(result, &env); err != nil {
-		t.Fatal(err)
-	}
-	if env.Product == "qimen" {
-		t.Log("BUG CONFIRMED: compute_qimen accepts invalid kind='xun'")
+	_, err := r.Execute(context.Background(), "compute_qimen", args)
+	if err == nil {
+		t.Error("BUG: compute_qimen accepts invalid kind='xun'")
 	}
 }
 
@@ -370,44 +201,22 @@ func TestBugAgent_ComputeQimen_InvalidKind(t *testing.T) {
 func TestBugAgent_ComputeMingGua_InvalidGender(t *testing.T) {
 	r := NewChatToolRegistry()
 	args := json.RawMessage(`{"gender":"unknown","birth_year":1990}`)
-	result, err := r.Execute(context.Background(), "compute_minggua", args)
-	if err != nil {
-		t.Fatalf("error: %v", err)
-	}
-	var env struct {
-		Product string `json:"_product"`
-	}
-	if err := json.Unmarshal(result, &env); err != nil {
-		t.Fatal(err)
-	}
-	if env.Product == "minggua" {
-		t.Log("BUG CONFIRMED: compute_minggua accepts invalid gender='unknown'")
+	_, err := r.Execute(context.Background(), "compute_minggua", args)
+	if err == nil {
+		t.Error("BUG: compute_minggua accepts invalid gender='unknown'")
 	}
 }
 
-// --- compute_minggua: missing birth_year ---
 
-func TestBugAgent_ComputeMingGua_MissingBirthYear(t *testing.T) {
+// --- compute_sanyuan_yun: invalid year ---
+
+func TestBugAgent_ComputeSanYuanYun_InvalidYear(t *testing.T) {
 	r := NewChatToolRegistry()
-	args := json.RawMessage(`{"gender":"male"}`)
-	result, err := r.Execute(context.Background(), "compute_minggua", args)
-	if err != nil {
-		t.Fatalf("error: %v", err)
+	args := json.RawMessage(`{"year":0}`)
+	_, err := r.Execute(context.Background(), "compute_sanyuan_yun", args)
+	if err == nil {
+		t.Error("BUG: compute_sanyuan_yun accepts year=0")
 	}
-	var env struct {
-		Product string          `json:"_product"`
-		Data    json.RawMessage `json:"data"`
-	}
-	if err := json.Unmarshal(result, &env); err != nil {
-		t.Fatal(err)
-	}
-	var mg struct {
-		GuaNumber int `json:"gua_number"`
-	}
-	if err := json.Unmarshal(env.Data, &mg); err != nil {
-		t.Fatal(err)
-	}
-	t.Logf("compute_minggua birth_year=0: gua_number=%d", mg.GuaNumber)
 }
 
 // --- compute_xuankong: missing mountains ---
@@ -415,60 +224,12 @@ func TestBugAgent_ComputeMingGua_MissingBirthYear(t *testing.T) {
 func TestBugAgent_ComputeXuankong_MissingMountains(t *testing.T) {
 	r := NewChatToolRegistry()
 	args := json.RawMessage(`{` + btAgent + `}`)
-	result, err := r.Execute(context.Background(), "compute_xuankong", args)
-	if err != nil {
-		t.Logf("compute_xuankong missing mountains error: %v", err)
-		return
-	}
-	var env struct {
-		Product string          `json:"_product"`
-		Data    json.RawMessage `json:"data"`
-	}
-	if err := json.Unmarshal(result, &env); err != nil {
-		t.Fatal(err)
-	}
-	if env.Product == "xuankong" {
-		var chart struct {
-			Palaces []json.RawMessage `json:"palaces"`
-		}
-		if err := json.Unmarshal(env.Data, &chart); err != nil {
-			t.Fatal(err)
-		}
-		t.Logf("BUG CONFIRMED: compute_xuankong accepts sit=0,face=0, palaces=%d", len(chart.Palaces))
+	_, err := r.Execute(context.Background(), "compute_xuankong", args)
+	if err == nil {
+		t.Error("BUG: compute_xuankong accepts missing sit_mountain/face_mountain")
 	}
 }
 
-// --- compute_sanyuan_yun: missing year ---
-
-func TestBugAgent_ComputeSanYuanYun_MissingYear(t *testing.T) {
-	defer func() {
-		if r := recover(); r != nil {
-			t.Logf("CRASH BUG: compute_sanyuan_yun panics on year=0: %v", r)
-			return
-		}
-	}()
-	r := NewChatToolRegistry()
-	args := json.RawMessage(`{}`)
-	result, err := r.Execute(context.Background(), "compute_sanyuan_yun", args)
-	if err != nil {
-		t.Fatalf("error: %v", err)
-	}
-	var env struct {
-		Product string          `json:"_product"`
-		Data    json.RawMessage `json:"data"`
-	}
-	if err := json.Unmarshal(result, &env); err != nil {
-		t.Fatal(err)
-	}
-	var yun struct {
-		YunNumber int `json:"YunNumber"`
-		StartYear int `json:"StartYear"`
-	}
-	if err := json.Unmarshal(env.Data, &yun); err != nil {
-		t.Fatal(err)
-	}
-	t.Logf("compute_sanyuan_yun year=0: YunNumber=%d, StartYear=%d", yun.YunNumber, yun.StartYear)
-}
 
 // --- compute_naming_wuge: empty surname ---
 
@@ -477,7 +238,7 @@ func TestBugAgent_ComputeNamingWuge_EmptySurname(t *testing.T) {
 	args := json.RawMessage(`{"surname":"","yong_shen":"木","xi_shen":["水"]}`)
 	_, err := r.Execute(context.Background(), "compute_naming_wuge", args)
 	if err == nil {
-		t.Log("BUG CONFIRMED: compute_naming_wuge accepts empty surname")
+		t.Error("BUG: compute_naming_wuge accepts empty surname")
 	} else {
 		t.Logf("OK: rejects empty surname: %v", err)
 	}
@@ -490,9 +251,7 @@ func TestBugAgent_ComputeNamingWuge_InvalidYongShen(t *testing.T) {
 	args := json.RawMessage(`{"surname":"张","yong_shen":"x","xi_shen":["水"]}`)
 	_, err := r.Execute(context.Background(), "compute_naming_wuge", args)
 	if err == nil {
-		t.Log("BUG CONFIRMED: compute_naming_wuge accepts invalid yong_shen='x'")
-	} else {
-		t.Logf("OK: rejects invalid yong_shen: %v", err)
+		t.Error("BUG: compute_naming_wuge accepts invalid yong_shen='x'")
 	}
 }
 
@@ -503,7 +262,7 @@ func TestBugAgent_ComputeNamingEvaluate_EmptyGivenName(t *testing.T) {
 	args := json.RawMessage(`{"surname":"张","given_name":"","yong_shen":"木"}`)
 	_, err := r.Execute(context.Background(), "compute_naming_evaluate", args)
 	if err == nil {
-		t.Log("BUG CONFIRMED: compute_naming_evaluate accepts empty given_name")
+		t.Error("BUG: compute_naming_evaluate accepts empty given_name")
 	} else {
 		t.Logf("OK: rejects empty given_name: %v", err)
 	}
@@ -516,9 +275,7 @@ func TestBugAgent_QueryHuangliDate_MissingEvent(t *testing.T) {
 	args := json.RawMessage(`{"date":"2025-06-01"}`)
 	_, err := r.Execute(context.Background(), "query_huangli_date", args)
 	if err == nil {
-		t.Log("BUG CONFIRMED: query_huangli_date accepts missing event")
-	} else {
-		t.Logf("OK: rejects missing event: %v", err)
+		t.Error("BUG: query_huangli_date accepts missing event")
 	}
 }
 
@@ -529,7 +286,7 @@ func TestBugAgent_QueryHuangliBondDate_MissingBirth(t *testing.T) {
 	args := json.RawMessage(`{"event_type":"结婚","date":"2025-06-01"}`)
 	_, err := r.Execute(context.Background(), "query_huangli_bond_date", args)
 	if err == nil {
-		t.Log("BUG CONFIRMED: query_huangli_bond_date accepts missing birth")
+		t.Error("BUG: query_huangli_bond_date accepts missing birth")
 	} else {
 		t.Logf("OK: rejects missing birth: %v", err)
 	}
@@ -550,26 +307,8 @@ func TestBugAgent_UnknownTool(t *testing.T) {
 func TestBugAgent_ComputeBazhai_MissingGender(t *testing.T) {
 	r := NewChatToolRegistry()
 	args := json.RawMessage(`{` + btAgent + `}`)
-	result, err := r.Execute(context.Background(), "compute_bazhai", args)
-	if err != nil {
-		t.Fatalf("error: %v", err)
-	}
-	var env struct {
-		Product string          `json:"_product"`
-		Data    json.RawMessage `json:"data"`
-	}
-	if err := json.Unmarshal(result, &env); err != nil {
-		t.Fatal(err)
-	}
-	if env.Product == "bazhai" {
-		var chart struct {
-			MingGua struct {
-				GuaNumber int `json:"gua_number"`
-			} `json:"ming_gua"`
-		}
-		if err := json.Unmarshal(env.Data, &chart); err != nil {
-			t.Fatal(err)
-		}
-		t.Logf("BUG CONFIRMED: compute_bazhai missing gender, gua_number=%d", chart.MingGua.GuaNumber)
+	_, err := r.Execute(context.Background(), "compute_bazhai", args)
+	if err == nil {
+		t.Error("BUG: compute_bazhai accepts missing gender")
 	}
 }

@@ -36,15 +36,15 @@ func TestCORSMiddleware_Headers(t *testing.T) {
 	}))
 
 	r := httptest.NewRequest("GET", "/", nil)
-	r.Header.Set("Origin", "https://tokflux.com")
+	r.Header.Set("Origin", "https://liki.hk")
 	w := httptest.NewRecorder()
 	handler.ServeHTTP(w, r)
 
 	if w.Code != http.StatusOK {
 		t.Errorf("status = %d, want %d", w.Code, http.StatusOK)
 	}
-	if got := w.Header().Get("Access-Control-Allow-Origin"); got != "https://tokflux.com" {
-		t.Errorf("Allow-Origin = %s, want https://tokflux.com", got)
+	if got := w.Header().Get("Access-Control-Allow-Origin"); got != "https://liki.hk" {
+		t.Errorf("Allow-Origin = %s, want https://liki.hk", got)
 	}
 	if got := w.Header().Get("Access-Control-Allow-Methods"); got != "GET, POST, OPTIONS" {
 		t.Errorf("Allow-Methods = %s, want GET, POST, OPTIONS", got)

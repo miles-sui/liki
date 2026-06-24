@@ -103,7 +103,7 @@ test.describe('Purchase flow', () => {
     await expect(buyCard).toBeVisible({ timeout: 10000 });
 
     // Verify buy card content.
-    await expect(buyCard).toContainText('69.00');
+    await expect(buyCard).toContainText('9.90');
     await expect(page.locator('.btn-buy')).toContainText('查看完整报告');
 
     // Click the pay button → should trigger checkout and navigate.

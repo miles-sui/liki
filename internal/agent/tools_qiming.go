@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"liki/internal/engine/ganzhi"
 	"liki/internal/engine/qiming"
 )
 
@@ -16,6 +17,9 @@ func computeNamingWuGeHandler(ctx context.Context, raw json.RawMessage) (json.Ra
 	}
 	if err := json.Unmarshal(raw, &p); err != nil {
 		return nil, fmt.Errorf("compute_naming_wuge: %w", err)
+	}
+	if _, err := ganzhi.ParseWuxing(p.YongShen); err != nil {
+		return nil, fmt.Errorf("compute_naming_wuge: yong_shen must be one of 木/火/土/金/水, got %q", p.YongShen)
 	}
 	result, err := qiming.PrepareWuGe(p.Surname, p.YongShen, p.XiShen)
 	if err != nil {

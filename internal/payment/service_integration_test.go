@@ -159,9 +159,16 @@ func TestWebhookToReport_Idempotent(t *testing.T) {
 		t.Fatalf("first HandleWebhook: %v", err)
 	}
 
-	// Allow goroutines to complete.
-	time.Sleep(100 * time.Millisecond)
-	emailCount := emailCli.count()
+	// Wait for goroutines to complete (poll with deadline).
+	deadline := time.Now().Add(5 * time.Second)
+	emailCount := 0
+	for time.Now().Before(deadline) {
+		emailCount = emailCli.count()
+		if emailCount > 0 {
+			break
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
 
 	// Second webhook — same PaymentID.
 	if err := svc.HandleWebhook(ctx, []byte(`{"type":"payment.succeeded"}`), http.Header{}); err != nil {

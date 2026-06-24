@@ -324,7 +324,7 @@ func TestEdge_EmptyJSON(t *testing.T) {
 			w := httptest.NewRecorder()
 			tt.handler(w, r)
 			if w.Code < 400 {
-				t.Logf("BUG? %s with {} returned %d (want >=400)", tt.name, w.Code)
+				t.Errorf("BUG: %s with {} returned %d (want >=400)", tt.name, w.Code)
 			}
 		})
 	}
@@ -338,7 +338,7 @@ func TestEdge_NullVsMissing(t *testing.T) {
 	w := httptest.NewRecorder()
 	computeChart(w, r)
 	if w.Code == http.StatusOK {
-		t.Log("BUG? gender=null accepted as valid")
+		t.Error("BUG: gender=null accepted as valid")
 	}
 	if w.Code >= 500 {
 		t.Errorf("gender=null caused 5xx: %d", w.Code)
@@ -584,7 +584,7 @@ func TestEd3_ValidateEmail_EdgeCases(t *testing.T) {
 		t.Run(tt.email, func(t *testing.T) {
 			err := validateEmail(tt.email)
 			if tt.valid && err != nil {
-				t.Logf("BUG? valid email %q rejected: %v", tt.email, err)
+				t.Errorf("BUG: valid email %q rejected: %v", tt.email, err)
 			}
 		})
 	}

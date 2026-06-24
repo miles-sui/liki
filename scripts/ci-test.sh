@@ -34,6 +34,11 @@ cleanup() {
 }
 trap cleanup EXIT
 
+# API 冒烟
+echo ""
+echo "=== api smoke ==="
+scripts/smoke-lingji.sh http://localhost:8080
+
 # Go 检查
 echo ""
 echo "=== go vet ==="

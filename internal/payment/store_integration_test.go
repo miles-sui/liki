@@ -150,7 +150,8 @@ func TestStore_UpdatedAt_ChangesOnModification(t *testing.T) {
 	createdAt := o1.CreatedAt
 	updatedAt := o1.UpdatedAt
 
-	time.Sleep(1 * time.Second)
+	// SQLite datetime('now') has second precision; ensure we cross a boundary.
+	time.Sleep(untilNextSecond(time.Now()))
 
 	s.UpdateEmail(ctx, "ts-order", "a@b.com")
 	o2, _ := s.GetOrder(ctx, "ts-order")
@@ -174,7 +175,8 @@ func TestStore_UpdatedAt_ChangesOnPayment(t *testing.T) {
 	o1, _ := s.GetOrder(ctx, "ts-pay")
 	updatedAt := o1.UpdatedAt
 
-	time.Sleep(1 * time.Second)
+	// SQLite datetime('now') has second precision; ensure we cross a boundary.
+	time.Sleep(untilNextSecond(time.Now()))
 
 	s.MarkPaidIdempotent(ctx, "ts-pay", "pay-ts")
 	o2, _ := s.GetOrder(ctx, "ts-pay")
@@ -335,4 +337,16 @@ func TestStore_GetOrder_Timestamps(t *testing.T) {
 	if o.UpdatedAt != o.CreatedAt {
 		t.Error("UpdatedAt should equal CreatedAt for new orders")
 	}
+}
+
+// untilNextSecond returns a duration to sleep to guarantee crossing a second
+// boundary. SQLite datetime('now') has second precision, so tests that assert
+// UpdatedAt.After(...) must ensure the update happens in a different second
+// than the insert.
+func untilNextSecond(now time.Time) time.Duration {
+	d := time.Duration(1000-now.Nanosecond()/1e6)*time.Millisecond + time.Millisecond
+	if d < 0 {
+		d = time.Millisecond
+	}
+	return d
 }

@@ -666,7 +666,7 @@ func TestBug_ZiweiBond_MissingB_SilentlyPasses(t *testing.T) {
 	// BUG: decodeJSON doesn't validate, so missing 'b' gives zero-value Chart.
 	// The handler returns 200 with a result computed against an empty chart.
 	if w.Code == http.StatusOK {
-		t.Log("BUG CONFIRMED: ziwei bond with missing 'b' returns 200 (no validation)")
+		t.Error("BUG: ziwei bond with missing 'b' returns 200 (no validation)")
 	}
 	if w.Code == http.StatusUnprocessableEntity {
 		t.Log("OK: missing 'b' returns 422")

@@ -225,7 +225,7 @@ func TestBlackBox_Evaluate_DifferentNames(t *testing.T) {
 
 	// 两个不同名字的响应应该不同
 	if w1.Body.String() == w2.Body.String() {
-		t.Log("BUG? evaluate returns same result for different given names")
+		t.Error("BUG: evaluate returns same result for different given names")
 	}
 }
 
@@ -323,7 +323,7 @@ func TestEd3_Wuge_InvalidXiShen(t *testing.T) {
 		t.Errorf("invalid xi_shen caused 5xx: %d", w.Code)
 	}
 	if w.Code == http.StatusOK {
-		t.Log("BUG? invalid xi_shen element accepted")
+		t.Error("BUG: invalid xi_shen element accepted")
 	}
 }
 
@@ -346,7 +346,7 @@ func TestBug_Wuge_InvalidXiShen_Ignored(t *testing.T) {
 	handleWuge(w, r)
 
 	if w.Code == http.StatusOK {
-		t.Log("BUG? wuge accepts invalid xi_shen elements")
+		t.Error("BUG: wuge accepts invalid xi_shen elements")
 	}
 	if w.Code == http.StatusUnprocessableEntity {
 		t.Log("OK: invalid xi_shen rejected")

@@ -13,6 +13,8 @@ import (
 	"liki/internal/engine/xuankong"
 )
 
+var validQimenKinds = map[string]bool{"shi": true, "ri": true, "yue": true, "nian": true}
+
 func computeQimenHandler(ctx context.Context, raw json.RawMessage) (json.RawMessage, error) {
 	var p struct {
 		Birth TimePoint `json:"birth"`
@@ -23,6 +25,9 @@ func computeQimenHandler(ctx context.Context, raw json.RawMessage) (json.RawMess
 	}
 	if p.Kind == "" {
 		p.Kind = "shi"
+	}
+	if !validQimenKinds[p.Kind] {
+		return nil, fmt.Errorf("compute_qimen: kind must be shi/ri/yue/nian, got %q", p.Kind)
 	}
 	ts, err := p.Birth.Timeset()
 	if err != nil {
@@ -35,6 +40,9 @@ func computeQimenHandler(ctx context.Context, raw json.RawMessage) (json.RawMess
 func computeBazhaiHandler(ctx context.Context, raw json.RawMessage) (json.RawMessage, error) {
 	var p Person
 	if err := json.Unmarshal(raw, &p); err != nil {
+		return nil, fmt.Errorf("compute_bazhai: %w", err)
+	}
+	if err := validateGender(p.Gender); err != nil {
 		return nil, fmt.Errorf("compute_bazhai: %w", err)
 	}
 	ts, err := p.Birth.Timeset()
@@ -53,6 +61,9 @@ func computeMingGuaHandler(ctx context.Context, raw json.RawMessage) (json.RawMe
 	if err := json.Unmarshal(raw, &p); err != nil {
 		return nil, fmt.Errorf("compute_minggua: %w", err)
 	}
+	if err := validateGender(p.Gender); err != nil {
+		return nil, fmt.Errorf("compute_minggua: %w", err)
+	}
 	result := bazhai.ComputeMingGua(p.Gender, p.BirthYear)
 	return wrapResult("minggua", result)
 }
@@ -60,17 +71,29 @@ func computeMingGuaHandler(ctx context.Context, raw json.RawMessage) (json.RawMe
 func computeXuankongHandler(ctx context.Context, raw json.RawMessage) (json.RawMessage, error) {
 	var p struct {
 		Birth        TimePoint `json:"birth"`
-		SitMountain  int        `json:"sit_mountain"`
-		FaceMountain int        `json:"face_mountain"`
+		SitMountain  *int       `json:"sit_mountain"`
+		FaceMountain *int       `json:"face_mountain"`
 	}
 	if err := json.Unmarshal(raw, &p); err != nil {
 		return nil, fmt.Errorf("compute_xuankong: %w", err)
+	}
+	if p.SitMountain == nil {
+		return nil, fmt.Errorf("compute_xuankong: sit_mountain is required")
+	}
+	if p.FaceMountain == nil {
+		return nil, fmt.Errorf("compute_xuankong: face_mountain is required")
+	}
+	if *p.SitMountain < 0 || *p.SitMountain > 23 {
+		return nil, fmt.Errorf("compute_xuankong: sit_mountain must be 0-23, got %d", *p.SitMountain)
+	}
+	if *p.FaceMountain < 0 || *p.FaceMountain > 23 {
+		return nil, fmt.Errorf("compute_xuankong: face_mountain must be 0-23, got %d", *p.FaceMountain)
 	}
 	ts, err := p.Birth.Timeset()
 	if err != nil {
 		return nil, fmt.Errorf("compute_xuankong: %w", err)
 	}
-	result := xuankong.ComputeChart(ts.Solar, p.SitMountain, p.FaceMountain)
+	result := xuankong.ComputeChart(ts.Solar, *p.SitMountain, *p.FaceMountain)
 	return wrapResult("xuankong", result)
 }
 
@@ -80,6 +103,9 @@ func computeSanYuanYunHandler(ctx context.Context, raw json.RawMessage) (json.Ra
 	}
 	if err := json.Unmarshal(raw, &p); err != nil {
 		return nil, fmt.Errorf("compute_sanyuan_yun: %w", err)
+	}
+	if p.Year <= 0 {
+		return nil, fmt.Errorf("compute_sanyuan_yun: year must be positive, got %d", p.Year)
 	}
 	result := xuankong.ComputeSanYuanYun(p.Year)
 	return wrapResult("sanyuan_yun", result)
@@ -116,6 +142,9 @@ func queryHuangliDateHandler(ctx context.Context, raw json.RawMessage) (json.Raw
 	}
 	if err := json.Unmarshal(raw, &p); err != nil {
 		return nil, fmt.Errorf("query_huangli_date: %w", err)
+	}
+	if p.Event == "" {
+		return nil, fmt.Errorf("query_huangli_date: event is required")
 	}
 	result, err := huangli.QueryDate(p.Date, p.Event)
 	if err != nil {

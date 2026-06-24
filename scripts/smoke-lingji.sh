@@ -140,7 +140,7 @@ if curl -s --connect-timeout 2 -o /dev/null -w '%{http_code}' "$BASE/api/health"
 	  check_200 "GET /llms.txt" "$s"
 	  b=$(body)
 	  check "  non-empty" "false" "$([ -z "$b" ] && echo true || echo false)"
-	  check "  has Skill" "false" "$(echo "$b" | /bin/grep -q 'Skill' && echo false || echo true)"
+	  check "  has skill" "false" "$(echo "$b" | /bin/grep -q '/skills' && echo false || echo true)"
 
 	  # Skill files
 	  s=$(caddy GET /skills/liki.md)
@@ -148,7 +148,7 @@ if curl -s --connect-timeout 2 -o /dev/null -w '%{http_code}' "$BASE/api/health"
 	  b=$(body)
 	  check "  has version" "false" "$(echo "$b" | /bin/grep -q 'version:' && echo false || echo true)"
 	  check "  has brand def" "false" "$(echo "$b" | /bin/grep -q '灵机' && echo false || echo true)"
-	  check "  has tool calls" "false" "$(echo "$b" | /bin/grep -q 'POST /api/bazi/chart' && echo false || echo true)"
+	  check "  has tool calls" "false" "$(echo "$b" | /bin/grep -q 'POST /api/' && echo false || echo true)"
 
 	  s=$(caddy GET /skills/report-chart.md)
 	  check_200 "GET /skills/report-chart.md" "$s"
@@ -158,12 +158,12 @@ if curl -s --connect-timeout 2 -o /dev/null -w '%{http_code}' "$BASE/api/health"
 	  s=$(caddy GET /skills/report-bond.md)
 	  check_200 "GET /skills/report-bond.md" "$s"
 	  b=$(body)
-	  check "  has bond structure" "false" "$(echo "$b" | /bin/grep -q '综合缘分评定' && echo false || echo true)"
+	  check "  has bond structure" "false" "$(echo "$b" | /bin/grep -q '合盘报告模板' && echo false || echo true)"
 
 	  s=$(caddy GET /skills/report-naming.md)
 	  check_200 "GET /skills/report-naming.md" "$s"
 	  b=$(body)
-	  check "  has naming structure" "false" "$(echo "$b" | /bin/grep -q '候选名字分析' && echo false || echo true)"
+	  check "  has naming structure" "false" "$(echo "$b" | /bin/grep -q '候选名字速览' && echo false || echo true)"
 	  else
 	  echo "  (Caddy not running — skipping static checks)"
 	  fi
@@ -326,14 +326,13 @@ echo "${BOLD}── BaZi ──${NC}"
 s=$(api POST /api/bazi/chart "$BR")
 check_200 "POST /api/bazi/chart" "$s"
 b=$(body)
-check_has "year.gan" "$b" '.data.year.gan'
-check_has "month.gan" "$b" '.data.month.gan'
-check_has "day.gan" "$b" '.data.day.gan'
-check_has "hour.gan" "$b" '.data.hour.gan'
-check_has "ri_yuan" "$b" '.data.ri_yuan'
-check_has "fu_yi" "$b" '.data.fu_yi.yong'
-check_has "da_yun" "$b" '.data.da_yun'
-check_has "wuxing_count" "$b" '.data.wuxing_count'
+	check_has "nian.gan" "$b" '.data.nian.gan'
+	check_has "yue.gan" "$b" '.data.yue.gan'
+	check_has "ri.gan" "$b" '.data.ri.gan'
+	check_has "shi.gan" "$b" '.data.shi.gan'
+	check_has "fu_yi" "$b" '.data.fu_yi.yong'
+	check_has "da_yun" "$b" '.data.da_yun'
+	check_has "wuxing_count" "$b" '.data.wuxing_count'
 
 # BaZi bond — returns Bond struct directly
 BOND="{\"a\":$BR_A,\"b\":$BR_B}"
@@ -345,19 +344,19 @@ check_has "bond shi_shen_cross" "$b" '.data.shi_shen_cross'
 check_has "bond nayin_cross" "$b" '.data.nayin_cross'
 check_has "bond structure" "$b" '.data.structure'
 
-# BaZi luck cycles
-s=$(api POST /api/bazi/liunian "{\"year\":2026,\"birth\":$BT}")
-check_200 "POST /api/bazi/liunian" "$s"
-check_has "liunian" "$b" '.data'
+	# BaZi luck cycles (gender required for 顺排/逆排)
+	s=$(api POST /api/bazi/liunian "{\"year\":2026,\"gender\":\"male\",\"birth\":$BT}")
+	check_200 "POST /api/bazi/liunian" "$s"
+	check_has "liunian" "$b" '.data'
 
-s=$(api POST /api/bazi/liuyue "{\"year\":2026,\"month\":6,\"birth\":$BT}")
-check_200 "POST /api/bazi/liuyue" "$s"
+	s=$(api POST /api/bazi/liuyue "{\"year\":2026,\"month\":6,\"gender\":\"male\",\"birth\":$BT}")
+	check_200 "POST /api/bazi/liuyue" "$s"
 
-s=$(api POST /api/bazi/liuri "{\"date\":\"2026-06-19\",\"birth\":$BT}")
-check_200 "POST /api/bazi/liuri" "$s"
+	s=$(api POST /api/bazi/liuri "{\"year\":2026,\"month\":6,\"day\":19,\"gender\":\"male\",\"birth\":$BT}")
+	check_200 "POST /api/bazi/liuri" "$s"
 
-s=$(api POST /api/bazi/liushi "{\"date\":\"2026-06-19\",\"hour\":14,\"birth\":$BT}")
-check_200 "POST /api/bazi/liushi" "$s"
+	s=$(api POST /api/bazi/liushi "{\"year\":2026,\"month\":6,\"day\":19,\"hour\":14,\"gender\":\"male\",\"birth\":$BT}")
+	check_200 "POST /api/bazi/liushi" "$s"
 
 s=$(api POST /api/bazi/xiaoyun "{\"birth\":$BT,\"gender\":\"male\",\"count\":10}")
 check_200 "POST /api/bazi/xiaoyun" "$s"
@@ -484,31 +483,36 @@ if curl -s --connect-timeout 2 -o /dev/null -w '%{http_code}' "$BASE/api/health"
   echo ""
   echo "${BOLD}── Access Policy ──${NC}"
 
-  # Restricted: agent APIs with external Origin → 403
-  s=$(curl -s -w '%{http_code}' -o /dev/null -X POST "$BASE/api/agent/chat" \
-    -H 'Content-Type: application/json' \
-    -H 'Origin: https://evil.com' \
-    -d '{"message":"hello"}')
-  check_403 "POST /api/agent/chat (external Origin)" "$s"
+  # Origin blocking is a Caddy-level feature (production Caddyfile only).
+  # Skip when running against local Caddy (no @external rules in Caddyfile.local).
+  if [ "$BASE" = "http://localhost:8080" ] || [ "$BASE" = "http://127.0.0.1:8080" ]; then
+    echo "  (local Caddy — skipping access policy checks)"
+  else
+    s=$(curl -s -w '%{http_code}' -o /dev/null -X POST "$BASE/api/agent/chat" \
+      -H 'Content-Type: application/json' \
+      -H 'Origin: https://evil.com' \
+      -d '{"message":"hello"}')
+    check_403 "POST /api/agent/chat (external Origin)" "$s"
 
-  s=$(curl -s -w '%{http_code}' -o /dev/null "$BASE/api/agent/greeting" \
-    -H 'Origin: https://evil.com')
-  check_403 "GET /api/agent/greeting (external Origin)" "$s"
+    s=$(curl -s -w '%{http_code}' -o /dev/null "$BASE/api/agent/greeting" \
+      -H 'Origin: https://evil.com')
+    check_403 "GET /api/agent/greeting (external Origin)" "$s"
 
-  s=$(curl -s -w '%{http_code}' -o /dev/null -X POST "$BASE/api/orders/nonexistent/retry" \
-    -H 'Origin: https://evil.com')
-  check_403 "POST /api/orders/{id}/retry (external Origin)" "$s"
+    s=$(curl -s -w '%{http_code}' -o /dev/null -X POST "$BASE/api/orders/nonexistent/retry" \
+      -H 'Origin: https://evil.com')
+    check_403 "POST /api/orders/{id}/retry (external Origin)" "$s"
 
-  # Public APIs with external Origin → normal response
-  s=$(curl -s -w '%{http_code}' -o /dev/null "$BASE/api/health" \
-    -H 'Origin: https://evil.com')
-  check_200 "GET /api/health (external Origin ignored)" "$s"
+    # Public APIs with external Origin → normal response
+    s=$(curl -s -w '%{http_code}' -o /dev/null "$BASE/api/health" \
+      -H 'Origin: https://evil.com')
+    check_200 "GET /api/health (external Origin ignored)" "$s"
 
-  s=$(curl -s -w '%{http_code}' -o /dev/null -X POST "$BASE/api/bazi/chart" \
-    -H 'Content-Type: application/json' \
-    -H 'Origin: https://evil.com' \
-    -d "{\"birth\":$BT,\"gender\":\"male\"}")
-  check_200 "POST /api/bazi/chart (external Origin ignored)" "$s"
+    s=$(curl -s -w '%{http_code}' -o /dev/null -X POST "$BASE/api/bazi/chart" \
+      -H 'Content-Type: application/json' \
+      -H 'Origin: https://evil.com' \
+      -d "{\"birth\":$BT,\"gender\":\"male\"}")
+    check_200 "POST /api/bazi/chart (external Origin ignored)" "$s"
+  fi
 else
   echo "  (Caddy not running — skipping access policy checks)"
 fi

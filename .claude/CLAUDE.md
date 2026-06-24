@@ -127,7 +127,7 @@ internal/
 |---|---|
 | expose: ["8080"] 不对外发布 | 健康检查走 Caddy --resolve |
 | Caddy 启动后 TLS 证书加载需时间 | 健康检查重试 6×5s |
-| DOMAIN 默认值 compose 和 script 不同步 | 两边一致用 tokflux.com |
+| DOMAIN 默认值 compose 和 script 不同步 | 两边一致用 liki.hk |
 | COPY vendor/ + COPY . . vendor 重复 | vendor 不能进 .dockerignore |
 | Caddy depends_on lingji 等 30s healthcheck | interval: 10s + start_period: 5s |
 | tar 追加 .env 用 gunzip→tar rf→gzip 三步 | 初始 tar 直接包含 .env |

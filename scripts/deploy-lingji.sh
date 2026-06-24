@@ -20,10 +20,20 @@ PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 IMAGE_FILE="/tmp/lingji_images.tar.gz"
 
 # 从 .env 读取各目标的域名和回调 URL
-DOMAIN_US=$(/bin/grep -oP '^DOMAIN_US=\K.*' "$PROJECT_DIR/.env" 2>/dev/null || echo "liki.hk")
-DOMAIN_CN=$(/bin/grep -oP '^DOMAIN_CN=\K.*' "$PROJECT_DIR/.env" 2>/dev/null || echo "liki.tokflux.com")
-RETURN_URL_US=$(/bin/grep -oP '^RETURN_URL_US=\K.*' "$PROJECT_DIR/.env" 2>/dev/null || echo "https://liki.hk")
-RETURN_URL_CN=$(/bin/grep -oP '^RETURN_URL_CN=\K.*' "$PROJECT_DIR/.env" 2>/dev/null || echo "https://liki.tokflux.com")
+DOMAIN_US=$(/bin/grep -oP '^DOMAIN_US=\K.*' "$PROJECT_DIR/.env" 2>/dev/null || echo "")
+DOMAIN_CN=$(/bin/grep -oP '^DOMAIN_CN=\K.*' "$PROJECT_DIR/.env" 2>/dev/null || echo "")
+RETURN_URL_US=$(/bin/grep -oP '^RETURN_URL_US=\K.*' "$PROJECT_DIR/.env" 2>/dev/null || echo "")
+RETURN_URL_CN=$(/bin/grep -oP '^RETURN_URL_CN=\K.*' "$PROJECT_DIR/.env" 2>/dev/null || echo "")
+
+# 校验必须变量非空
+fail_missing() {
+  echo "ERROR: $1 is not set. Add it to $PROJECT_DIR/.env" >&2
+  exit 1
+}
+[ -n "$DOMAIN_US" ] || fail_missing DOMAIN_US
+[ -n "$DOMAIN_CN" ] || fail_missing DOMAIN_CN
+[ -n "$RETURN_URL_US" ] || fail_missing RETURN_URL_US
+[ -n "$RETURN_URL_CN" ] || fail_missing RETURN_URL_CN
 
 if ! command -v docker &>/dev/null; then
   echo "ERROR: docker not found. Install Docker and try again."

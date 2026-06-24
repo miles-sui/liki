@@ -14,6 +14,9 @@ func computeChartHandler(ctx context.Context, raw json.RawMessage) (json.RawMess
 	if err := json.Unmarshal(raw, &p); err != nil {
 		return nil, fmt.Errorf("compute_chart: %w", err)
 	}
+	if err := validateGender(p.Gender); err != nil {
+		return nil, fmt.Errorf("compute_chart: %w", err)
+	}
 	ts, err := p.Birth.Timeset()
 	if err != nil {
 		return nil, fmt.Errorf("compute_chart: %w", err)
@@ -29,6 +32,12 @@ func computeBondHandler(ctx context.Context, raw json.RawMessage) (json.RawMessa
 	}
 	if err := json.Unmarshal(raw, &p); err != nil {
 		return nil, fmt.Errorf("compute_bond: %w", err)
+	}
+	if err := validateGender(p.A.Gender); err != nil {
+		return nil, fmt.Errorf("compute_bond: a: %w", err)
+	}
+	if err := validateGender(p.B.Gender); err != nil {
+		return nil, fmt.Errorf("compute_bond: b: %w", err)
 	}
 	tsA, err := p.A.Birth.Timeset()
 	if err != nil {
@@ -52,6 +61,9 @@ func computeLiunianHandler(ctx context.Context, raw json.RawMessage) (json.RawMe
 	}
 	if err := json.Unmarshal(raw, &p); err != nil {
 		return nil, fmt.Errorf("compute_liunian: %w", err)
+	}
+	if p.Year <= 0 {
+		return nil, fmt.Errorf("compute_liunian: year must be positive, got %d", p.Year)
 	}
 	ts, err := p.Birth.Timeset()
 	if err != nil {
@@ -122,6 +134,12 @@ func computeLiushiHandler(ctx context.Context, raw json.RawMessage) (json.RawMes
 	if err := json.Unmarshal(raw, &p); err != nil {
 		return nil, fmt.Errorf("compute_liushi: %w", err)
 	}
+	if p.Hour < 0 || p.Hour > 23 {
+		return nil, fmt.Errorf("compute_liushi: hour must be 0-23, got %d", p.Hour)
+	}
+	if err := validateGender(p.Gender); err != nil {
+		return nil, fmt.Errorf("compute_liushi: %w", err)
+	}
 	ts, err := p.Birth.Timeset()
 	if err != nil {
 		return nil, fmt.Errorf("compute_liushi: %w", err)
@@ -143,6 +161,9 @@ func computeXiaoYunHandler(ctx context.Context, raw json.RawMessage) (json.RawMe
 	if err := json.Unmarshal(raw, &p); err != nil {
 		return nil, fmt.Errorf("compute_xiaoyun: %w", err)
 	}
+	if err := validateGender(p.Gender); err != nil {
+		return nil, fmt.Errorf("compute_xiaoyun: %w", err)
+	}
 	ts, err := p.Birth.Timeset()
 	if err != nil {
 		return nil, fmt.Errorf("compute_xiaoyun: %w", err)
@@ -157,6 +178,9 @@ func computeXiaoXianHandler(ctx context.Context, raw json.RawMessage) (json.RawM
 		Count  int            `json:"count"`
 	}
 	if err := json.Unmarshal(raw, &p); err != nil {
+		return nil, fmt.Errorf("compute_xiaoxian: %w", err)
+	}
+	if err := validateGender(p.Gender); err != nil {
 		return nil, fmt.Errorf("compute_xiaoxian: %w", err)
 	}
 	result := bazi.ComputeXiaoXian(p.Gender, p.Count)

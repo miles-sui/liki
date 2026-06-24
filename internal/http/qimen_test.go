@@ -169,7 +169,7 @@ func TestEdge_Qimen_InvalidKind(t *testing.T) {
 			w := httptest.NewRecorder()
 			handleQimenPan(w, r)
 			if w.Code == http.StatusOK {
-				t.Logf("BUG? qimen kind=%q accepted", kind)
+				t.Errorf("BUG: qimen kind=%q accepted", kind)
 			}
 			if w.Code >= 500 {
 				t.Errorf("qimen kind=%q caused 5xx: %d", kind, w.Code)
@@ -196,7 +196,7 @@ func TestEdge2_Qimen_KindCaseVariations(t *testing.T) {
 				t.Errorf("kind=%q caused 5xx: %d", kind, w.Code)
 			}
 			if w.Code == http.StatusOK {
-				t.Logf("BUG? qimen kind=%q accepted", kind)
+				t.Errorf("BUG: qimen kind=%q accepted", kind)
 			}
 		})
 	}

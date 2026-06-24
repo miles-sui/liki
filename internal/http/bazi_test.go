@@ -723,7 +723,7 @@ func TestBlackBox_BaZi_GenderDifference_DaYun(t *testing.T) {
 	firstF := envF.Data.DaYun.Zhus[0]
 
 	if firstM.Gan == firstF.Gan && firstM.Zhi == firstF.Zhi {
-		t.Log("BUG? male and female have same first DaYun pillar")
+		t.Error("BUG: male and female have same first DaYun pillar")
 	} else {
 		t.Logf("OK: male first dayun=%s%s, female first dayun=%s%s",
 			firstM.Gan, firstM.Zhi, firstF.Gan, firstF.Zhi)
@@ -985,7 +985,7 @@ func TestEdge2_Lunar_ZeroValues(t *testing.T) {
 		t.Errorf("lunar all-zeros caused 5xx: %d", w.Code)
 	}
 	if w.Code == http.StatusOK {
-		t.Log("BUG? lunar all-zeros accepted")
+		t.Error("BUG: lunar all-zeros accepted")
 	}
 }
 
@@ -1144,7 +1144,7 @@ func TestBug_LiuShi_HourZero_Rejected(t *testing.T) {
 	liuShi(w, r)
 
 	if w.Code == http.StatusUnprocessableEntity {
-		t.Log("BUG CONFIRMED: hour=0 rejected (validation.Required on int)")
+		t.Error("BUG: hour=0 rejected (validation.Required on int)")
 	}
 	if w.Code == http.StatusOK {
 		t.Log("OK: hour=0 accepted")
@@ -1160,7 +1160,7 @@ func TestBug_LiuYue_Year2200_Accepted(t *testing.T) {
 	liuYue(w, r)
 
 	if w.Code == http.StatusOK {
-		t.Log("BUG? liuYue accepts year=2199 (max=2200 vs others' max=2100)")
+		t.Error("BUG: liuYue accepts year=2199 (max=2200 vs others' max=2100)")
 	}
 }
 

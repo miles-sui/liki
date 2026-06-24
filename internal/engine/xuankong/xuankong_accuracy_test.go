@@ -448,13 +448,16 @@ func TestComputeChart_WangShanWangXiang_Evaluation(t *testing.T) {
 }
 
 func TestComputeChart_FuYin_Detection(t *testing.T) {
-	// 八运 子山午向: period star 8 at palace 8(艮) → position 8 → FuYin
-	chart := computeChart(0, 12, 2020)
-	// FuYin = period star at its home palace
-	// 八运运星8在艮宫(8). index 7 (0-indexed) = 艮(8). periodStars[7] = 8 = palace 7+1=8.
-	// The period star at position 7 (palace 8) = 8. So FuYin should be true.
+	// FuYin occurs when every palace's period star equals its palace number.
+	// This happens in 五运 with forward flying: center(5)=5, then 6,7,8,9,1,2,3,4.
+	chart := computeChart(0, 12, 1945) // 五运 子山午向
 	if !chart.FuYin {
-		t.Log("FuYin not detected for 子山午向八运 — check evaluate() logic")
+		t.Error("FuYin not detected for 子山午向五运 — check evaluate() logic")
+	}
+	// Verify a non-FuYin case: 八运 should NOT have FuYin.
+	chart8 := computeChart(0, 12, 2020) // 八运 子山午向
+	if chart8.FuYin {
+		t.Error("FuYin false-positive for 子山午向八运 — should not have FuYin")
 	}
 }
 

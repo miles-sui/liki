@@ -454,7 +454,7 @@ func TestToolRegistry_Schemas(t *testing.T) {
 
 func TestToolRegistry_Execute_ComputeLiuShi(t *testing.T) {
 	r := NewChatToolRegistry()
-	args := json.RawMessage(`{"year":2025,"month":6,"day":1,"hour":8,` + bt + `}`)
+	args := json.RawMessage(`{"year":2025,"month":6,"day":1,"hour":8,"gender":"male",` + bt + `}`)
 	result, err := r.Execute(context.Background(), "compute_liushi", args)
 	if err != nil {
 		t.Fatalf("compute_liushi: %v", err)

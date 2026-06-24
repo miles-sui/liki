@@ -13,6 +13,9 @@ func computeZiweiHandler(ctx context.Context, raw json.RawMessage) (json.RawMess
 	if err := json.Unmarshal(raw, &p); err != nil {
 		return nil, fmt.Errorf("compute_ziwei: %w", err)
 	}
+	if err := validateGender(p.Gender); err != nil {
+		return nil, fmt.Errorf("compute_ziwei: %w", err)
+	}
 	ts, err := p.Birth.Timeset()
 	if err != nil {
 		return nil, fmt.Errorf("compute_ziwei: %w", err)
@@ -101,6 +104,12 @@ func computeZiweiBondHandler(ctx context.Context, raw json.RawMessage) (json.Raw
 	}
 	if err := json.Unmarshal(p.B, &chartB); err != nil {
 		return nil, fmt.Errorf("compute_ziwei_bond: parse chart b: %w", err)
+	}
+	if chartA.BirthYear == 0 {
+		return nil, fmt.Errorf("compute_ziwei_bond: chart a is empty")
+	}
+	if chartB.BirthYear == 0 {
+		return nil, fmt.Errorf("compute_ziwei_bond: chart b is empty")
 	}
 	result := ziwei.ComputeBond(chartA, chartB)
 	return wrapResult("ziwei_bond", result)

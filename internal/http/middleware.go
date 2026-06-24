@@ -3,8 +3,7 @@ package handler
 import "net/http"
 
 var prodOrigins = map[string]bool{
-	"https://liki.hk":     true,
-	"https://tokflux.com": true,
+	"https://liki.hk": true,
 }
 
 var devOrigins = map[string]bool{

@@ -769,15 +769,16 @@ func TestSolarTermIndex_KnownDates(t *testing.T) {
 		day   int
 		want  int
 	}{
-		{"立春", 2024, 2, 4, 3},
-		{"春分", 2024, 3, 20, 5},
-		{"夏至", 2024, 6, 21, 12},
+		{"立春后", 2024, 2, 6, 3},
+		{"春分后", 2024, 3, 25, 6},
+		{"夏至后", 2024, 6, 25, 12},
+		{"冬至后", 2024, 12, 25, 0},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := SolarTermIndex(tt.year, tt.month, tt.day)
-			if got < tt.want-1 || got > tt.want+1 {
-				t.Errorf("SolarTermIndex(%d,%d,%d)=%d, want ~%d",
+			if got != tt.want {
+				t.Errorf("SolarTermIndex(%d,%d,%d)=%d, want %d",
 					tt.year, tt.month, tt.day, got, tt.want)
 			}
 		})

@@ -21,15 +21,8 @@ func JianYue(gt GregorianTime) ganzhi.Zhi {
 	t := gt.Time()
 	lon := solarLongitude(t)
 	for i := 0; i < 12; i++ {
-		cl, nl := solarTermLongitudes[i], solarTermLongitudes[(i+1)%12]
-		if cl <= nl {
-			if lon >= cl && lon < nl {
-				return ganzhi.Zhi((i+2)%12 + 1)
-			}
-		} else {
-			if lon >= cl || lon < nl {
-				return ganzhi.Zhi((i+2)%12 + 1)
-			}
+		if angleInRange(lon, solarTermLongitudes[i], solarTermLongitudes[(i+1)%12]) {
+			return ganzhi.Zhi((i+2)%12 + 1)
 		}
 	}
 	return ganzhi.ZhiYin
@@ -52,6 +45,15 @@ func solarLongitude(t time.Time) float64 {
 	lon = math.Mod(lon, 360)
 	if lon < 0 { lon += 360 }
 	return lon
+}
+
+// angleInRange checks whether lon is within [cur, next), handling
+// wraparound past 360° when cur > next.
+func angleInRange(lon, cur, next float64) bool {
+	if cur <= next {
+		return lon >= cur && lon < next
+	}
+	return lon >= cur || lon < next
 }
 
 func SolarTermTime(year int, targetLon float64) time.Time {
@@ -101,12 +103,11 @@ func solarTermDate(year int, targetLon float64) (month, day int) {
 func liChunDay(year int) (month, day int) { return solarTermDate(year, 315) }
 
 func SolarTermIndex(year, month, day int) int {
-	target := time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC)
-	terms := AllSolarTerms(year)
+	lon := solarLongitude(time.Date(year, time.Month(month), day, 12, 0, 0, 0, time.UTC))
 	for i := 0; i < 24; i++ {
-		next := terms[(i+1)%24]
-		if next.Before(terms[i]) { next = next.AddDate(1, 0, 0) }
-		if !target.Before(terms[i]) && target.Before(next) { return i }
+		if angleInRange(lon, JieQiLongitudes[(i+21)%24], JieQiLongitudes[(i+22)%24]) {
+			return i
+		}
 	}
 	return 23
 }

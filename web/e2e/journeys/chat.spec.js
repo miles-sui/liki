@@ -241,7 +241,7 @@ test.describe('Chat page', () => {
 
     // Buy bar should appear after done.
     await expect(page.locator('.buy-card')).toBeVisible({ timeout: 5000 });
-    await expect(page.locator('.buy-card')).toContainText('69.00');
+    await expect(page.locator('.buy-card')).toContainText('9.90');
 
     // Pay button should be present.
     await expect(page.locator('.btn-buy')).toContainText('查看完整报告');

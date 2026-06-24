@@ -1356,8 +1356,8 @@ func TestComputeWangShuai_Full(t *testing.T) {
 // =============================================================================
 
 func TestDetermineJuShu_KnownDates(t *testing.T) {
-	// 2024年6月21日 (夏至附近)
-	ju := determineJuShu(2024, 6, 21, ganzhi.GanBing, ganzhi.ZhiWu)
+	// 2024年6月22日 (夏至之后，2024年夏至为6月21日)
+	ju := determineJuShu(2024, 6, 22, ganzhi.GanBing, ganzhi.ZhiWu)
 	if ju.Number < 1 || ju.Number > 9 {
 		t.Errorf("jushu out of range: %d", ju.Number)
 	}
@@ -1368,7 +1368,7 @@ func TestDetermineJuShu_KnownDates(t *testing.T) {
 	// 冬至
 	ju2 := determineJuShu(2024, 12, 22, ganzhi.GanJia, ganzhi.ZhiZi)
 	if ju2.YinDun == ju.YinDun {
-		t.Logf("冬至 and 夏至 should have different yin/yang: %v vs %v", ju.YinDun, ju2.YinDun)
+		t.Errorf("冬至 and 夏至 should have different yin/yang: %v vs %v", ju.YinDun, ju2.YinDun)
 	}
 }
 

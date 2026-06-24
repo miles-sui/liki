@@ -201,3 +201,11 @@ func wrapResult(product string, data any) (json.RawMessage, error) {
 	}{Product: product, Data: data})
 }
 
+// validateGender checks that the gender is male or female (not empty or invalid).
+func validateGender(g ganzhi.Gender) error {
+	if _, err := ganzhi.ParseGender(string(g)); err != nil {
+		return fmt.Errorf("gender must be male or female, got %q", g)
+	}
+	return nil
+}
+

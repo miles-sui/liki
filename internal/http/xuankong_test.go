@@ -263,7 +263,7 @@ func TestBug_XuankongChart_SitMountainZero_Rejected(t *testing.T) {
 	// Current behavior: 422 because validation.Required treats 0 as blank.
 	// If this is 422, mountain 0 can never be selected — a design bug.
 	if w.Code == http.StatusUnprocessableEntity {
-		t.Log("BUG CONFIRMED: sit_mountain=0 rejected (validation.Required on int)")
+		t.Error("BUG: sit_mountain=0 rejected (validation.Required on int)")
 	}
 	if w.Code == http.StatusOK {
 		t.Log("OK: sit_mountain=0 accepted")
@@ -277,7 +277,7 @@ func TestBug_XuankongChart_FaceMountainZero_Rejected(t *testing.T) {
 	xuankongChart(w, r)
 
 	if w.Code == http.StatusUnprocessableEntity {
-		t.Log("BUG CONFIRMED: face_mountain=0 rejected (validation.Required on int)")
+		t.Error("BUG: face_mountain=0 rejected (validation.Required on int)")
 	}
 }
 
@@ -306,7 +306,7 @@ func TestBug_XuankongChart_SitMountain24(t *testing.T) {
 func TestBug_SanYuan_YearZero(t *testing.T) {
 	defer func() {
 		if r := recover(); r != nil {
-			t.Logf("CRASH BUG: xuankongSanYuan panics on year=0: %v", r)
+			t.Errorf("CRASH BUG: xuankongSanYuan panics on year=0: %v", r)
 		}
 	}()
 	r := httptest.NewRequest("GET", "/api/xuankong/sanyuan?year=0", nil)
@@ -321,7 +321,7 @@ func TestBug_SanYuan_YearZero(t *testing.T) {
 func TestBug_SanYuan_YearNegative(t *testing.T) {
 	defer func() {
 		if r := recover(); r != nil {
-			t.Logf("CRASH BUG: xuankongSanYuan panics on year=-100: %v", r)
+			t.Errorf("CRASH BUG: xuankongSanYuan panics on year=-100: %v", r)
 		}
 	}()
 	r := httptest.NewRequest("GET", "/api/xuankong/sanyuan?year=-100", nil)
