@@ -21,7 +21,7 @@ func TestSign(t *testing.T) {
 	}{
 		{
 			name:   "basic params",
-			params: map[string]string{"appid": "test_app", "version": "1.0", "out_trade_no": "order-1"},
+			params: map[string]string{"appid": "test_app", "version": "1.0", "trade_order_id": "order-1"},
 			secret: "secret123",
 		},
 		{
@@ -98,8 +98,8 @@ func TestCreateCheckout_Success(t *testing.T) {
 		if r.Form.Get("appid") != "test_appid" {
 			t.Errorf("appid = %q", r.Form.Get("appid"))
 		}
-		if r.Form.Get("out_trade_no") != "order-1" {
-			t.Errorf("out_trade_no = %q", r.Form.Get("out_trade_no"))
+		if r.Form.Get("trade_order_id") != "order-1" {
+			t.Errorf("trade_order_id = %q", r.Form.Get("trade_order_id"))
 		}
 
 		// Verify hash parameter is present.
@@ -188,7 +188,7 @@ func TestVerifyWebhook_PaymentSuccess(t *testing.T) {
 	// Build form with valid hash.
 	form := url.Values{
 		"appid":         {"test_appid"},
-		"out_trade_no":  {"order-1"},
+		"trade_order_id":  {"order-1"},
 		"total_fee":     {"990"},
 		"trade_no":      {"txn_123"},
 		"trade_status":  {"TRADE_SUCCESS"},
@@ -196,7 +196,7 @@ func TestVerifyWebhook_PaymentSuccess(t *testing.T) {
 	}
 	formParams := map[string]string{
 		"appid":        "test_appid",
-		"out_trade_no": "order-1",
+		"trade_order_id": "order-1",
 		"total_fee":    "990",
 		"trade_no":     "txn_123",
 		"trade_status": "TRADE_SUCCESS",
@@ -233,7 +233,7 @@ func TestVerifyWebhook_BadSignature(t *testing.T) {
 
 	form := url.Values{
 		"appid":        {"test_appid"},
-		"out_trade_no": {"order-1"},
+		"trade_order_id": {"order-1"},
 		"total_fee":    {"990"},
 		"trade_status": {"TRADE_SUCCESS"},
 		"hash":         {"bad_signature_here"},
@@ -255,7 +255,7 @@ func TestVerifyWebhook_MissingHash(t *testing.T) {
 
 	form := url.Values{
 		"appid":        {"test_appid"},
-		"out_trade_no": {"order-1"},
+		"trade_order_id": {"order-1"},
 		"trade_status": {"TRADE_SUCCESS"},
 	}
 	body := []byte(form.Encode())
@@ -275,7 +275,7 @@ func TestVerifyWebhook_NonPaymentStatus(t *testing.T) {
 
 	formParams := map[string]string{
 		"appid":        "test_appid",
-		"out_trade_no": "order-1",
+		"trade_order_id": "order-1",
 		"total_fee":    "990",
 		"trade_status": "ORDER_CREATED",
 	}
@@ -395,5 +395,159 @@ func TestCreateCheckout_ProductPricing(t *testing.T) {
 				t.Error("CheckoutURL should not be empty")
 			}
 		})
+	}
+}
+
+func TestCreateCheckout_ParamFormat(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if err := r.ParseForm(); err != nil {
+			http.Error(w, "bad form", http.StatusBadRequest)
+			return
+		}
+
+		// version must be 1.1.
+		if v := r.Form.Get("version"); v != "1.1" {
+			t.Errorf("version = %q, want 1.1", v)
+		}
+		// nonce_str must be 32 hex chars.
+		if n := r.Form.Get("nonce_str"); len(n) != 32 {
+			t.Errorf("nonce_str len = %d, want 32", len(n))
+		}
+		// total_fee must be decimal yuan, not integer fen.
+		if f := r.Form.Get("total_fee"); f != "9.90" {
+			t.Errorf("total_fee = %q, want 9.90 (yuan decimal)", f)
+		}
+		// title must be present (product subject).
+		if title := r.Form.Get("title"); title == "" {
+			t.Error("title should not be empty")
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]any{ //nolint:errcheck
+			"errcode": 0,
+			"errmsg":  "ok",
+			"url":     "https://pay.example.com/checkout",
+		})
+	}))
+	defer srv.Close()
+
+	c := newTestClient(srv)
+	_, err := c.CreateCheckout(context.Background(), agent.ProductChart, 990, "order-1", "", "https://liki.hk/return")
+	if err != nil {
+		t.Fatalf("CreateCheckout: %v", err)
+	}
+}
+
+func TestCreateCheckout_AmountFormat(t *testing.T) {
+	tests := []struct {
+		name   string
+		amount int
+		want   string
+	}{
+		{"990 fen → 9.90", 990, "9.90"},
+		{"1990 fen → 19.90", 1990, "19.90"},
+		{"2990 fen → 29.90", 2990, "29.90"},
+		{"100 fen → 1.00", 100, "1.00"},
+		{"0 fen → 0.00", 0, "0.00"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				r.ParseForm() //nolint:errcheck
+				if f := r.Form.Get("total_fee"); f != tt.want {
+					t.Errorf("total_fee = %q, want %q", f, tt.want)
+				}
+				w.Header().Set("Content-Type", "application/json")
+				json.NewEncoder(w).Encode(map[string]any{ //nolint:errcheck
+					"errcode": 0, "errmsg": "ok", "url": "https://pay.example.com/checkout",
+				})
+			}))
+			defer srv.Close()
+
+			c := newTestClient(srv)
+			_, err := c.CreateCheckout(context.Background(), agent.ProductChart, tt.amount, "order-1", "", "https://liki.hk/return")
+			if err != nil {
+				t.Fatalf("CreateCheckout: %v", err)
+			}
+		})
+	}
+}
+
+func TestVerifyWebhook_LegacyOrderID(t *testing.T) {
+	c := &Client{
+		appID:     "test_appid",
+		appSecret: "test_secret",
+	}
+
+	formParams := map[string]string{
+		"appid":        "test_appid",
+		"out_trade_no": "legacy-order-1",
+		"total_fee":    "990",
+		"trade_no":     "txn_123",
+		"trade_status": "TRADE_SUCCESS",
+	}
+	form := url.Values{}
+	for k, v := range formParams {
+		form.Set(k, v)
+	}
+	form.Set("hash", sign(formParams, "test_secret"))
+
+	event, err := c.VerifyWebhook(
+		[]byte(form.Encode()),
+		http.Header{"Content-Type": {"application/x-www-form-urlencoded"}},
+	)
+	if err != nil {
+		t.Fatalf("VerifyWebhook: %v", err)
+	}
+	if event.Data.OrderID != "legacy-order-1" {
+		t.Errorf("OrderID = %q, want legacy-order-1", event.Data.OrderID)
+	}
+}
+
+func TestCreateCheckout_HashPresent(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		r.ParseForm() //nolint:errcheck
+		h := r.Form.Get("hash")
+		if h == "" {
+			t.Error("hash is missing")
+		}
+		if len(h) != 32 {
+			t.Errorf("hash len = %d, want 32", len(h))
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]any{ //nolint:errcheck
+			"errcode": 0, "errmsg": "ok", "url": "https://pay.example.com/checkout",
+		})
+	}))
+	defer srv.Close()
+
+	c := newTestClient(srv)
+	_, err := c.CreateCheckout(context.Background(), agent.ProductChart, 990, "order-1", "", "https://liki.hk/return")
+	if err != nil {
+		t.Fatalf("CreateCheckout: %v", err)
+	}
+}
+
+func TestSign_Deterministic(t *testing.T) {
+	params := map[string]string{
+		"appid":          "201906182089",
+		"version":        "1.1",
+		"time":           "1782304566",
+		"nonce_str":      "b0eaff923b531dc05e4d679aeb32bb73",
+		"trade_order_id": "go-test-001",
+		"total_fee":      "9.90",
+		"title":          "test-chart",
+		"notify_url":     "https://liki.hk/api/webhook",
+		"return_url":     "https://liki.hk/return",
+	}
+	got := sign(params, "df0e94d93d3d3328fc83f4daf815ffc2")
+
+	got2 := sign(params, "df0e94d93d3d3328fc83f4daf815ffc2")
+	if got != got2 {
+		t.Error("sign() should be deterministic")
+	}
+	if len(got) != 32 {
+		t.Errorf("sign() length = %d, want 32", len(got))
 	}
 }

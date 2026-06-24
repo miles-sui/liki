@@ -3,6 +3,7 @@ package xunhu
 import (
 	"context"
 	"crypto/md5"
+	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -43,17 +44,23 @@ func New(appID, appSecret string) *Client {
 
 // CreateCheckout creates a XunhuPay checkout session.
 func (c *Client) CreateCheckout(ctx context.Context, product agent.Product, amount int, orderID, email, returnURL string) (*payment.CheckoutResult, error) {
-	// Derive webhook URL from returnURL base.
 	webhookURL := deriveWebhookURL(returnURL)
 
+	nonce := make([]byte, 16)
+	if _, err := rand.Read(nonce); err != nil {
+		return nil, fmt.Errorf("xunhu: generate nonce: %w", err)
+	}
+
 	params := map[string]string{
-		"appid":        c.appID,
-		"version":      "1.0",
-		"out_trade_no": orderID,
-		"total_fee":    strconv.Itoa(amount),
-		"body":         product.EmailSubject(),
-		"notify_url":   webhookURL,
-		"return_url":   returnURL,
+		"appid":          c.appID,
+		"time":           strconv.FormatInt(time.Now().Unix(), 10),
+		"version":        "1.1",
+		"nonce_str":      hex.EncodeToString(nonce),
+		"trade_order_id": orderID,
+		"total_fee":      fmt.Sprintf("%d.%02d", amount/100, amount%100),
+		"title":          product.EmailSubject(),
+		"notify_url":     webhookURL,
+		"return_url":     returnURL,
 	}
 	params["hash"] = sign(params, c.appSecret)
 
@@ -141,10 +148,14 @@ func (c *Client) VerifyWebhook(rawBody []byte, headers http.Header) (*payment.We
 		eventType = "payment.succeeded"
 	}
 
+	orderID := values.Get("trade_order_id")
+	if orderID == "" {
+		orderID = values.Get("out_trade_no")
+	}
 	return &payment.WebhookEvent{
 		Type: eventType,
 		Data: payment.WebhookEventData{
-			OrderID:   values.Get("out_trade_no"),
+			OrderID:   orderID,
 			Amount:    amount,
 			Email:     values.Get("openid"),
 			PaymentID: values.Get("trade_no"),

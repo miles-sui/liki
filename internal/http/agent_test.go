@@ -465,6 +465,9 @@ func TestChatHandler_SSEEvents_Confirmed(t *testing.T) {
 			if data["product"] == nil || data["product"] == "" {
 				t.Error("done event data.product must be non-empty")
 			}
+			if data["currency"] == nil || data["currency"] == "" {
+				t.Error("done event data.currency must be non-empty")
+			}
 		case "error":
 			t.Errorf("unexpected error event: %v", ev)
 		}

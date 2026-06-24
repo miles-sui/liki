@@ -113,7 +113,7 @@ test.describe('Purchase flow', () => {
     });
 
     await page.locator('.btn-buy').click();
-    // Should navigate to Dodo checkout.
+    // Should navigate to checkout page.
     await page.waitForURL('**/checkout/e2e-test', { timeout: 10000 });
   });
 
@@ -305,5 +305,60 @@ test.describe('Purchase flow', () => {
 
     // Error toast or error in buy card.
     await expect(page.locator('.error-toast')).toBeVisible({ timeout: 10000 });
+  });
+
+  // ── xunhu checkout with QR code ──
+
+  test('xunhu checkout returns qrcode_url alongside checkout_url', async () => {
+    // Mock greeting.
+    await page.route('**/api/agent/greeting', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ data: { greeting: '你好。' } }),
+      });
+    });
+
+    // Mock chat with done (CNY currency → xunhu provider).
+    await page.route('**/api/agent/chat', async (route) => {
+      await route.fulfill({
+        status: 200,
+        headers: {
+          'Content-Type': 'text/event-stream',
+          'Cache-Control': 'no-cache',
+          'X-Session-ID': 'xunhu-checkout-test',
+        },
+        body: [
+          sseLine({ type: 'thinking' }),
+          sseLine({ type: 'text-delta', content: '分析完成。' }),
+          sseLine({ type: 'done', data: { product: 'chart', order_id: 'order-xunhu', amount: 990, currency: 'CNY' } }),
+        ].join(''),
+      });
+    });
+
+    // Mock xunhu checkout — returns both checkout_url and qrcode_url.
+    await page.route('**/api/payments/checkout', async (route) => {
+      const body = JSON.parse(route.request().postData() || '{}');
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          data: {
+            checkout_url: 'https://api.xunhupay.com/payment/checkout',
+            qrcode_url: 'https://api.xunhupay.com/payment/qrcode',
+            provider: body.provider || 'xunhu',
+          },
+        }),
+      });
+    });
+
+    await page.goto('/zh/chat.html');
+    await page.waitForSelector('.chat-shell', { timeout: 10000 });
+
+    await page.locator('.chat-input-bar input').fill('排盘');
+    await page.locator('.btn-send').click();
+
+    await expect(page.locator('.buy-card')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('.buy-card')).toContainText('¥'); // CNY symbol
   });
 });

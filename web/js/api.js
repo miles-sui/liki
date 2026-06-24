@@ -4,16 +4,6 @@ const TOAST_DURATION = 4000;
 const MAX_RETRIES = 2;
 const RETRY_DELAY = 1000;
 
-// Per-product per-locale display prices (cents).
-const PRICE_MAP = {
-  chart:  { zh: 6900, hk: 7800, en: 990 },
-  bond:   { zh: 13900, hk: 15800, en: 1990 },
-  naming: { zh: 20900, hk: 23800, en: 2990 },
-};
-const CURRENCY = { zh: '≈¥', hk: '≈HK$', en: '$' };
-window.__PRICE_MAP = PRICE_MAP;
-window.__CURRENCY = CURRENCY;
-
 // ── connectivity ──
 
 let online = navigator.onLine;

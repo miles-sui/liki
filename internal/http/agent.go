@@ -117,6 +117,7 @@ func chatHandler(chat *agent.ChatAgent, orders agent.OrderCreator, store *sessio
 				"order_id": result.Purchase.OrderID,
 				"amount":   result.Purchase.Amount,
 				"product":  result.Purchase.Product,
+				"currency": detectCurrency(r),
 			},
 		}); err != nil {
 			slog.Error("write SSE done event", "err", err)

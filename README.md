@@ -1,5 +1,7 @@
 # 灵机 Liki — AI 命理助手
 
+[![Wikidata](https://img.shields.io/badge/Wikidata-Q140329242-blue?logo=wikidata)](https://www.wikidata.org/wiki/Q140329242)
+
 八字排盘 · 紫微斗数 · 奇门遁甲 · 智能起名 · 六爻断卦 · 黄历择日 · 风水堪舆
 
 灵机是一款基于 LLM 的中国传统命理 AI 服务。用户通过自然语言对话描述需求，AI 自动收集出生信息、排盘计算、生成分析报告。前端为静态 HTML + Vue 3，后端为 Go JSON API，LLM 通过 SSE 流式返回。
@@ -22,7 +24,7 @@
 Go 1.26 + SQLite (WAL) + Caddy
 前端: 静态 HTML + Vue 3 + Alpine.js
 LLM: DeepSeek V4 Pro（流式 tool-calling + SSE streaming）
-支付: Dodo Payments
+支付: Dodo Payments + 虎皮椒
 邮件: Resend
 ```
 
@@ -53,6 +55,7 @@ internal/
   http/             HTTP handler + 中间件 + 路由 + SessionStore
   payment/          支付服务 + Store
   dodo/             Dodo Payments SDK 封装
+  xunhu/            虎皮椒支付 SDK 封装
   email/            Resend 邮件
 data/prompts/       LLM 系统 prompt
 web/skills/         对外 skill 文件 + 报告模板（嵌入 + Caddy serve）
@@ -92,7 +95,7 @@ docs/               设计文档
 
 **Liki** is an LLM-powered Chinese metaphysics assistant. Users chat in natural language — the AI collects birth information, computes charts, and generates analysis reports. It covers BaZi (Eight Characters), Zi Wei Dou Shu (Purple Star Astrology), Qi Men Dun Jia (Mystical Doors), intelligent naming, Liu Yao (Hexagram divination), Chinese Almanac (Huangli), and Feng Shui.
 
-Built with Go 1.26 + SQLite + Caddy (backend), vanilla HTML + Vue 3 + Alpine.js (frontend), DeepSeek V4 Pro (LLM with streaming tool-calling over SSE), Dodo Payments, and Resend email.
+Built with Go 1.26 + SQLite + Caddy (backend), vanilla HTML + Vue 3 + Alpine.js (frontend), DeepSeek V4 Pro (LLM with streaming tool-calling over SSE), Dodo Payments + XunhuPay, and Resend email.
 
 External AI agents can discover the service via `llms.txt` → `liki.md` → `openapi.json` → report templates. No account required — reports are accessed by order ID.
 

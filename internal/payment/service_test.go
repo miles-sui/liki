@@ -189,10 +189,62 @@ func TestCreateCheckout_WithEmail(t *testing.T) {
 
 func TestHandleWebhook_VerifyFailure(t *testing.T) {
 	svc, _, dodoMock, _ := newTestSvc(t)
+	xunhuMock := svc.Xunhu.(*mockPaymentProvider)
 	dodoMock.verifyErr = errors.New("bad signature")
+	xunhuMock.verifyErr = errors.New("bad hash")
 	err := svc.HandleWebhook(context.Background(), []byte(`{}`), http.Header{})
 	if err == nil {
 		t.Fatal("expected verification error")
+	}
+	if !errors.Is(err, ErrWebhookVerify) {
+		t.Errorf("expected ErrWebhookVerify, got %v", err)
+	}
+}
+
+func TestHandleWebhook_XunhuFallback(t *testing.T) {
+	// Dodo verification fails, xunhu succeeds — dispatch falls back to xunhu.
+	svc, store, dodoMock, emailMock := newTestSvc(t)
+	emailMock.sent = make(chan struct{}, 4)
+
+	if err := store.UpdateEmail(context.Background(), "order-1", "user@example.com"); err != nil {
+		t.Fatalf("UpdateEmail: %v", err)
+	}
+
+	dodoMock.verifyErr = errors.New("dodo: bad signature")
+	xunhuMock := svc.Xunhu.(*mockPaymentProvider)
+	xunhuMock.verifyEvent = &WebhookEvent{
+		Type: "payment.succeeded",
+		Data: WebhookEventData{OrderID: "order-1", PaymentID: "xunhu-pay-1", Amount: 990},
+	}
+
+	err := svc.HandleWebhook(context.Background(), []byte(`trade_status=TRADE_SUCCESS&trade_order_id=order-1`), http.Header{})
+	if err != nil {
+		t.Fatalf("HandleWebhook xunhu fallback: %v", err)
+	}
+	<-emailMock.sent // customer email
+	<-emailMock.sent // admin email
+
+	order, err := store.GetOrder(context.Background(), "order-1")
+	if err != nil {
+		t.Fatalf("GetOrder: %v", err)
+	}
+	if order.Status != OrderPaid {
+		t.Errorf("status = %s, want paid", order.Status)
+	}
+	if order.PaymentID != "xunhu-pay-1" {
+		t.Errorf("PaymentID = %q, want xunhu-pay-1", order.PaymentID)
+	}
+}
+
+func TestHandleWebhook_BothProvidersFail(t *testing.T) {
+	svc, _, dodoMock, _ := newTestSvc(t)
+	xunhuMock := svc.Xunhu.(*mockPaymentProvider)
+	dodoMock.verifyErr = errors.New("dodo: bad signature")
+	xunhuMock.verifyErr = errors.New("xunhu: bad hash")
+
+	err := svc.HandleWebhook(context.Background(), []byte(`{}`), http.Header{})
+	if err == nil {
+		t.Fatal("expected error when both providers fail")
 	}
 	if !errors.Is(err, ErrWebhookVerify) {
 		t.Errorf("expected ErrWebhookVerify, got %v", err)

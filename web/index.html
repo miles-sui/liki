@@ -110,7 +110,7 @@
       <h2 class="text-lg font-semibold text-stone-800" data-i18n="index.chart.title">八字</h2>
       <p class="text-stone-500 mt-1.5 text-sm leading-relaxed" data-i18n="index.chart.desc">输入生辰，解读您的命理格局、用神喜忌与大运流年。</p>
       <div class="pc-features" data-i18n-html="index.chart.features"></div>
-      <span class="pricing" data-i18n="index.chart.price">$9.90</span>
+      <span class="pricing" data-i18n="index.chart.price">9.90</span>
     </a>
 
     <!-- 合盘 -->
@@ -120,7 +120,7 @@
       <h2 class="text-lg font-semibold text-stone-800" data-i18n="index.bond.title">合盘</h2>
       <p class="text-stone-500 mt-1.5 text-sm leading-relaxed" data-i18n="index.bond.desc">分析两人八字的天干地支关系，纳音五行配合，缘分深浅一目了然。</p>
       <div class="pc-features" data-i18n-html="index.bond.features"></div>
-      <span class="pricing" data-i18n="index.bond.price">$19.90</span>
+      <span class="pricing" data-i18n="index.bond.price">19.90</span>
     </a>
 
     <!-- 起名 (highlight) -->
@@ -131,7 +131,7 @@
       <h2 class="text-lg font-semibold text-stone-800" data-i18n="index.naming.title">起名</h2>
       <p class="text-stone-500 mt-1.5 text-sm leading-relaxed" data-i18n="index.naming.desc">根据八字用神推荐名字，五格三才配置，生肖避讳，音韵平仄全考量。</p>
       <div class="pc-features" data-i18n-html="index.naming.features"></div>
-      <span class="pricing" data-i18n="index.naming.price">$29.90</span>
+      <span class="pricing" data-i18n="index.naming.price">29.90</span>
     </a>
   </div>
 
@@ -148,5 +148,17 @@
 
 <liki-footer></liki-footer>
 
+<script>
+// Show pricing with currency symbol based on IP geo (¥ for CN, $ for others).
+fetch('/api/location').then(r => r.json()).then(d => {
+  const sym = (d.data && d.data.currency === 'CNY') ? '¥' : '$';
+  document.querySelectorAll('.pricing').forEach(el => {
+    el.textContent = sym + el.textContent.trim();
+    el.style.visibility = 'visible';
+  });
+}).catch(() => {
+  document.querySelectorAll('.pricing').forEach(el => el.style.visibility = 'visible');
+});
+</script>
 </body>
 </html>

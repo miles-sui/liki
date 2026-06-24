@@ -558,6 +558,7 @@ th {
 }
 .pricing {
   display: inline-block;
+  visibility: hidden;
   font-size: .8125rem;
   font-weight: 600;
   padding: .1875rem .625rem;

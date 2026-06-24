@@ -245,12 +245,8 @@ function mountApp() {
           const data = evt.data || {};
           orderID.value = data.order_id || '';
           amount.value = data.amount || 0;
-          const product = data.product || '';
-          var priceMap = window.__PRICE_MAP || {};
-          var prices = priceMap[product] || {};
-          var displayAmount = prices[lang] || amount.value;
-          var currency = window.__CURRENCY ? window.__CURRENCY[lang] : '$';
-          messages.value.push({ role: 'buy', amount: amount.value, displayAmount: displayAmount, currency: currency, time: new Date().toISOString() });
+          var currency = (data.currency === 'CNY') ? '¥' : '$';
+          messages.value.push({ role: 'buy', amount: amount.value, displayAmount: amount.value, currency: currency, time: new Date().toISOString() });
           scrollDown();
           break;
 
