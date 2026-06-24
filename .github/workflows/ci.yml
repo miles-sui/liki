@@ -161,8 +161,8 @@ jobs:
           done
           if [ "$i" = "30" ]; then echo "Server failed to start" >&2; exit 1; fi
 
-      - name: Run smoke test
-        run: cd web && BASE_URL=http://localhost:8080 npx playwright test --config e2e/playwright.config.js journeys/smoke.spec.js
+      - name: Run page tests
+        run: cd web && BASE_URL=http://localhost:8080 npx playwright test --config e2e/playwright.config.js journeys/pages.spec.js
 
       - name: Run full E2E
         run: cd web && BASE_URL=http://localhost:8080 npx playwright test --config e2e/playwright.config.js --ignore-snapshots

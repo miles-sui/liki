@@ -1,5 +1,5 @@
 // Render error tests — catches silent framework failures: console errors, raw templates, broken images.
-// Separate from smoke.spec.js which checks page load and framework init.
+// Separate from pages.spec.js which checks page load and framework init.
 
 import { test, expect } from '../fixtures.js';
 

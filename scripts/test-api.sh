@@ -1,5 +1,5 @@
 #!/bin/bash
-# Liki — API smoke test
+# Liki — API layer test
 set -uo pipefail
 
 BASE="${1:-http://localhost:8080}"
@@ -16,7 +16,7 @@ HAS_JQ=false
 RED=""; GREEN=""; BOLD=""; NC=""
 [ -t 1 ] && { RED='\033[31m'; GREEN='\033[32m'; BOLD='\033[1m'; NC='\033[0m'; }
 
-TMP=$(mktemp -d /tmp/smoke-lingji-XXXXXX)
+TMP=$(mktemp -d /tmp/test-api-XXXXXX)
 trap 'rm -rf "$TMP"' EXIT
 
 command -v jq &>/dev/null && HAS_JQ=true
@@ -397,6 +397,6 @@ if [ "$FAIL" -gt 0 ]; then
   echo "${RED}Some tests failed.${NC}"
   exit 1
 else
-  echo "${GREEN}All smoke tests passed.${NC}"
+  echo "${GREEN}All API tests passed.${NC}"
   exit 0
 fi
