@@ -170,7 +170,7 @@ func (s *Service) handleEvent(ctx context.Context, event *WebhookEvent) error {
 			now := time.Now().In(time.FixedZone("CST", 8*3600)).Format("2006-01-02 15:04:05")
 		customerHTML := fmt.Sprintf(`<p>感谢购买！<a href="%s/report/%s">点击查看完整报告</a></p>
 				<p>请保存此链接以便日后查阅。如有疑问请回复此邮件。</p>
-				<p><small>订单时间：%s CST</small></p>`, s.ReturnURL, orderID, now)
+				<p><small>订单时间：%s 北京时间</small></p>`, s.ReturnURL, orderID, now)
 			go func() { if err := s.Email.SendReport(s.bgCtx, email, product.EmailSubject(), customerHTML); err != nil { slog.Error("send customer report", "err", err) } }()
 		}
 
