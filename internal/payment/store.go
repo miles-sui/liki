@@ -21,6 +21,7 @@ CREATE TABLE IF NOT EXISTS orders (
     product     TEXT NOT NULL,
     amount      INTEGER NOT NULL,
     currency    TEXT NOT NULL,
+    provider    TEXT NOT NULL DEFAULT '',
     email       TEXT NOT NULL DEFAULT '',
     chart_json  TEXT NOT NULL,
     llm_json    TEXT NOT NULL DEFAULT '',
@@ -39,6 +40,9 @@ const dropPdfPath = `ALTER TABLE orders DROP COLUMN pdf_path;`
 // addLocale adds locale column for multi-language report generation.
 const addLocale = `ALTER TABLE orders ADD COLUMN locale TEXT NOT NULL DEFAULT 'zh-Hans';`
 
+// addProvider adds provider column for tracking which payment gateway was used.
+const addProvider = `ALTER TABLE orders ADD COLUMN provider TEXT NOT NULL DEFAULT '';`
+
 // OrderStatus is the payment status of an order.
 type OrderStatus string
 
@@ -53,6 +57,7 @@ type Order struct {
 	Product   agent.Product
 	Amount    int
 	Currency  string
+	Provider  string
 	Email     string
 	ChartJSON string
 	LlmJSON   string
@@ -81,14 +86,19 @@ func NewStore(db *sql.DB) (*Store, error) {
 	if _, err := db.Exec(addLocale); err != nil {
 		slog.Info("payment: add locale (expected on upgraded instances)", "err", err)
 	}
+	// Add provider column for tracking payment gateway. Column may
+	// already exist on upgraded instances — failure is expected and harmless.
+	if _, err := db.Exec(addProvider); err != nil {
+		slog.Info("payment: add provider (expected on upgraded instances)", "err", err)
+	}
 	return &Store{db: db}, nil
 }
 
 // CreateOrder inserts a new pending order into the database.
-func (s *Store) CreateOrder(ctx context.Context, orderID string, product agent.Product, amount int, currency, chartJSON, llmJSON, locale string) error {
+func (s *Store) CreateOrder(ctx context.Context, orderID string, product agent.Product, amount int, currency, chartJSON, llmJSON, locale, provider string) error {
 	_, err := s.db.ExecContext(ctx,
-		`INSERT INTO orders (order_id, product, amount, currency, chart_json, llm_json, locale) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-		orderID, product, amount, currency, chartJSON, llmJSON, locale)
+		`INSERT INTO orders (order_id, product, amount, currency, chart_json, llm_json, locale, provider) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+		orderID, product, amount, currency, chartJSON, llmJSON, locale, provider)
 	if err != nil {
 		return fmt.Errorf("payment: create order: %w", err)
 	}
@@ -100,6 +110,14 @@ func (s *Store) UpdateEmail(ctx context.Context, orderID, email string) error {
 	_, err := s.db.ExecContext(ctx,
 		`UPDATE orders SET email = ?, updated_at = datetime('now') WHERE order_id = ?`,
 		email, orderID)
+	return err
+}
+
+// UpdateProvider updates the payment provider for an order.
+func (s *Store) UpdateProvider(ctx context.Context, orderID, provider string) error {
+	_, err := s.db.ExecContext(ctx,
+		`UPDATE orders SET provider = ?, updated_at = datetime('now') WHERE order_id = ?`,
+		provider, orderID)
 	return err
 }
 
@@ -138,8 +156,8 @@ func (s *Store) GetOrder(ctx context.Context, orderID string) (*Order, error) {
 	var ca, ua string
 	var productStr string
 	err := s.db.QueryRowContext(ctx,
-		`SELECT order_id, product, amount, currency, email, chart_json, llm_json, status, COALESCE(payment_id,''), locale, created_at, updated_at FROM orders WHERE order_id = ?`,
-		orderID).Scan(&o.OrderID, &productStr, &o.Amount, &o.Currency, &o.Email, &o.ChartJSON, &o.LlmJSON, &o.Status, &o.PaymentID, &o.Locale, &ca, &ua)
+		`SELECT order_id, product, amount, currency, provider, email, chart_json, llm_json, status, COALESCE(payment_id,''), locale, created_at, updated_at FROM orders WHERE order_id = ?`,
+		orderID).Scan(&o.OrderID, &productStr, &o.Amount, &o.Currency, &o.Provider, &o.Email, &o.ChartJSON, &o.LlmJSON, &o.Status, &o.PaymentID, &o.Locale, &ca, &ua)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrOrderNotFound

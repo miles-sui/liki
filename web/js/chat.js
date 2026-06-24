@@ -250,7 +250,7 @@ function mountApp() {
           var prices = priceMap[product] || {};
           var displayAmount = prices[lang] || amount.value;
           var currency = window.__CURRENCY ? window.__CURRENCY[lang] : '$';
-          messages.value.push({ role: 'buy', displayAmount: displayAmount, currency: currency, time: new Date().toISOString() });
+          messages.value.push({ role: 'buy', amount: amount.value, displayAmount: displayAmount, currency: currency, time: new Date().toISOString() });
           scrollDown();
           break;
 

@@ -4,7 +4,6 @@ package payment
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"net/http"
 	"path/filepath"
@@ -13,7 +12,6 @@ import (
 	"time"
 
 	"liki/internal/agent"
-	"liki/internal/dodo"
 )
 
 // trackedEmailClient records every SendReport call for inspection.
@@ -41,28 +39,19 @@ func (m *trackedEmailClient) count() int {
 	return len(m.reports)
 }
 
-type stubReportAgent struct {
-	result string
-	err    error
-}
-
-func (a *stubReportAgent) GenerateFromData(_ context.Context, _ string, _ agent.Product, _ json.RawMessage) (string, error) {
-	return a.result, a.err
-}
-
-type stubDodo struct {
-	checkoutResult *dodo.CheckoutResult
+type stubProvider struct {
+	checkoutResult *CheckoutResult
 	checkoutErr    error
-	webhookEvent   *dodo.WebhookEvent
+	webhookEvent   *WebhookEvent
 	webhookErr     error
 }
 
-func (d *stubDodo) CreateCheckout(_ context.Context, _ string, _ int, _, _, _ string) (*dodo.CheckoutResult, error) {
-	return d.checkoutResult, d.checkoutErr
+func (p *stubProvider) CreateCheckout(_ context.Context, _ agent.Product, _ int, _, _, _ string) (*CheckoutResult, error) {
+	return p.checkoutResult, p.checkoutErr
 }
 
-func (d *stubDodo) VerifyWebhook(_ []byte, _ http.Header) (*dodo.WebhookEvent, error) {
-	return d.webhookEvent, d.webhookErr
+func (p *stubProvider) VerifyWebhook(_ []byte, _ http.Header) (*WebhookEvent, error) {
+	return p.webhookEvent, p.webhookErr
 }
 
 func openServiceTestDB(t *testing.T) *Store {
@@ -81,26 +70,18 @@ func openServiceTestDB(t *testing.T) *Store {
 	return s
 }
 
-func productIDMap() map[agent.Product]string {
-	return map[agent.Product]string{
-		agent.ProductChart:  "prod_chart",
-		agent.ProductBond:   "prod_bond",
-		agent.ProductNaming: "prod_naming",
-	}
-}
-
-func newTestService(t *testing.T, dodo *stubDodo, email *trackedEmailClient, report *stubReportAgent) *Service {
+func newTestSvcInt(t *testing.T, dodo, xunhu paymentProvider, email emailClient) *Service {
 	t.Helper()
-	return NewService(dodo, email, openServiceTestDB(t), productIDMap(), "https://example.com", "admin@example.com", report, context.Background())
+	return NewService(dodo, xunhu, email, openServiceTestDB(t), "https://example.com", "admin@example.com", nil, context.Background())
 }
 
-// ── Webhook → MarkPaid → Email → Report Generation full pipeline ──
+// ── Webhook → MarkPaid → Email ──
 
 func TestWebhookToReportPipeline(t *testing.T) {
-	dodoCli := &stubDodo{
-		webhookEvent: &dodo.WebhookEvent{
+	dodoCli := &stubProvider{
+		webhookEvent: &WebhookEvent{
 			Type: "payment.succeeded",
-			Data: dodo.WebhookEventData{
+			Data: WebhookEventData{
 				OrderID:   "pipe-1",
 				Amount:    990,
 				PaymentID: "pay-pipe-1",
@@ -108,24 +89,20 @@ func TestWebhookToReportPipeline(t *testing.T) {
 		},
 	}
 	emailCli := &trackedEmailClient{}
-	reportAgent := &stubReportAgent{result: "<p>generated report</p>"}
-	svc := newTestService(t, dodoCli, emailCli, reportAgent)
+	svc := newTestSvcInt(t, dodoCli, &stubProvider{}, emailCli)
 
 	ctx := context.Background()
 
-	// 1. Create a pending order.
-	if err := svc.Store.CreateOrder(ctx, "pipe-1", agent.ProductChart, 990, "CNY", `{"chart":{"nianzhu":{"gan":"甲","zhi":"子"}}}`, "", "zh-Hans"); err != nil {
+	if err := svc.Store.CreateOrder(ctx, "pipe-1", agent.ProductChart, 990, "CNY", `{"chart":{"nianzhu":{"gan":"甲","zhi":"子"}}}`, "", "zh-Hans", ""); err != nil {
 		t.Fatalf("CreateOrder: %v", err)
 	}
 	svc.Store.UpdateEmail(ctx, "pipe-1", "buyer@test.com")
 
-	// 2. Handle webhook — simulates Dodo callback.
 	err := svc.HandleWebhook(ctx, []byte(`{"type":"payment.succeeded"}`), http.Header{})
 	if err != nil {
 		t.Fatalf("HandleWebhook: %v", err)
 	}
 
-	// 3. Verify order status changed to paid.
 	o, err := svc.Store.GetOrder(ctx, "pipe-1")
 	if err != nil {
 		t.Fatalf("GetOrder: %v", err)
@@ -137,7 +114,7 @@ func TestWebhookToReportPipeline(t *testing.T) {
 		t.Errorf("PaymentID = %q, want pay-pipe-1", o.PaymentID)
 	}
 
-	// 4. Email was sent to buyer (goroutine — poll).
+	// Email sent to buyer (goroutine — poll).
 	for i := 0; i < 20; i++ {
 		if emailCli.count() >= 1 {
 			break
@@ -156,27 +133,15 @@ func TestWebhookToReportPipeline(t *testing.T) {
 	if !foundBuyer {
 		t.Errorf("expected buyer email to buyer@test.com, got %v", emailCli.reports)
 	}
-
-	// 5. Report generation runs in background — wait for it.
-	for i := 0; i < 20; i++ {
-		o, _ = svc.Store.GetOrder(ctx, "pipe-1")
-		if o.LlmJSON != "" {
-			break
-		}
-		time.Sleep(50 * time.Millisecond)
-	}
-	if o.LlmJSON != "<p>generated report</p>" {
-		t.Errorf("LlmJSON = %q, want <p>generated report</p>", o.LlmJSON)
-	}
 }
 
-// ── Webhook idempotency — no double email, no double generation ──
+// ── Webhook idempotency — no double email ──
 
 func TestWebhookToReport_Idempotent(t *testing.T) {
-	dodoCli := &stubDodo{
-		webhookEvent: &dodo.WebhookEvent{
+	dodoCli := &stubProvider{
+		webhookEvent: &WebhookEvent{
 			Type: "payment.succeeded",
-			Data: dodo.WebhookEventData{
+			Data: WebhookEventData{
 				OrderID:   "idem-1",
 				Amount:    990,
 				PaymentID: "pay-idem-1",
@@ -184,27 +149,18 @@ func TestWebhookToReport_Idempotent(t *testing.T) {
 		},
 	}
 	emailCli := &trackedEmailClient{}
-	reportAgent := &stubReportAgent{result: "<p>ok</p>"}
-	svc := newTestService(t, dodoCli, emailCli, reportAgent)
+	svc := newTestSvcInt(t, dodoCli, &stubProvider{}, emailCli)
 
 	ctx := context.Background()
-	svc.Store.CreateOrder(ctx, "idem-1", agent.ProductChart, 990, "CNY", `{}`, "", "zh-Hans")
+	svc.Store.CreateOrder(ctx, "idem-1", agent.ProductChart, 990, "CNY", `{}`, "", "zh-Hans", "")
 	svc.Store.UpdateEmail(ctx, "idem-1", "buyer@test.com")
 
-	// First webhook.
 	if err := svc.HandleWebhook(ctx, []byte(`{"type":"payment.succeeded"}`), http.Header{}); err != nil {
 		t.Fatalf("first HandleWebhook: %v", err)
 	}
 
-	// Wait for background generation.
-	for i := 0; i < 20; i++ {
-		o, _ := svc.Store.GetOrder(ctx, "idem-1")
-		if o.LlmJSON != "" {
-			break
-		}
-		time.Sleep(50 * time.Millisecond)
-	}
-
+	// Allow goroutines to complete.
+	time.Sleep(100 * time.Millisecond)
 	emailCount := emailCli.count()
 
 	// Second webhook — same PaymentID.
@@ -212,32 +168,25 @@ func TestWebhookToReport_Idempotent(t *testing.T) {
 		t.Fatalf("second HandleWebhook: %v", err)
 	}
 
-	// Email count must not increase.
 	if emailCli.count() != emailCount {
 		t.Errorf("email count = %d, want %d (no new emails)", emailCli.count(), emailCount)
-	}
-
-	// LlmJSON must not be overwritten.
-	o, _ := svc.Store.GetOrder(ctx, "idem-1")
-	if o.LlmJSON != "<p>ok</p>" {
-		t.Errorf("LlmJSON = %q, want <p>ok</p>", o.LlmJSON)
 	}
 }
 
 // ── Webhook with non-existent order returns error ──
 
 func TestWebhook_NonExistentOrder(t *testing.T) {
-	dodoCli := &stubDodo{
-		webhookEvent: &dodo.WebhookEvent{
+	dodoCli := &stubProvider{
+		webhookEvent: &WebhookEvent{
 			Type: "payment.succeeded",
-			Data: dodo.WebhookEventData{
+			Data: WebhookEventData{
 				OrderID:   "no-such-order",
 				Amount:    990,
 				PaymentID: "pay-unknown",
 			},
 		},
 	}
-	svc := newTestService(t, dodoCli, &trackedEmailClient{}, &stubReportAgent{result: "x"})
+	svc := newTestSvcInt(t, dodoCli, &stubProvider{}, &trackedEmailClient{})
 
 	err := svc.HandleWebhook(context.Background(), []byte(`{}`), http.Header{})
 	if err == nil {
@@ -248,21 +197,21 @@ func TestWebhook_NonExistentOrder(t *testing.T) {
 	}
 }
 
-// ── Checkout flow creates Dodo session and updates email ──
+// ── Checkout flow sets provider ──
 
 func TestCreateCheckout_Integration(t *testing.T) {
-	dodoCli := &stubDodo{
-		checkoutResult: &dodo.CheckoutResult{
+	dodoCli := &stubProvider{
+		checkoutResult: &CheckoutResult{
 			SessionID:   "sess-checkout",
 			CheckoutURL: "https://pay.example.com/checkout",
 		},
 	}
-	svc := newTestService(t, dodoCli, &trackedEmailClient{}, nil)
+	svc := newTestSvcInt(t, dodoCli, &stubProvider{}, &trackedEmailClient{})
 	ctx := context.Background()
 
-	svc.Store.CreateOrder(ctx, "co-1", agent.ProductBond, 1990, "CNY", `{}`, "", "zh-Hans")
+	svc.Store.CreateOrder(ctx, "co-1", agent.ProductBond, 1990, "CNY", `{}`, "", "zh-Hans", "")
 
-	result, err := svc.CreateCheckout(ctx, "co-1", "buyer@test.com")
+	result, err := svc.CreateCheckout(ctx, "dodo", "co-1", "")
 	if err != nil {
 		t.Fatalf("CreateCheckout: %v", err)
 	}
@@ -270,24 +219,19 @@ func TestCreateCheckout_Integration(t *testing.T) {
 		t.Errorf("SessionID = %q, want sess-checkout", result.SessionID)
 	}
 
-	// Email must be persisted.
 	o, _ := svc.Store.GetOrder(ctx, "co-1")
-	if o.Email != "buyer@test.com" {
-		t.Errorf("Email = %q, want buyer@test.com", o.Email)
+	if o.Provider != "dodo" {
+		t.Errorf("Provider = %q, want dodo", o.Provider)
 	}
 }
 
 // ── RetryReportGeneration for paid orders without llm_json ──
 
 func TestRetryReportGeneration_Integration(t *testing.T) {
-	dodoCli := &stubDodo{}
-	emailCli := &trackedEmailClient{}
-	reportAgent := &stubReportAgent{result: "<p>retry generated</p>"}
-	svc := newTestService(t, dodoCli, emailCli, reportAgent)
+	svc := newTestSvcInt(t, &stubProvider{}, &stubProvider{}, &trackedEmailClient{})
 	ctx := context.Background()
 
-	// Create and manually mark as paid (simulating missed webhook).
-	svc.Store.CreateOrder(ctx, "retry-1", agent.ProductChart, 990, "CNY", `{"chart":{}}`, "", "zh-Hans")
+	svc.Store.CreateOrder(ctx, "retry-1", agent.ProductChart, 990, "CNY", `{"chart":{}}`, "", "zh-Hans", "")
 	svc.Store.MarkPaidIdempotent(ctx, "retry-1", "pay-retry-1")
 
 	status, product, llmJSON, err := svc.RetryReportGeneration(ctx, "retry-1")
@@ -301,30 +245,17 @@ func TestRetryReportGeneration_Integration(t *testing.T) {
 		t.Errorf("product = %q, want chart", product)
 	}
 	if llmJSON != "" {
-		t.Errorf("llmJSON = %q, want empty (bg gen not complete)", llmJSON)
-	}
-
-	// Wait for background generation.
-	for i := 0; i < 20; i++ {
-		o, _ := svc.Store.GetOrder(ctx, "retry-1")
-		if o.LlmJSON != "" {
-			break
-		}
-		time.Sleep(50 * time.Millisecond)
-	}
-	o, _ := svc.Store.GetOrder(ctx, "retry-1")
-	if o.LlmJSON != "<p>retry generated</p>" {
-		t.Errorf("LlmJSON = %q, want <p>retry generated</p>", o.LlmJSON)
+		t.Errorf("llmJSON = %q, want empty", llmJSON)
 	}
 }
 
 // ── GetReport hides llm_json for pending orders ──
 
 func TestGetReport_HidesLlmJSONForPending(t *testing.T) {
-	svc := newTestService(t, &stubDodo{}, &trackedEmailClient{}, nil)
+	svc := newTestSvcInt(t, &stubProvider{}, &stubProvider{}, &trackedEmailClient{})
 	ctx := context.Background()
 
-	svc.Store.CreateOrder(ctx, "pending-rpt", agent.ProductNaming, 2990, "CNY", `{}`, "# secret", "zh-Hans")
+	svc.Store.CreateOrder(ctx, "pending-rpt", agent.ProductNaming, 2990, "CNY", `{}`, "# secret", "zh-Hans", "")
 
 	rd, err := svc.GetReport(ctx, "pending-rpt")
 	if err != nil {

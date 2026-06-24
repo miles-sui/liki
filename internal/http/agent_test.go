@@ -31,7 +31,7 @@ type orderRecord struct {
 	LlmJSON   string
 }
 
-func (m *mockOrderCreator) CreateOrder(ctx context.Context, orderID string, product agent.Product, amount int, currency, chartJSON, llmJSON, locale string) error {
+func (m *mockOrderCreator) CreateOrder(ctx context.Context, orderID string, product agent.Product, amount int, currency, chartJSON, llmJSON, locale, provider string) error {
 	if m.err != nil {
 		return m.err
 	}

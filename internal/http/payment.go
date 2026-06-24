@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/mail"
+	"strings"
 
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 
@@ -14,8 +15,9 @@ import (
 )
 
 type checkoutRequest struct {
-	OrderID string `json:"order_id"`
-	Email   string `json:"email"`
+	OrderID  string `json:"order_id"`
+	Email    string `json:"email"`
+	Provider string `json:"provider"`
 }
 
 func (r checkoutRequest) Validate() error {
@@ -46,9 +48,19 @@ func handleCheckout(svc *payment.Service) http.HandlerFunc {
 			return
 		}
 
-		result, err := svc.CreateCheckout(r.Context(), req.OrderID, req.Email)
+	provider := req.Provider
+		if provider == "" {
+			country := strings.ToUpper(r.Header.Get("CF-IPCountry"))
+			if country == "" || country == "CN" {
+				provider = "xunhu"
+			} else {
+				provider = "dodo"
+			}
+		}
+
+		result, err := svc.CreateCheckout(r.Context(), provider, req.OrderID, req.Email)
 		if err != nil {
-			if errors.Is(err, payment.ErrOrderNotFound) {
+			if errors.Is(err, payment.ErrOrderNotFound) || errors.Is(err, payment.ErrUnknownProvider) {
 				respondError(w, http.StatusNotFound, "not_found", i18n.T(i18n.DetectLang(r), "err.order_not_found"))
 				return
 			}
@@ -102,7 +114,7 @@ func handleRetryOrder(svc *payment.Service) http.HandlerFunc {
 	}
 }
 
-// handlePaymentReturn handles Dodo post-payment redirect (GET /api/payments/return/{id}).
+// handlePaymentReturn handles post-payment redirect (GET /api/payments/return/{id}).
 // Email is collected by AI in conversation and stored at order creation time.
 func handlePaymentReturn() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {

@@ -1,6 +1,6 @@
 # Liki (灵机)
 
-Go 1.26 + SQLite + Caddy。静态 HTML + Alpine.js 前端，DeepSeek LLM，Dodo Payments。
+Go 1.26 + SQLite + Caddy。静态 HTML + Alpine.js 前端，DeepSeek LLM，Dodo Payments + 虎皮椒。
 模型用 DeepSeek V4 Pro（当前最新），超时 120s，全流式 tool-calling + SSE streaming。
 
 ## Commands
@@ -49,6 +49,7 @@ internal/
   payment/          支付服务（checkout/webhook/download/report）+ Store
   llm/              DeepSeek 客户端 + tool schema JSON
   dodo/             Dodo Payments SDK 封装
+  xunhu/            虎皮椒支付 SDK 封装
   email/            Resend 邮件客户端
   http/             Handler (package handler) + 中间件 + 路由 + 编排 + SessionStore（含 Free API）
   i18n/             国际化工具
@@ -89,7 +90,10 @@ internal/
 - SQLite WAL 模式，单连接（MaxOpenConns=1）。
 
 ### 支付
-- Dodo Payments，orderID 存 metadata。不要跳过 webhook 签名验证。
+- Dodo Payments（国际卡）+ 虎皮椒（微信/支付宝），双 provider 共存。
+- 前端用户自选支付方式，相同数字金额不同币种（¥9.90 vs $9.90）。
+- 订单表 `currency` 字段区分（CNY/USD），`provider` 字段记录支付通道。
+- 不要跳过 webhook 签名验证。
 
 ### LLM
 - 当前模型: DeepSeek V4 Pro。选型标准: 最新旗舰、支持 tool-calling + SSE streaming。

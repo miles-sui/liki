@@ -22,7 +22,7 @@ type ToolRegistry interface {
 
 // OrderCreator creates an order in the payment store.
 type OrderCreator interface {
-	CreateOrder(ctx context.Context, orderID string, product Product, amount int, currency, chartJSON, llmJSON, locale string) error
+	CreateOrder(ctx context.Context, orderID string, product Product, amount int, currency, chartJSON, llmJSON, locale, provider string) error
 	UpdateEmail(ctx context.Context, orderID, email string) error
 }
 
@@ -30,9 +30,12 @@ type OrderCreator interface {
 type Product string
 
 const (
-	ProductChart  Product = "chart"
-	ProductBond   Product = "bond"
-	ProductNaming Product = "naming"
+	ProductChart    Product = "chart"
+	ProductBond     Product = "bond"
+	ProductNaming   Product = "naming"
+	ProductZiwei    Product = "ziwei"
+	ProductBazhai   Product = "bazhai"
+	ProductXuankong Product = "xuankong"
 )
 
 func (p Product) EmailSubject() string {
@@ -43,6 +46,12 @@ func (p Product) EmailSubject() string {
 		return "您的合盘报告"
 	case ProductNaming:
 		return "您的起名报告"
+	case ProductZiwei:
+		return "您的紫微斗数报告"
+	case ProductBazhai:
+		return "您的八宅风水报告"
+	case ProductXuankong:
+		return "您的玄空风水报告"
 	default:
 		return "您的命理报告"
 	}
@@ -51,12 +60,11 @@ func (p Product) EmailSubject() string {
 // ChatAgent handles LLM conversation via tool-calling. Engine computation is
 // delegated to *engine.Service injected through the tool registry.
 type ChatAgent struct {
-	llm           LLMClient
-	tools         ToolRegistry
-	prompt        string
-	Greeting      string
-	ReportPrompts map[Product]string
-	Amounts       map[Product]int
+	llm      LLMClient
+	tools    ToolRegistry
+	prompt   string
+	Greeting string
+	Amounts  map[Product]int
 }
 
 // NewChatAgent creates a new ChatAgent with the given prompt and tools.

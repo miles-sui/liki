@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"flag"
 	"log/slog"
 	"net"
@@ -16,7 +15,8 @@ import (
 	doc "liki"
 	"liki/internal/agent"
 	"liki/internal/dodo"
-	
+	"liki/internal/xunhu"
+
 	"liki/internal/email"
 	"liki/internal/http"
 	"liki/internal/llm"
@@ -54,27 +54,25 @@ func main() {
 	emailClient := email.New(envOr("RESEND_API_KEY", ""), emailFrom)
 
 	dodoTest := envOrBool("DODO_TEST_MODE", false)
-	dodoClient := dodo.New(envOr("DODO_API_KEY", ""), envOr("DODO_WEBHOOK_KEY", ""), dodoTest)
-
-	// Chat tools call foundation packages (bazi, qiming) directly.
-	chatTools := agent.NewChatToolRegistry()
-	chatAgent := agent.NewChatAgent(llm.New(envOr("DEEPSEEK_API_KEY", "")), chatTools, doc.ChatPrompt)
-	// Single agent with unified prompt and all tools.
-	chatAgent.ReportPrompts = map[agent.Product]string{
-		agent.ProductChart:  doc.ChartReportPrompt,
-		agent.ProductBond:   doc.BondReportPrompt,
-		agent.ProductNaming: doc.NamingReportPrompt,
-	}
-	chatAgent.Greeting = "你好，我是灵机（Liki），一款 AI 命理助手，为你提供命盘解读、运势分析、合盘配对及起名等服务。有什么事，不妨一起看看。"
-
-	sessionStore := session.NewStore(30*time.Minute, 500)
-	defer sessionStore.Stop()
-
-	productIDs := map[agent.Product]string{
+	dodoProducts := map[agent.Product]string{
 		agent.ProductChart:  os.Getenv("DODO_PRODUCT_CHART"),
 		agent.ProductBond:   os.Getenv("DODO_PRODUCT_BOND"),
 		agent.ProductNaming: os.Getenv("DODO_PRODUCT_NAMING"),
 	}
+	dodoClient := dodo.New(envOr("DODO_API_KEY", ""), envOr("DODO_WEBHOOK_KEY", ""), dodoTest, dodoProducts)
+
+	xunhuClient := xunhu.New(
+		envOr("XUNHU_APPID", ""),
+		envOr("XUNHU_APPSECRET", ""),
+	)
+
+	// Chat tools call foundation packages (bazi, qiming) directly.
+	chatTools := agent.NewChatToolRegistry()
+	chatAgent := agent.NewChatAgent(llm.New(envOr("DEEPSEEK_API_KEY", "")), chatTools, doc.ChatPrompt)
+	chatAgent.Greeting = "你好，我是灵机（Liki），一款 AI 命理助手，为你提供命盘解读、运势分析、合盘配对及起名等服务。有什么事，不妨一起看看。"
+
+	sessionStore := session.NewStore(30*time.Minute, 500)
+	defer sessionStore.Stop()
 
 	returnURL := envOr("RETURN_URL", "")
 	if returnURL == "" {
@@ -87,8 +85,18 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	reportAdapter := &reportGenerator{agent: chatAgent}
-	paymentSvc := payment.NewService(dodoClient, emailClient, store, productIDs, returnURL, adminEmail, reportAdapter, ctx)
+	// Report agents — one per product, each with its own prompt.
+	llmClient := llm.New(envOr("DEEPSEEK_API_KEY", ""))
+	reportTools := agent.NewCheckToolRegistry()
+	reportAgents := map[agent.Product]*agent.ReportAgent{
+		agent.ProductChart:    agent.NewReportAgent(llmClient, reportTools, doc.ReportPrompt, doc.ChartReportPrompt),
+		agent.ProductBond:     agent.NewReportAgent(llmClient, reportTools, doc.ReportPrompt, doc.BondReportPrompt),
+		agent.ProductNaming:   agent.NewReportAgent(llmClient, reportTools, doc.ReportPrompt, doc.NamingReportPrompt),
+		agent.ProductZiwei:    agent.NewReportAgent(llmClient, reportTools, doc.ReportPrompt, doc.ZiweiReportPrompt),
+		agent.ProductBazhai:   agent.NewReportAgent(llmClient, reportTools, doc.ReportPrompt, doc.BazhaiReportPrompt),
+		agent.ProductXuankong: agent.NewReportAgent(llmClient, reportTools, doc.ReportPrompt, doc.XuankongReportPrompt),
+	}
+	paymentSvc := payment.NewService(dodoClient, xunhuClient, emailClient, store, returnURL, adminEmail, reportAgents, ctx)
 	chatAgent.Amounts = map[agent.Product]int{agent.ProductChart: 990, agent.ProductBond: 1990, agent.ProductNaming: 2990}
 
 	// Dev mode controls CORS localhost origins.
@@ -172,14 +180,6 @@ func cleanupStaleOrders(ctx context.Context, store *payment.Store) {
 			return
 		}
 	}
-}
-
-type reportGenerator struct {
-	agent *agent.ChatAgent
-}
-
-func (a *reportGenerator) GenerateFromData(ctx context.Context, locale string, product agent.Product, chartJSON json.RawMessage) (string, error) {
-	return a.agent.GenerateFromData(ctx, locale, product, chartJSON, nil)
 }
 
 func handleSignals(srv *http.Server) {

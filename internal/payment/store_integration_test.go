@@ -43,7 +43,7 @@ func TestStore_ReopenPreservesData(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewStore (first): %v", err)
 	}
-	s1.CreateOrder(context.Background(), "reopen-test", agent.ProductChart, 990, "CNY", `{"x":1}`, "", "zh-Hans")
+	s1.CreateOrder(context.Background(), "reopen-test", agent.ProductChart, 990, "CNY", `{"x":1}`, "", "zh-Hans", "")
 	db1.Close()
 
 	// Reopen — data must survive.
@@ -75,7 +75,7 @@ func TestStore_ReopenWithPaidOrder(t *testing.T) {
 
 	db1, _ := OpenDB(path)
 	s1, _ := NewStore(db1)
-	s1.CreateOrder(context.Background(), "paid-reopen", agent.ProductBond, 1990, "CNY", `{"bond":{}}`, "", "zh-Hans")
+	s1.CreateOrder(context.Background(), "paid-reopen", agent.ProductBond, 1990, "CNY", `{"bond":{}}`, "", "zh-Hans", "")
 	s1.MarkPaidIdempotent(context.Background(), "paid-reopen", "pay-456")
 	db1.Close()
 
@@ -101,7 +101,7 @@ func TestStore_MarkPaidIdempotent_Concurrent(t *testing.T) {
 	s := openTestDBFile(t)
 	ctx := context.Background()
 
-	s.CreateOrder(ctx, "concurrent-pay", agent.ProductChart, 990, "CNY", `{}`, "", "zh-Hans")
+	s.CreateOrder(ctx, "concurrent-pay", agent.ProductChart, 990, "CNY", `{}`, "", "zh-Hans", "")
 
 	const n = 5
 	results := make(chan bool, n)
@@ -145,7 +145,7 @@ func TestStore_UpdatedAt_ChangesOnModification(t *testing.T) {
 	s := openTestDBFile(t)
 	ctx := context.Background()
 
-	s.CreateOrder(ctx, "ts-order", agent.ProductChart, 990, "CNY", `{}`, "", "zh-Hans")
+	s.CreateOrder(ctx, "ts-order", agent.ProductChart, 990, "CNY", `{}`, "", "zh-Hans", "")
 	o1, _ := s.GetOrder(ctx, "ts-order")
 	createdAt := o1.CreatedAt
 	updatedAt := o1.UpdatedAt
@@ -170,7 +170,7 @@ func TestStore_UpdatedAt_ChangesOnPayment(t *testing.T) {
 	s := openTestDBFile(t)
 	ctx := context.Background()
 
-	s.CreateOrder(ctx, "ts-pay", agent.ProductChart, 990, "CNY", `{}`, "", "zh-Hans")
+	s.CreateOrder(ctx, "ts-pay", agent.ProductChart, 990, "CNY", `{}`, "", "zh-Hans", "")
 	o1, _ := s.GetOrder(ctx, "ts-pay")
 	updatedAt := o1.UpdatedAt
 
@@ -190,7 +190,7 @@ func TestStore_UpdateLlmJSON_Overwrites(t *testing.T) {
 	s := openTestDBFile(t)
 	ctx := context.Background()
 
-	s.CreateOrder(ctx, "llm-overwrite", agent.ProductChart, 990, "CNY", `{}`, "", "zh-Hans")
+	s.CreateOrder(ctx, "llm-overwrite", agent.ProductChart, 990, "CNY", `{}`, "", "zh-Hans", "")
 	s.UpdateLlmJSONIfEmpty(ctx, "llm-overwrite", "v1")
 
 	err := s.UpdateLlmJSON(ctx, "llm-overwrite", "v2")
@@ -237,7 +237,7 @@ func TestStore_Locale_Persists(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		if err := s.CreateOrder(ctx, tt.orderID, agent.ProductChart, 990, "CNY", `{}`, "", tt.locale); err != nil {
+		if err := s.CreateOrder(ctx, tt.orderID, agent.ProductChart, 990, "CNY", `{}`, "", tt.locale, ""); err != nil {
 			t.Errorf("CreateOrder(%s): %v", tt.orderID, err)
 		}
 	}
@@ -260,7 +260,7 @@ func TestStore_CreateOrder_WithInitialLlmJSON(t *testing.T) {
 	s := openTestDBFile(t)
 	ctx := context.Background()
 
-	s.CreateOrder(ctx, "prefilled-llm", agent.ProductChart, 990, "CNY", `{"chart":{}}`, "# Pre-generated\n\nLLM content", "zh-Hans")
+	s.CreateOrder(ctx, "prefilled-llm", agent.ProductChart, 990, "CNY", `{"chart":{}}`, "# Pre-generated\n\nLLM content", "zh-Hans", "")
 
 	o, _ := s.GetOrder(ctx, "prefilled-llm")
 	if o.LlmJSON != "# Pre-generated\n\nLLM content" {
@@ -291,8 +291,8 @@ func TestStore_CleanStale_AgeBoundary(t *testing.T) {
 	}
 	ctx := context.Background()
 
-	s.CreateOrder(ctx, "very-old", agent.ProductChart, 990, "CNY", `{}`, "", "zh-Hans")
-	s.CreateOrder(ctx, "very-new", agent.ProductChart, 990, "CNY", `{}`, "", "zh-Hans")
+	s.CreateOrder(ctx, "very-old", agent.ProductChart, 990, "CNY", `{}`, "", "zh-Hans", "")
+	s.CreateOrder(ctx, "very-new", agent.ProductChart, 990, "CNY", `{}`, "", "zh-Hans", "")
 
 	// Backdate the old order.
 	db.ExecContext(ctx, `UPDATE orders SET created_at = '2020-01-01 00:00:00' WHERE order_id = 'very-old'`)
@@ -324,7 +324,7 @@ func TestStore_GetOrder_Timestamps(t *testing.T) {
 	ctx := context.Background()
 
 	before := time.Now()
-	s.CreateOrder(ctx, "ts-valid", agent.ProductChart, 990, "CNY", `{}`, "", "zh-Hans")
+	s.CreateOrder(ctx, "ts-valid", agent.ProductChart, 990, "CNY", `{}`, "", "zh-Hans", "")
 	after := time.Now()
 
 	o, _ := s.GetOrder(ctx, "ts-valid")

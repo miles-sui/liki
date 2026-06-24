@@ -70,7 +70,7 @@ func TestCreateAndGetOrder(t *testing.T) {
 	ctx := context.Background()
 
 	orderID := "test-order-1"
-	if err := store.CreateOrder(ctx, orderID, agent.ProductChart, 990, "USD", `{"chart":{}}`, "", "zh-Hans"); err != nil {
+	if err := store.CreateOrder(ctx, orderID, agent.ProductChart, 990, "USD", `{"chart":{}}`, "", "zh-Hans", ""); err != nil {
 		t.Fatalf("CreateOrder: %v", err)
 	}
 
@@ -110,7 +110,7 @@ func TestMarkPaid(t *testing.T) {
 	ctx := context.Background()
 
 	orderID := "test-order-paid"
-	if err := store.CreateOrder(ctx, orderID, agent.ProductBond, 1990, "USD", `{"bond":{}}`, "", "zh-Hans"); err != nil {
+	if err := store.CreateOrder(ctx, orderID, agent.ProductBond, 1990, "USD", `{"bond":{}}`, "", "zh-Hans", ""); err != nil {
 		t.Fatalf("CreateOrder: %v", err)
 	}
 	if err := store.UpdateEmail(ctx, orderID, "user@test.com"); err != nil {
@@ -173,7 +173,7 @@ func TestUpdateLlmJSON(t *testing.T) {
 	ctx := context.Background()
 
 	orderID := "test-order-llm"
-	if err := store.CreateOrder(ctx, orderID, agent.ProductNaming, 2990, "USD", `{"naming":{}}`, "", "zh-Hans"); err != nil {
+	if err := store.CreateOrder(ctx, orderID, agent.ProductNaming, 2990, "USD", `{"naming":{}}`, "", "zh-Hans", ""); err != nil {
 		t.Fatalf("CreateOrder: %v", err)
 	}
 	if err := store.UpdateLlmJSON(ctx, orderID, "# Report\n\ncontent"); err != nil {
@@ -198,7 +198,7 @@ func TestCleanStale(t *testing.T) {
 	ctx := context.Background()
 
 	// Create a paid order (should survive).
-	if err := store.CreateOrder(ctx, "paid-order", agent.ProductChart, 990, "USD", `{}`, "", "zh-Hans"); err != nil {
+	if err := store.CreateOrder(ctx, "paid-order", agent.ProductChart, 990, "USD", `{}`, "", "zh-Hans", ""); err != nil {
 		t.Fatalf("CreateOrder paid: %v", err)
 	}
 	if _, _, _, _, err := store.MarkPaidIdempotent(ctx, "paid-order", "pay-1"); err != nil {
@@ -206,7 +206,7 @@ func TestCleanStale(t *testing.T) {
 	}
 
 	// Create a pending order (should be cleaned).
-	if err := store.CreateOrder(ctx, "pending-order", agent.ProductChart, 990, "USD", `{}`, "", "zh-Hans"); err != nil {
+	if err := store.CreateOrder(ctx, "pending-order", agent.ProductChart, 990, "USD", `{}`, "", "zh-Hans", ""); err != nil {
 		t.Fatalf("CreateOrder pending: %v", err)
 	}
 	// Backdate created_at so it falls within the stale window.
@@ -292,7 +292,7 @@ func TestMarkPaid_Idempotent(t *testing.T) {
 	ctx := context.Background()
 
 	orderID := "test-idempotent"
-	if err := store.CreateOrder(ctx, orderID, agent.ProductChart, 990, "USD", `{}`, "", "zh-Hans"); err != nil {
+	if err := store.CreateOrder(ctx, orderID, agent.ProductChart, 990, "USD", `{}`, "", "zh-Hans", ""); err != nil {
 		t.Fatalf("CreateOrder: %v", err)
 	}
 
@@ -322,7 +322,7 @@ func TestUpdateLlmJSONIfEmpty(t *testing.T) {
 	ctx := context.Background()
 
 	orderID := "test-llm-if-empty"
-	if err := store.CreateOrder(ctx, orderID, agent.ProductChart, 990, "USD", `{}`, "", "zh-Hans"); err != nil {
+	if err := store.CreateOrder(ctx, orderID, agent.ProductChart, 990, "USD", `{}`, "", "zh-Hans", ""); err != nil {
 		t.Fatalf("CreateOrder: %v", err)
 	}
 
@@ -363,10 +363,10 @@ func TestCreateOrder_DuplicateID(t *testing.T) {
 	}
 	ctx := context.Background()
 
-	if err := store.CreateOrder(ctx, "dup-order", agent.ProductChart, 990, "USD", `{}`, "", "zh-Hans"); err != nil {
+	if err := store.CreateOrder(ctx, "dup-order", agent.ProductChart, 990, "USD", `{}`, "", "zh-Hans", ""); err != nil {
 		t.Fatalf("CreateOrder: %v", err)
 	}
-	err = store.CreateOrder(ctx, "dup-order", agent.ProductBond, 1990, "CNY", `{}`, "", "zh-Hans")
+	err = store.CreateOrder(ctx, "dup-order", agent.ProductBond, 1990, "CNY", `{}`, "", "zh-Hans", "")
 	if err == nil {
 		t.Error("expected error for duplicate order_id")
 	}

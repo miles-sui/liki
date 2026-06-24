@@ -13,8 +13,6 @@ import (
 	"testing"
 	"time"
 
-	"liki/internal/dodo"
-	
 	"liki/internal/agent"
 	"liki/internal/payment"
 )
@@ -39,16 +37,11 @@ func newHandlerTestService(t *testing.T, db *sql.DB) *payment.Service {
 	if err != nil {
 		t.Fatalf("NewStore: %v", err)
 	}
-	productIDs := map[agent.Product]string{
-		agent.ProductChart:  "prod_chart",
-		agent.ProductBond:   "prod_bond",
-		agent.ProductNaming: "prod_naming",
-	}
 	return payment.NewService(
-		&stubDodoForHandler{},
+		&stubProviderForHandler{},
+		&stubProviderForHandler{},
 		&stubEmailForHandler{},
 		store,
-		productIDs,
 		"https://example.com",
 		"admin@example.com",
 		nil,
@@ -56,16 +49,16 @@ func newHandlerTestService(t *testing.T, db *sql.DB) *payment.Service {
 	)
 }
 
-type stubDodoForHandler struct{}
+type stubProviderForHandler struct{}
 
-func (d *stubDodoForHandler) CreateCheckout(_ context.Context, _ string, _ int, _, _, _ string) (*dodo.CheckoutResult, error) {
-	return &dodo.CheckoutResult{SessionID: "sess-test", CheckoutURL: "https://pay.example.com/checkout"}, nil
+func (d *stubProviderForHandler) CreateCheckout(_ context.Context, _ agent.Product, _ int, _, _, _ string) (*payment.CheckoutResult, error) {
+	return &payment.CheckoutResult{SessionID: "sess-test", CheckoutURL: "https://pay.example.com/checkout"}, nil
 }
 
-func (d *stubDodoForHandler) VerifyWebhook(_ []byte, _ http.Header) (*dodo.WebhookEvent, error) {
-	return &dodo.WebhookEvent{
+func (d *stubProviderForHandler) VerifyWebhook(_ []byte, _ http.Header) (*payment.WebhookEvent, error) {
+	return &payment.WebhookEvent{
 		Type: "payment.succeeded",
-		Data: dodo.WebhookEventData{OrderID: "hook-1", Amount: 990, PaymentID: "pay-1"},
+		Data: payment.WebhookEventData{OrderID: "hook-1", Amount: 990, PaymentID: "pay-1"},
 	}, nil
 }
 
@@ -78,8 +71,8 @@ func (e *stubEmailForHandler) SendReport(_ context.Context, _, _, _ string) erro
 func createHandlerTestOrder(t *testing.T, db *sql.DB, orderID string, status payment.OrderStatus, chartJSON, llmJSON string) {
 	t.Helper()
 	_, err := db.Exec(
-		`INSERT INTO orders (order_id, product, amount, currency, email, chart_json, llm_json, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-		orderID, "chart", 990, "CNY", "buyer@test.com", chartJSON, llmJSON, status,
+		`INSERT INTO orders (order_id, product, amount, currency, provider, email, chart_json, llm_json, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		orderID, "chart", 990, "CNY", "", "buyer@test.com", chartJSON, llmJSON, status,
 	)
 	if err != nil {
 		t.Fatalf("create test order: %v", err)
@@ -95,9 +88,9 @@ func TestCheckoutToReportLifecycle(t *testing.T) {
 	// 1. Create an order directly in DB (simulating agent's purchase tool).
 	createHandlerTestOrder(t, db, "lifecycle-1", payment.OrderPending, `{"chart":{}}`, "")
 
-	// 2. Checkout — creates Dodo session.
+	// 2. Checkout — creates checkout session.
 	checkoutHandler := handleCheckout(svc)
-	checkoutReq := httptest.NewRequest("POST", "/api/payments/checkout", strings.NewReader(`{"order_id":"lifecycle-1","email":"buyer@test.com"}`))
+	checkoutReq := httptest.NewRequest("POST", "/api/payments/checkout", strings.NewReader(`{"order_id":"lifecycle-1","email":"buyer@test.com","provider":"dodo"}`))
 	checkoutW := httptest.NewRecorder()
 	checkoutHandler(checkoutW, checkoutReq)
 
@@ -221,7 +214,6 @@ func TestRetryOrder_Integration(t *testing.T) {
 
 	// Manually mark paid without llm_json (missed webhook scenario).
 	createHandlerTestOrder(t, db, "retry-int-1", payment.OrderPaid, `{"chart":{}}`, "")
-	// Need to set payment_id since MarkPaidIdempotent sets status=paid.
 	db.Exec(`UPDATE orders SET status='paid', payment_id='pay-retry-int' WHERE order_id='retry-int-1'`)
 
 	retryHandler := handleRetryOrder(svc)
@@ -308,7 +300,7 @@ func TestCleanStale_Integration(t *testing.T) {
 	svc := newHandlerTestService(t, db)
 
 	ctx := context.Background()
-	svc.Store.CreateOrder(ctx, "stale-1", agent.ProductChart, 990, "CNY", `{}`, "", "zh-Hans")
+	svc.Store.CreateOrder(ctx, "stale-1", agent.ProductChart, 990, "CNY", `{}`, "", "zh-Hans", "")
 	// Backdate to 2020.
 	db.ExecContext(ctx, `UPDATE orders SET created_at = '2020-01-01 00:00:00' WHERE order_id = 'stale-1'`)
 

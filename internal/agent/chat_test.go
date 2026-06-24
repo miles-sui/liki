@@ -32,7 +32,7 @@ type emailRecord struct {
 	email   string
 }
 
-func (s *stubPurchaseOrderCreator) CreateOrder(ctx context.Context, orderID string, product Product, amount int, currency, chartJSON, llmJSON, locale string) error {
+func (s *stubPurchaseOrderCreator) CreateOrder(ctx context.Context, orderID string, product Product, amount int, currency, chartJSON, llmJSON, locale, provider string) error {
 	s.created = append(s.created, orderRecord{orderID, product, amount, chartJSON})
 	return nil
 }

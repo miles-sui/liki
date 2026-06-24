@@ -303,6 +303,7 @@ cmd/lingji
        ├─ internal/engine     → Engine 层 (11 包)
        └─ internal/payment    → 支付服务 + Store
             ├─ internal/dodo   → Dodo Payments SDK
+            ├─ internal/xunhu  → 虎皮椒支付 SDK
             └─ internal/email  → Resend 邮件客户端
 
 无 orchestrator 包（已并入 agent），无 domain 包（类型归属到各自域）。

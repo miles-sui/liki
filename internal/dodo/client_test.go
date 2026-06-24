@@ -14,6 +14,8 @@ import (
 	dodopayments "github.com/dodopayments/dodopayments-go"
 	"github.com/dodopayments/dodopayments-go/option"
 	standardwebhooks "github.com/standard-webhooks/standard-webhooks/libraries/go"
+
+	"liki/internal/agent"
 )
 
 // helperKey is a 32-byte raw key whose base64 is in helperSecret.
@@ -42,7 +44,7 @@ func helperSign(t *testing.T, msgID string, body string) http.Header {
 }
 
 func newTestClient() *Client {
-	return New("sk_test", helperSecret, true)
+	return New("sk_test", helperSecret, true, nil)
 }
 
 // --- VerifyWebhook tests (uses official Dodo SDK Unwrap) ---
@@ -209,7 +211,7 @@ func TestRealPayloadParses(t *testing.T) {
 }
 
 func TestNew_LiveMode(t *testing.T) {
-	c := New("sk_live", "whsec_test", false)
+	c := New("sk_live", "whsec_test", false, nil)
 	if c == nil {
 		t.Fatal("New returned nil")
 		return
@@ -223,7 +225,7 @@ func TestNew_LiveMode(t *testing.T) {
 }
 
 func TestNew_TestMode(t *testing.T) {
-	c := New("sk_test", "whsec_test", true)
+	c := New("sk_test", "whsec_test", true, nil)
 	if c == nil {
 		t.Fatal("New returned nil")
 	}
@@ -237,6 +239,11 @@ func newTestClientWithURL(apiKey, baseURL string) *Client {
 	return &Client{
 		checkoutSvc: dodopayments.NewCheckoutSessionService(opts...),
 		webhookSvc:  dodopayments.NewWebhookService(append(opts, option.WithWebhookKey("whsec_test"))...),
+		products: map[agent.Product]string{
+			agent.ProductChart:  "pdt_test_chart",
+			agent.ProductBond:   "pdt_test_bond",
+			agent.ProductNaming: "pdt_test_naming",
+		},
 	}
 }
 
@@ -262,7 +269,7 @@ func TestCreateCheckout_Success(t *testing.T) {
 	c := newTestClientWithURL("sk_test", srv.URL)
 	ctx := context.Background()
 
-	result, err := c.CreateCheckout(ctx, "pdt_1", 990, "order-1", "user@test.com", "https://liki.hk/return")
+	result, err := c.CreateCheckout(ctx, agent.ProductChart, 990, "order-1", "user@test.com", "https://liki.hk/return")
 	if err != nil {
 		t.Fatalf("CreateCheckout: %v", err)
 	}
@@ -284,7 +291,7 @@ func TestCreateCheckout_HTTPError(t *testing.T) {
 	c := newTestClientWithURL("sk_test", srv.URL)
 	ctx := context.Background()
 
-	_, err := c.CreateCheckout(ctx, "pdt_1", 990, "order-1", "", "https://liki.hk/return")
+	_, err := c.CreateCheckout(ctx, agent.ProductChart, 990, "order-1", "", "https://liki.hk/return")
 	if err == nil {
 		t.Fatal("expected error for 500 response")
 	}
@@ -296,7 +303,7 @@ func TestCreateCheckout_InvalidBaseURL(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 
-	_, err := c.CreateCheckout(ctx, "pdt_1", 990, "order-1", "", "https://liki.hk/return")
+	_, err := c.CreateCheckout(ctx, agent.ProductChart, 990, "order-1", "", "https://liki.hk/return")
 	if err == nil {
 		t.Fatal("expected connection error for invalid URL")
 	}

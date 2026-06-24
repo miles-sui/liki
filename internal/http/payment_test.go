@@ -10,26 +10,25 @@ import (
 	"strings"
 	"testing"
 
-	"liki/internal/dodo"
-	
 	"liki/internal/agent"
+	"liki/internal/llm"
 	"liki/internal/payment"
 )
 
 // -- mocks --
 
-type mockDodoClient struct {
-	checkoutResult *dodo.CheckoutResult
+type mockPaymentProvider struct {
+	checkoutResult *payment.CheckoutResult
 	checkoutErr    error
-	webhookEvent   *dodo.WebhookEvent
+	webhookEvent   *payment.WebhookEvent
 	webhookErr     error
 }
 
-func (m *mockDodoClient) CreateCheckout(_ context.Context, _ string, _ int, _, _, _ string) (*dodo.CheckoutResult, error) {
+func (m *mockPaymentProvider) CreateCheckout(_ context.Context, _ agent.Product, _ int, _, _, _ string) (*payment.CheckoutResult, error) {
 	return m.checkoutResult, m.checkoutErr
 }
 
-func (m *mockDodoClient) VerifyWebhook(_ []byte, _ http.Header) (*dodo.WebhookEvent, error) {
+func (m *mockPaymentProvider) VerifyWebhook(_ []byte, _ http.Header) (*payment.WebhookEvent, error) {
 	return m.webhookEvent, m.webhookErr
 }
 
@@ -41,13 +40,21 @@ func (m *mockEmailClient) SendReport(_ context.Context, _, _, _ string) error {
 	return m.err
 }
 
-type mockReportAgent struct {
-	result string
-	err    error
-}
-
-func (m *mockReportAgent) GenerateFromData(_ context.Context, _ string, _ agent.Product, _ json.RawMessage) (string, error) {
-	return m.result, m.err
+func newReportAgents(result string) map[agent.Product]*agent.ReportAgent {
+	mllm := &agent.MockLLM{
+		ToolResps: []*llm.ChatResult{
+			agent.ChatRes(nil, result),
+		},
+	}
+	tools := &agent.MockToolRegistry{}
+	return map[agent.Product]*agent.ReportAgent{
+		agent.ProductChart:    agent.NewReportAgent(mllm, tools, "", ""),
+		agent.ProductBond:     agent.NewReportAgent(mllm, tools, "", ""),
+		agent.ProductNaming:   agent.NewReportAgent(mllm, tools, "", ""),
+		agent.ProductZiwei:    agent.NewReportAgent(mllm, tools, "", ""),
+		agent.ProductBazhai:   agent.NewReportAgent(mllm, tools, "", ""),
+		agent.ProductXuankong: agent.NewReportAgent(mllm, tools, "", ""),
+	}
 }
 
 // -- helpers --
@@ -62,25 +69,20 @@ func openPaymentTestDB(t *testing.T) *sql.DB {
 	return db
 }
 
-func newTestPaymentService(t *testing.T, db *sql.DB, dodoCli *mockDodoClient, emailCli *mockEmailClient, reportAgent *mockReportAgent) *payment.Service {
+func newTestPaymentService(t *testing.T, db *sql.DB, dodoCli, xunhuCli *mockPaymentProvider, emailCli *mockEmailClient, reportResult string) *payment.Service {
 	t.Helper()
 	store, err := payment.NewStore(db)
 	if err != nil {
 		t.Fatalf("new store: %v", err)
 	}
-	productIDs := map[agent.Product]string{
-		agent.ProductChart:  "prod_chart",
-		agent.ProductBond:   "prod_bond",
-		agent.ProductNaming: "prod_naming",
-	}
-	return payment.NewService(dodoCli, emailCli, store, productIDs, "https://example.com", "admin@example.com", reportAgent, context.Background())
+	return payment.NewService(dodoCli, xunhuCli, emailCli, store, "https://example.com", "admin@example.com", newReportAgents(reportResult), context.Background())
 }
 
 func createTestOrder(t *testing.T, db *sql.DB, orderID string, product agent.Product, status payment.OrderStatus, email, chartJSON, llmJSON string) {
 	t.Helper()
 	_, err := db.Exec(
-		`INSERT INTO orders (order_id, product, amount, currency, email, chart_json, llm_json, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-		orderID, product, 990, "CNY", email, chartJSON, llmJSON, status,
+		`INSERT INTO orders (order_id, product, amount, currency, provider, email, chart_json, llm_json, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		orderID, product, 990, "CNY", "", email, chartJSON, llmJSON, status,
 	)
 	if err != nil {
 		t.Fatalf("create test order: %v", err)
@@ -184,16 +186,17 @@ func TestHandleCheckout_Success(t *testing.T) {
 	db := openPaymentTestDB(t)
 	defer db.Close()
 
-	dodoCli := &mockDodoClient{
-		checkoutResult: &dodo.CheckoutResult{SessionID: "sess_1", CheckoutURL: "https://pay.example.com/checkout"},
+	dodoCli := &mockPaymentProvider{
+		checkoutResult: &payment.CheckoutResult{SessionID: "sess_1", CheckoutURL: "https://pay.example.com/checkout"},
 	}
+	xunhuCli := &mockPaymentProvider{}
 	emailCli := &mockEmailClient{}
-	svc := newTestPaymentService(t, db, dodoCli, emailCli, nil)
+	svc := newTestPaymentService(t, db, dodoCli, xunhuCli, emailCli, "")
 
 	createTestOrder(t, db, "order-1", agent.ProductChart, payment.OrderPending, "", `{"x":1}`, "")
 
 	h := handleCheckout(svc)
-	body := `{"order_id":"order-1","email":"a@b.co"}`
+	body := `{"order_id":"order-1","email":"a@b.co","provider":"dodo"}`
 	r := httptest.NewRequest("POST", "/api/checkout", strings.NewReader(body))
 	w := httptest.NewRecorder()
 	h(w, r)
@@ -202,7 +205,7 @@ func TestHandleCheckout_Success(t *testing.T) {
 		t.Fatalf("status = %d, want 200, body: %s", w.Code, w.Body.String())
 	}
 	var env struct {
-		Data dodo.CheckoutResult `json:"data"`
+		Data payment.CheckoutResult `json:"data"`
 	}
 	if err := json.NewDecoder(w.Body).Decode(&env); err != nil {
 		t.Fatalf("decode: %v", err)
@@ -212,13 +215,47 @@ func TestHandleCheckout_Success(t *testing.T) {
 	}
 }
 
+func TestHandleCheckout_Xunhu(t *testing.T) {
+	db := openPaymentTestDB(t)
+	defer db.Close()
+
+	dodoCli := &mockPaymentProvider{}
+	xunhuCli := &mockPaymentProvider{
+		checkoutResult: &payment.CheckoutResult{SessionID: "sess_x", CheckoutURL: "https://pay.xunhu.com/checkout", QRCodeURL: "https://pay.xunhu.com/qr"},
+	}
+	emailCli := &mockEmailClient{}
+	svc := newTestPaymentService(t, db, dodoCli, xunhuCli, emailCli, "")
+
+	createTestOrder(t, db, "order-1", agent.ProductChart, payment.OrderPending, "", `{"x":1}`, "")
+
+	h := handleCheckout(svc)
+	body := `{"order_id":"order-1","provider":"xunhu"}`
+	r := httptest.NewRequest("POST", "/api/checkout", strings.NewReader(body))
+	w := httptest.NewRecorder()
+	h(w, r)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200, body: %s", w.Code, w.Body.String())
+	}
+	var env struct {
+		Data payment.CheckoutResult `json:"data"`
+	}
+	if err := json.NewDecoder(w.Body).Decode(&env); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if env.Data.QRCodeURL != "https://pay.xunhu.com/qr" {
+		t.Errorf("qrcode_url = %q, want https://pay.xunhu.com/qr", env.Data.QRCodeURL)
+	}
+}
+
 func TestHandleCheckout_OrderNotFound(t *testing.T) {
 	db := openPaymentTestDB(t)
 	defer db.Close()
 
-	dodoCli := &mockDodoClient{}
+	dodoCli := &mockPaymentProvider{}
+	xunhuCli := &mockPaymentProvider{}
 	emailCli := &mockEmailClient{}
-	svc := newTestPaymentService(t, db, dodoCli, emailCli, nil)
+	svc := newTestPaymentService(t, db, dodoCli, xunhuCli, emailCli, "")
 
 	h := handleCheckout(svc)
 	body := `{"order_id":"nonexistent"}`
@@ -235,9 +272,10 @@ func TestHandleCheckout_InvalidBody(t *testing.T) {
 	db := openPaymentTestDB(t)
 	defer db.Close()
 
-	dodoCli := &mockDodoClient{}
+	dodoCli := &mockPaymentProvider{}
+	xunhuCli := &mockPaymentProvider{}
 	emailCli := &mockEmailClient{}
-	svc := newTestPaymentService(t, db, dodoCli, emailCli, nil)
+	svc := newTestPaymentService(t, db, dodoCli, xunhuCli, emailCli, "")
 
 	h := handleCheckout(svc)
 	r := httptest.NewRequest("POST", "/api/checkout", strings.NewReader("not-json"))
@@ -253,9 +291,10 @@ func TestHandleCheckout_MissingOrderID(t *testing.T) {
 	db := openPaymentTestDB(t)
 	defer db.Close()
 
-	dodoCli := &mockDodoClient{}
+	dodoCli := &mockPaymentProvider{}
+	xunhuCli := &mockPaymentProvider{}
 	emailCli := &mockEmailClient{}
-	svc := newTestPaymentService(t, db, dodoCli, emailCli, nil)
+	svc := newTestPaymentService(t, db, dodoCli, xunhuCli, emailCli, "")
 
 	h := handleCheckout(svc)
 	body := `{"email":"a@b.co"}`
@@ -268,20 +307,21 @@ func TestHandleCheckout_MissingOrderID(t *testing.T) {
 	}
 }
 
-func TestHandleCheckout_DodoError(t *testing.T) {
+func TestHandleCheckout_ProviderError(t *testing.T) {
 	db := openPaymentTestDB(t)
 	defer db.Close()
 
-	dodoCli := &mockDodoClient{
-		checkoutErr: errors.New("dodo: api error"),
+	dodoCli := &mockPaymentProvider{
+		checkoutErr: errors.New("api error"),
 	}
+	xunhuCli := &mockPaymentProvider{}
 	emailCli := &mockEmailClient{}
-	svc := newTestPaymentService(t, db, dodoCli, emailCli, nil)
+	svc := newTestPaymentService(t, db, dodoCli, xunhuCli, emailCli, "")
 
 	createTestOrder(t, db, "order-1", agent.ProductChart, payment.OrderPending, "", `{"x":1}`, "")
 
 	h := handleCheckout(svc)
-	body := `{"order_id":"order-1"}`
+	body := `{"order_id":"order-1","provider":"dodo"}`
 	r := httptest.NewRequest("POST", "/api/checkout", strings.NewReader(body))
 	w := httptest.NewRecorder()
 	h(w, r)
@@ -291,15 +331,72 @@ func TestHandleCheckout_DodoError(t *testing.T) {
 	}
 }
 
+func TestHandleCheckout_AutoProvider(t *testing.T) {
+	tests := []struct {
+		name       string
+		ipCountry  string
+		wantCallX  bool // xunhu called, dodo not
+	}{
+		{"CN selects xunhu", "CN", true},
+		{"US selects dodo", "US", false},
+		{"empty defaults to xunhu", "", true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			db := openPaymentTestDB(t)
+			defer db.Close()
+
+			dodoCli := &mockPaymentProvider{
+				checkoutResult: &payment.CheckoutResult{SessionID: "dodo_sess", CheckoutURL: "https://dodo.example.com/checkout"},
+			}
+			xunhuCli := &mockPaymentProvider{
+				checkoutResult: &payment.CheckoutResult{SessionID: "xunhu_sess", CheckoutURL: "https://xunhu.example.com/checkout"},
+			}
+			emailCli := &mockEmailClient{}
+			svc := newTestPaymentService(t, db, dodoCli, xunhuCli, emailCli, "")
+
+			createTestOrder(t, db, "order-1", agent.ProductChart, payment.OrderPending, "", `{"x":1}`, "")
+
+			h := handleCheckout(svc)
+			body := `{"order_id":"order-1"}` // no provider
+			r := httptest.NewRequest("POST", "/api/checkout", strings.NewReader(body))
+			if tt.ipCountry != "" {
+				r.Header.Set("CF-IPCountry", tt.ipCountry)
+			}
+			w := httptest.NewRecorder()
+			h(w, r)
+
+			if w.Code != http.StatusOK {
+				t.Fatalf("status = %d, want 200, body: %s", w.Code, w.Body.String())
+			}
+			var env struct {
+				Data payment.CheckoutResult `json:"data"`
+			}
+			json.NewDecoder(w.Body).Decode(&env)
+			if tt.wantCallX {
+				if env.Data.SessionID != "xunhu_sess" {
+					t.Errorf("session_id = %q, want xunhu_sess", env.Data.SessionID)
+				}
+			} else {
+				if env.Data.SessionID != "dodo_sess" {
+					t.Errorf("session_id = %q, want dodo_sess", env.Data.SessionID)
+				}
+			}
+		})
+	}
+}
+
 // -- handleOrderStatus --
 
 func TestHandleOrderStatus_Valid(t *testing.T) {
 	db := openPaymentTestDB(t)
 	defer db.Close()
 
-	dodoCli := &mockDodoClient{}
+	dodoCli := &mockPaymentProvider{}
+	xunhuCli := &mockPaymentProvider{}
 	emailCli := &mockEmailClient{}
-	svc := newTestPaymentService(t, db, dodoCli, emailCli, nil)
+	svc := newTestPaymentService(t, db, dodoCli, xunhuCli, emailCli, "")
 
 	createTestOrder(t, db, "order-1", agent.ProductChart, payment.OrderPending, "", `{"x":1}`, "")
 
@@ -330,9 +427,10 @@ func TestHandleOrderStatus_NotFound(t *testing.T) {
 	db := openPaymentTestDB(t)
 	defer db.Close()
 
-	dodoCli := &mockDodoClient{}
+	dodoCli := &mockPaymentProvider{}
+	xunhuCli := &mockPaymentProvider{}
 	emailCli := &mockEmailClient{}
-	svc := newTestPaymentService(t, db, dodoCli, emailCli, nil)
+	svc := newTestPaymentService(t, db, dodoCli, xunhuCli, emailCli, "")
 
 	h := handleOrderStatus(svc)
 	r := httptest.NewRequest("GET", "/api/orders/nonexistent/status", nil)
@@ -349,9 +447,10 @@ func TestHandleOrderStatus_MissingID(t *testing.T) {
 	db := openPaymentTestDB(t)
 	defer db.Close()
 
-	dodoCli := &mockDodoClient{}
+	dodoCli := &mockPaymentProvider{}
+	xunhuCli := &mockPaymentProvider{}
 	emailCli := &mockEmailClient{}
-	svc := newTestPaymentService(t, db, dodoCli, emailCli, nil)
+	svc := newTestPaymentService(t, db, dodoCli, xunhuCli, emailCli, "")
 
 	h := handleOrderStatus(svc)
 	r := httptest.NewRequest("GET", "/api/orders//status", nil)
@@ -370,9 +469,10 @@ func TestHandleRetryOrder_Valid(t *testing.T) {
 	db := openPaymentTestDB(t)
 	defer db.Close()
 
-	dodoCli := &mockDodoClient{}
+	dodoCli := &mockPaymentProvider{}
+	xunhuCli := &mockPaymentProvider{}
 	emailCli := &mockEmailClient{}
-	svc := newTestPaymentService(t, db, dodoCli, emailCli, nil)
+	svc := newTestPaymentService(t, db, dodoCli, xunhuCli, emailCli, "")
 
 	createTestOrder(t, db, "order-1", agent.ProductChart, payment.OrderPending, "", `{"x":1}`, "")
 
@@ -391,9 +491,10 @@ func TestHandleRetryOrder_NotFound(t *testing.T) {
 	db := openPaymentTestDB(t)
 	defer db.Close()
 
-	dodoCli := &mockDodoClient{}
+	dodoCli := &mockPaymentProvider{}
+	xunhuCli := &mockPaymentProvider{}
 	emailCli := &mockEmailClient{}
-	svc := newTestPaymentService(t, db, dodoCli, emailCli, nil)
+	svc := newTestPaymentService(t, db, dodoCli, xunhuCli, emailCli, "")
 
 	h := handleRetryOrder(svc)
 	r := httptest.NewRequest("POST", "/api/orders/nonexistent/retry", nil)
@@ -410,9 +511,10 @@ func TestHandleRetryOrder_MissingID(t *testing.T) {
 	db := openPaymentTestDB(t)
 	defer db.Close()
 
-	dodoCli := &mockDodoClient{}
+	dodoCli := &mockPaymentProvider{}
+	xunhuCli := &mockPaymentProvider{}
 	emailCli := &mockEmailClient{}
-	svc := newTestPaymentService(t, db, dodoCli, emailCli, nil)
+	svc := newTestPaymentService(t, db, dodoCli, xunhuCli, emailCli, "")
 
 	h := handleRetryOrder(svc)
 	r := httptest.NewRequest("POST", "/api/orders//retry", nil)
@@ -431,19 +533,19 @@ func TestHandleWebhook_Success(t *testing.T) {
 	db := openPaymentTestDB(t)
 	defer db.Close()
 
-	dodoCli := &mockDodoClient{
-		webhookEvent: &dodo.WebhookEvent{
+	dodoCli := &mockPaymentProvider{
+		webhookEvent: &payment.WebhookEvent{
 			Type: "payment.succeeded",
-			Data: dodo.WebhookEventData{
+			Data: payment.WebhookEventData{
 				OrderID:   "order-1",
 				Amount:    990,
 				PaymentID: "pay_1",
 			},
 		},
 	}
+	xunhuCli := &mockPaymentProvider{}
 	emailCli := &mockEmailClient{}
-	reportAgent := &mockReportAgent{result: "<p>report</p>"}
-	svc := newTestPaymentService(t, db, dodoCli, emailCli, reportAgent)
+	svc := newTestPaymentService(t, db, dodoCli, xunhuCli, emailCli, "<p>report</p>")
 
 	createTestOrder(t, db, "order-1", agent.ProductChart, payment.OrderPending, "a@b.co", `{"x":1}`, "")
 
@@ -461,11 +563,12 @@ func TestHandleWebhook_VerifyFail(t *testing.T) {
 	db := openPaymentTestDB(t)
 	defer db.Close()
 
-	dodoCli := &mockDodoClient{
+	dodoCli := &mockPaymentProvider{
 		webhookErr: errors.New("signature invalid"),
 	}
+	xunhuCli := &mockPaymentProvider{}
 	emailCli := &mockEmailClient{}
-	svc := newTestPaymentService(t, db, dodoCli, emailCli, nil)
+	svc := newTestPaymentService(t, db, dodoCli, xunhuCli, emailCli, "")
 
 	h := handleWebhook(svc)
 	r := httptest.NewRequest("POST", "/api/webhook", strings.NewReader(`{"type":"payment.succeeded"}`))
@@ -481,13 +584,14 @@ func TestHandleWebhook_NonPayment(t *testing.T) {
 	db := openPaymentTestDB(t)
 	defer db.Close()
 
-	dodoCli := &mockDodoClient{
-		webhookEvent: &dodo.WebhookEvent{
+	dodoCli := &mockPaymentProvider{
+		webhookEvent: &payment.WebhookEvent{
 			Type: "checkout.created",
 		},
 	}
+	xunhuCli := &mockPaymentProvider{}
 	emailCli := &mockEmailClient{}
-	svc := newTestPaymentService(t, db, dodoCli, emailCli, nil)
+	svc := newTestPaymentService(t, db, dodoCli, xunhuCli, emailCli, "")
 
 	h := handleWebhook(svc)
 	r := httptest.NewRequest("POST", "/api/webhook", strings.NewReader(`{"type":"checkout.created"}`))
@@ -500,24 +604,23 @@ func TestHandleWebhook_NonPayment(t *testing.T) {
 }
 
 func TestHandleWebhook_DuplicateIdempotent(t *testing.T) {
-	// Dodo may redeliver webhooks. The second identical payment.succeeded
-	// must return 200 without double-processing (idempotent).
+	// Duplicate webhooks must return 200 without double-processing (idempotent).
 	db := openPaymentTestDB(t)
 	defer db.Close()
 
-	dodoCli := &mockDodoClient{
-		webhookEvent: &dodo.WebhookEvent{
+	dodoCli := &mockPaymentProvider{
+		webhookEvent: &payment.WebhookEvent{
 			Type: "payment.succeeded",
-			Data: dodo.WebhookEventData{
+			Data: payment.WebhookEventData{
 				OrderID:   "order-1",
 				Amount:    990,
 				PaymentID: "pay_1",
 			},
 		},
 	}
+	xunhuCli := &mockPaymentProvider{}
 	emailCli := &mockEmailClient{}
-	reportAgent := &mockReportAgent{result: "<p>report</p>"}
-	svc := newTestPaymentService(t, db, dodoCli, emailCli, reportAgent)
+	svc := newTestPaymentService(t, db, dodoCli, xunhuCli, emailCli, "<p>report</p>")
 
 	createTestOrder(t, db, "order-1", agent.ProductChart, payment.OrderPending, "a@b.co", `{"x":1}`, "")
 
@@ -544,18 +647,19 @@ func TestHandleWebhook_NonExistentOrder(t *testing.T) {
 	db := openPaymentTestDB(t)
 	defer db.Close()
 
-	dodoCli := &mockDodoClient{
-		webhookEvent: &dodo.WebhookEvent{
+	dodoCli := &mockPaymentProvider{
+		webhookEvent: &payment.WebhookEvent{
 			Type: "payment.succeeded",
-			Data: dodo.WebhookEventData{
+			Data: payment.WebhookEventData{
 				OrderID:   "no-such-order",
 				Amount:    990,
 				PaymentID: "pay_unknown",
 			},
 		},
 	}
+	xunhuCli := &mockPaymentProvider{}
 	emailCli := &mockEmailClient{}
-	svc := newTestPaymentService(t, db, dodoCli, emailCli, nil)
+	svc := newTestPaymentService(t, db, dodoCli, xunhuCli, emailCli, "")
 
 	h := handleWebhook(svc)
 	r := httptest.NewRequest("POST", "/api/webhook", strings.NewReader(`{"type":"payment.succeeded"}`))
@@ -567,15 +671,49 @@ func TestHandleWebhook_NonExistentOrder(t *testing.T) {
 	}
 }
 
+func TestHandleWebhook_Xunhu(t *testing.T) {
+	// xunhu provider verifies the webhook and processes the payment.
+	db := openPaymentTestDB(t)
+	defer db.Close()
+
+	dodoCli := &mockPaymentProvider{
+		webhookErr: errors.New("not dodo format"),
+	}
+	xunhuCli := &mockPaymentProvider{
+		webhookEvent: &payment.WebhookEvent{
+			Type: "payment.succeeded",
+			Data: payment.WebhookEventData{
+				OrderID:   "order-1",
+				Amount:    990,
+				PaymentID: "xunhu_pay_1",
+			},
+		},
+	}
+	emailCli := &mockEmailClient{}
+	svc := newTestPaymentService(t, db, dodoCli, xunhuCli, emailCli, "<p>report</p>")
+
+	createTestOrder(t, db, "order-1", agent.ProductChart, payment.OrderPending, "a@b.co", `{"x":1}`, "")
+
+	h := handleWebhook(svc)
+	r := httptest.NewRequest("POST", "/api/webhook", strings.NewReader(`trade_status=TRADE_SUCCESS&out_trade_no=order-1`))
+	w := httptest.NewRecorder()
+	h(w, r)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200, body: %s", w.Code, w.Body.String())
+	}
+}
+
 // -- handleReport --
 
 func TestHandleReport_Valid(t *testing.T) {
 	db := openPaymentTestDB(t)
 	defer db.Close()
 
-	dodoCli := &mockDodoClient{}
+	dodoCli := &mockPaymentProvider{}
+	xunhuCli := &mockPaymentProvider{}
 	emailCli := &mockEmailClient{}
-	svc := newTestPaymentService(t, db, dodoCli, emailCli, nil)
+	svc := newTestPaymentService(t, db, dodoCli, xunhuCli, emailCli, "")
 
 	createTestOrder(t, db, "order-1", agent.ProductChart, payment.OrderPaid, "a@b.co", `{"x":1}`, `{"report":"content"}`)
 
@@ -606,9 +744,10 @@ func TestHandleReport_NotFound(t *testing.T) {
 	db := openPaymentTestDB(t)
 	defer db.Close()
 
-	dodoCli := &mockDodoClient{}
+	dodoCli := &mockPaymentProvider{}
+	xunhuCli := &mockPaymentProvider{}
 	emailCli := &mockEmailClient{}
-	svc := newTestPaymentService(t, db, dodoCli, emailCli, nil)
+	svc := newTestPaymentService(t, db, dodoCli, xunhuCli, emailCli, "")
 
 	h := handleReport(svc)
 	r := httptest.NewRequest("GET", "/api/reports/nonexistent", nil)
@@ -625,9 +764,10 @@ func TestHandleReport_MissingID(t *testing.T) {
 	db := openPaymentTestDB(t)
 	defer db.Close()
 
-	dodoCli := &mockDodoClient{}
+	dodoCli := &mockPaymentProvider{}
+	xunhuCli := &mockPaymentProvider{}
 	emailCli := &mockEmailClient{}
-	svc := newTestPaymentService(t, db, dodoCli, emailCli, nil)
+	svc := newTestPaymentService(t, db, dodoCli, xunhuCli, emailCli, "")
 
 	h := handleReport(svc)
 	r := httptest.NewRequest("GET", "/api/reports/", nil)
@@ -644,10 +784,10 @@ func TestHandleReport_PaidNoLlmJSON(t *testing.T) {
 	db := openPaymentTestDB(t)
 	defer db.Close()
 
-	dodoCli := &mockDodoClient{}
+	dodoCli := &mockPaymentProvider{}
+	xunhuCli := &mockPaymentProvider{}
 	emailCli := &mockEmailClient{}
-	reportAgent := &mockReportAgent{result: "<p>generated</p>"}
-	svc := newTestPaymentService(t, db, dodoCli, emailCli, reportAgent)
+	svc := newTestPaymentService(t, db, dodoCli, xunhuCli, emailCli, "<p>report</p>")
 
 	createTestOrder(t, db, "order-1", agent.ProductChart, payment.OrderPaid, "a@b.co", `{"x":1}`, "")
 
@@ -676,9 +816,10 @@ func TestHandleReport_PendingStatus(t *testing.T) {
 	db := openPaymentTestDB(t)
 	defer db.Close()
 
-	dodoCli := &mockDodoClient{}
+	dodoCli := &mockPaymentProvider{}
+	xunhuCli := &mockPaymentProvider{}
 	emailCli := &mockEmailClient{}
-	svc := newTestPaymentService(t, db, dodoCli, emailCli, nil)
+	svc := newTestPaymentService(t, db, dodoCli, xunhuCli, emailCli, "")
 
 	createTestOrder(t, db, "order-1", agent.ProductChart, payment.OrderPending, "a@b.co", `{"x":1}`, "")
 
@@ -707,7 +848,6 @@ func TestEd3_Payment_ReturnNoStatus(t *testing.T) {
 	r := httptest.NewRequest("GET", "/api/payments/return/order123", nil)
 	w := httptest.NewRecorder()
 	h(w, r)
-	// 无 status=succeeded → 重定向到 /
 	if w.Code != http.StatusFound {
 		t.Errorf("status=%d, want 302", w.Code)
 	}
@@ -737,7 +877,6 @@ func TestEd3_Payment_ReturnEmptyID(t *testing.T) {
 	r := httptest.NewRequest("GET", "/api/payments/return/?status=succeeded", nil)
 	w := httptest.NewRecorder()
 	h(w, r)
-	// 空 id + status=succeeded，redirect 到 /report/
 	if w.Code != http.StatusFound {
 		t.Errorf("status=%d, want 302", w.Code)
 	}
@@ -748,7 +887,6 @@ func TestEd3_Payment_RedirectReport_EmptyID(t *testing.T) {
 	r := httptest.NewRequest("GET", "/api/orders//report", nil)
 	w := httptest.NewRecorder()
 	h(w, r)
-	// 空 id 应返回错误
 	if w.Code < 400 {
 		t.Errorf("status=%d, want >=400", w.Code)
 	}

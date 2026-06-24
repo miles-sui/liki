@@ -188,7 +188,7 @@ func (a *ChatAgent) handlePurchase(ctx context.Context, tc llm.ToolCall, msgs []
 	}
 
 	orderID := uuid.New().String()
-	if err := orderCreator.CreateOrder(ctx, orderID, product, amount, defaultCurrency, string(chartJSON), "", locale); err != nil {
+	if err := orderCreator.CreateOrder(ctx, orderID, product, amount, defaultCurrency, string(chartJSON), "", locale, ""); err != nil {
 		return nil, fmt.Errorf("agent: create order: %w", err)
 	}
 
@@ -210,32 +210,6 @@ func (a *ChatAgent) ensureSystemPrompt(locale string, messages []llm.Message) []
 		return messages
 	}
 	return append([]llm.Message{{Role: llm.RoleSystem, Content: a.systemPrompt(locale)}}, messages...)
-}
-
-// GenerateFromData generates a report from pre-computed engine data without tool calling.
-// Uses ReportPrompts map to select the right prompt for the product.
-// Used for full report generation after payment (webhook) and as fallback (report API).
-func (a *ChatAgent) GenerateFromData(ctx context.Context, locale string, product Product, chartJSON json.RawMessage, onEvent func(ChatEvent)) (string, error) {
-	prompt := a.ReportPrompts[product]
-	if prompt == "" {
-		prompt = a.prompt
-	}
-	systemPrompt := strings.ReplaceAll(prompt, "{locale}", locale)
-	userMsg := "请根据以下数据生成完整报告:\n" + string(chartJSON)
-
-	tokenCh, err := a.llm.ChatStream(ctx, systemPrompt, userMsg)
-	if err != nil {
-		return "", fmt.Errorf("agent: generate from data: %w", err)
-	}
-
-	var buf strings.Builder
-	for token := range tokenCh {
-		buf.WriteString(token)
-		if onEvent != nil {
-			onEvent(ChatEvent{Type: EventTextDelta, Content: token})
-		}
-	}
-	return buf.String(), nil
 }
 
 func findComputeResult(msgs []llm.Message, product string) json.RawMessage {

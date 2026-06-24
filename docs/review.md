@@ -34,7 +34,7 @@ qiming/     # 起名
         │             │             │
    Session(内存)  无状态          无状态
         │
-   Payment (Dodo webhook)
+   Payment (Dodo/虎皮椒 webhook)
 ```
 
 三条用户路径：
@@ -202,7 +202,7 @@ pending ──(webhook)──→ paid
 | Lazy generation + cache | ✅ | llm_json 首次付费时生成并缓存 |
 | SQLite WAL + 单连接 | ✅ | 匹配低写入量场景 |
 | Session 内存不落盘 | ✅ | 短生命周期，无需持久化 |
-| 幂等 webhook 验签 | ✅ | Dodo 签名验证 |
+| 幂等 webhook 验签 | ✅ | Dodo + 虎皮椒双通道签名验证 |
 | 可恢复/致命错误分级 | ✅ | chat 流 SSE error 事件 + recoverable 字段 |
 | 并发保护 (pending guard) | ✅ | 防重复提交 |
 | 流取消 (AbortController) | ✅ | 用户可停止流式输出 |
