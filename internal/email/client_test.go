@@ -12,8 +12,15 @@ import (
 	resend "github.com/resend/resend-go/v3"
 )
 
-func TestSendReport_InvalidAPIKey(t *testing.T) {
-	c := New("bad-key", "from@test.com")
+func TestSendReport_ServerError(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusUnauthorized)
+		w.Write([]byte(`{"message":"invalid api key"}`)) //nolint:errcheck
+	}))
+	defer srv.Close()
+
+	c := newTestClientWithBaseURL(t, "bad-key", "from@test.com", srv.URL)
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
