@@ -805,7 +805,7 @@
         "tags": ["bazi"],
         "summary": "排八字命盘",
         "description": "返回四柱、十神、藏干、纳音、神煞、用神（扶抑+调候）、格局、身强身弱、大运。",
-        "requestBody": {"required": true, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Person"}}}},
+        "requestBody": {"required": true, "content": {"application/json": {"schema": {"type": "object", "allOf": [{"$ref": "#/components/schemas/Person"}]}}}},
         "responses": {"200": {"description": "八字命盘", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/EnvelopeChart"}}}}},
         "x-agent-tool": "compute_chart"
       }
@@ -885,7 +885,7 @@
         "tags": ["ziwei"],
         "summary": "紫微斗数排盘",
         "description": "返回十二宫星曜分布、亮度、四化。",
-        "requestBody": {"required": true, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Person"}}}},
+        "requestBody": {"required": true, "content": {"application/json": {"schema": {"type": "object", "allOf": [{"$ref": "#/components/schemas/Person"}]}}}},
         "responses": {"200": {"description": "紫微命盘", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/EnvelopeZiWeiChart"}}}}},
         "x-agent-tool": "compute_ziwei"
       }
@@ -1035,7 +1035,7 @@
         "tags": ["fengshui"],
         "summary": "八宅风水",
         "description": "综合命卦与飞星分析。",
-        "requestBody": {"required": true, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Person"}}}},
+        "requestBody": {"required": true, "content": {"application/json": {"schema": {"type": "object", "allOf": [{"$ref": "#/components/schemas/Person"}]}}}},
         "responses": {"200": {"description": "八宅风水", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/EnvelopeBazhai"}}}}},
         "x-agent-tool": "compute_bazhai"
       }

@@ -3,7 +3,13 @@
 set -uo pipefail
 
 BASE="${1:-http://localhost:8080}"
-API="${2:-http://localhost:8081}"
+if [ $# -ge 2 ]; then
+  API="$2"
+elif echo "$BASE" | /bin/grep -q '^http://localhost'; then
+  API="http://localhost:8081"
+else
+  API="$BASE"
+fi
 PASS=0; FAIL=0
 HAS_JQ=false
 
@@ -109,6 +115,24 @@ else
 fi
 
 # ============================================================================
+# Wiki
+# ============================================================================
+echo ""
+echo "${BOLD}── Wiki ──${NC}"
+s=$(caddy GET /wiki/)
+check_200 "GET /wiki/" "$s"
+b=$(body)
+check "  redirects to zh-hant" "false" "$(echo "$b" | /bin/grep -q 'zh-hant/index.html' && echo false || echo true)"
+s=$(caddy GET /wiki/zh-hant/index.html)
+check_200 "GET /wiki/zh-hant/index.html" "$s"
+s=$(caddy GET /wiki/entity/)
+check_200 "GET /wiki/entity/" "$s"
+b=$(body)
+check "  entity redirects to ../zh-hant" "false" "$(echo "$b" | /bin/grep -q '../zh-hant/entity/index.html' && echo false || echo true)"
+s=$(caddy GET /wiki/zh-hant/entity/index.html)
+check_200 "GET /wiki/zh-hant/entity/index.html" "$s"
+
+# ============================================================================
 # Payment
 # ============================================================================
 echo ""
@@ -150,7 +174,7 @@ echo "${BOLD}── Agent ──${NC}"
 s=$(api GET /api/agent/greeting)
 check_200 "GET /api/agent/greeting" "$s"
 
-# Chat SSE — verify headers
+# Chat SSE — verify headers + no error in stream
 chat_code=$(curl -s -w '%{http_code}' -o "$TMP/chat_body" "$API/api/agent/chat" \
   -H 'Content-Type: application/json' -d '{"message":"hello"}' \
   -D "$TMP/chat_headers")
@@ -159,6 +183,13 @@ chat_ct=$(/bin/grep -i 'content-type:' "$TMP/chat_headers" 2>/dev/null | tr -d '
 check "  SSE content-type" "false" "$(echo "$chat_ct" | /bin/grep -q 'text/event-stream' && echo false || echo true)"
 chat_sid=$(/bin/grep -i 'x-session-id:' "$TMP/chat_headers" 2>/dev/null | tr -d '\r' || true)
 check "  has X-Session-ID" "false" "$([ -n "$chat_sid" ] && echo false || echo true)"
+# Verify no error event in SSE stream
+if echo "$chat_code" | /bin/grep -q '200' && /bin/grep -q '"type":"error"' "$TMP/chat_body" 2>/dev/null; then
+  chat_err=$(/bin/grep -o '"content":"[^"]*"' "$TMP/chat_body" 2>/dev/null | head -1 || true)
+  check "  no SSE error" "true" "false — SSE stream contains error: $chat_err"
+else
+  check "  no SSE error" "false" "false"
+fi
 
 s=$(api POST /api/agent/chat '{"message":""}')
 check_400 "POST /api/agent/chat (empty message)" "$s"
@@ -169,7 +200,7 @@ check_400 "POST /api/agent/chat (empty message)" "$s"
 echo ""
 echo "${BOLD}── Huangli ──${NC}"
 
-s=$(api GET '/api/huangli/date?date=2026-06-19&event=嫁娶')
+s=$(api GET '/api/huangli/date?date=2026-06-19&event=%E5%AB%81%E5%A8%B6')
 check_200 "GET /api/huangli/date" "$s"
 
 HL_BD="{\"birth\":$BT,\"event_type\":\"嫁娶\",\"date\":\"2026-06-19\"}"

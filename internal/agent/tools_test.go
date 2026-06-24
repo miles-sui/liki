@@ -977,9 +977,60 @@ func TestOpenApiParams_ComputeChart(t *testing.T) {
 	if params == nil {
 		t.Fatal("compute_chart schema not found")
 	}
-	// compute_chart uses $ref to Person — verify non-empty
-	if len(params) == 0 {
-		t.Error("empty parameters")
+	var schema map[string]any
+	if err := json.Unmarshal(params, &schema); err != nil {
+		t.Fatal(err)
+	}
+	if tpe, ok := schema["type"]; !ok || tpe != "object" {
+		t.Errorf("compute_chart schema type = %v, want 'object'", tpe)
+	}
+}
+
+func TestOpenApiParams_ComputeZiwei(t *testing.T) {
+	params := openapiParams("compute_ziwei")
+	if params == nil {
+		t.Fatal("compute_ziwei schema not found")
+	}
+	var schema map[string]any
+	if err := json.Unmarshal(params, &schema); err != nil {
+		t.Fatal(err)
+	}
+	if tpe, ok := schema["type"]; !ok || tpe != "object" {
+		t.Errorf("compute_ziwei schema type = %v, want 'object'", tpe)
+	}
+}
+
+func TestOpenApiParams_ComputeBazhai(t *testing.T) {
+	params := openapiParams("compute_bazhai")
+	if params == nil {
+		t.Fatal("compute_bazhai schema not found")
+	}
+	var schema map[string]any
+	if err := json.Unmarshal(params, &schema); err != nil {
+		t.Fatal(err)
+	}
+	if tpe, ok := schema["type"]; !ok || tpe != "object" {
+		t.Errorf("compute_bazhai schema type = %v, want 'object'", tpe)
+	}
+}
+
+func TestToolSchemas_AllHaveTypeObject(t *testing.T) {
+	r := NewChatToolRegistry()
+	schemas := r.Schemas()
+
+	for _, s := range schemas {
+		var fn map[string]any
+		if err := json.Unmarshal(s.Function, &fn); err != nil {
+			t.Errorf("invalid schema JSON: %v", err)
+			continue
+		}
+		params, ok := fn["parameters"].(map[string]any)
+		if !ok {
+			continue // tools without params are checked elsewhere
+		}
+		if tpe, ok := params["type"]; !ok || tpe != "object" {
+			t.Errorf("tool %q schema type = %v, want 'object'", fn["name"], tpe)
+		}
 	}
 }
 func TestOpenApiParams_ComputeLiuRi(t *testing.T) {
