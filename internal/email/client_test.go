@@ -49,8 +49,6 @@ func TestSendReport_Integration(t *testing.T) {
 	<h1>灵机邮件测试</h1>
 	<p>这是一封来自灵机系统的测试邮件。</p>
 	<p>如果你收到这封邮件，说明 Resend 邮件服务配置正确。</p>
-	<hr>
-	<p><small>发送时间: ` + time.Now().In(time.FixedZone("CST", 8*3600)).Format("2006-01-02 15:04:05") + ` 北京时间</small></p>
 	</body></html>`
 
 	c := New(apiKey, from)
