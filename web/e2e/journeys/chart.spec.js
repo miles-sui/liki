@@ -83,7 +83,7 @@ test.describe('Chart demo page', () => {
 
   // ── zhu table data correctness ──
 
-  test('year zhu shows correct data (甲 七杀 → 子, 癸 · 海中金)', async () => {
+  test('year zhu shows correct data (甲 七殺 → 子, 癸 · 海中金)', async () => {
     await page.goto('/zh/chart.html');
     await page.waitForSelector('[data-i18n]', { timeout: 10000 });
 
@@ -96,16 +96,16 @@ test.describe('Chart demo page', () => {
 
     // Desktop table.
     const yearRow = page.locator('.hide-mobile tbody tr').nth(0);
-    await expect(yearRow).toContainText('七杀');
+    await expect(yearRow).toContainText('七殺');
     await expect(yearRow).toContainText('海中金');
   });
 
-  test('day zhu shows 戊 (比肩) → 辰 with 华盖 shensha', async () => {
+  test('day zhu shows 戊 (比肩) → 辰 with 華蓋 shensha', async () => {
     await page.goto('/zh/chart.html');
     await page.waitForSelector('[data-i18n]', { timeout: 10000 });
 
     const dayRow = page.locator('.hide-mobile tbody tr').nth(2);
-    await expect(dayRow).toContainText('华盖');
+    await expect(dayRow).toContainText('華蓋');
   });
 
   // ── CTA link ──

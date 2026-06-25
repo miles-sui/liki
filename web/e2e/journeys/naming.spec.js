@@ -43,16 +43,16 @@ test.describe('Naming demo page', () => {
 
   // ── name candidate cards ──
 
-  test('first name card shows 陈煜霖 with correct details', async () => {
+  test('first name card shows 陳煜霖 with correct details', async () => {
     await page.goto('/zh/naming.html');
     await page.waitForSelector('[data-i18n]', { timeout: 10000 });
 
     const firstCard = page.locator('.name-card').nth(0);
-    await expect(firstCard.locator('.name-title')).toContainText('陈煜霖');
+    await expect(firstCard.locator('.name-title')).toContainText('陳煜霖');
     await expect(firstCard.locator('.tag-green')).toContainText('大吉');
     // Character details.
-    await expect(firstCard.locator('.name-card-chars')).toContainText('煜 (13画)');
-    await expect(firstCard.locator('.name-card-chars')).toContainText('霖 (16画)');
+    await expect(firstCard.locator('.name-card-chars')).toContainText('煜 (13畫)');
+    await expect(firstCard.locator('.name-card-chars')).toContainText('霖 (16畫)');
     // Wu Ge.
     await expect(firstCard.locator('.name-card-wuge')).toBeVisible();
   });
@@ -72,15 +72,15 @@ test.describe('Naming demo page', () => {
 
   // ── interpretation content ──
 
-  test('interpretation has three sections: 命理基础, 候选分析, 选择建议', async () => {
+  test('interpretation has three sections: 命理基礎, 候選分析, 選擇建議', async () => {
     await page.goto('/zh/naming.html');
     await page.waitForSelector('[data-i18n]', { timeout: 10000 });
 
     const h3s = page.locator('.report-content h3');
     await expect(h3s).toHaveCount(3);
-    await expect(h3s.nth(0)).toContainText('命理基础');
-    await expect(h3s.nth(1)).toContainText('候选名字分析');
-    await expect(h3s.nth(2)).toContainText('选择建议');
+    await expect(h3s.nth(0)).toContainText('命理基礎');
+    await expect(h3s.nth(1)).toContainText('候選名字分析');
+    await expect(h3s.nth(2)).toContainText('選擇建議');
   });
 
   // ── print and share ──
