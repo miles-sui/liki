@@ -3,7 +3,10 @@
 window.__chatAppRender = (function(){
 const { createElementVNode: _createElementVNode, createCommentVNode: _createCommentVNode, openBlock: _openBlock, createElementBlock: _createElementBlock, toDisplayString: _toDisplayString, createTextVNode: _createTextVNode, resolveComponent: _resolveComponent, createVNode: _createVNode, renderList: _renderList, Fragment: _Fragment, vShow: _vShow, withDirectives: _withDirectives, vModelText: _vModelText, withKeys: _withKeys } = Vue
 
-const _hoisted_1 = { class: "chat-shell" }
+const _hoisted_1 = {
+  class: "chat-shell",
+  id: "main"
+}
 const _hoisted_2 = { class: "chat-header" }
 const _hoisted_3 = ["href"]
 const _hoisted_4 = { class: "brand" }
@@ -52,7 +55,7 @@ return function render(_ctx, _cache) {
     _cache[3] || (_cache[3] = _createElementVNode("a", {
       href: "#main",
       class: "skip-link"
-    }, "跳到主要内容", -1 /* CACHED */)),
+    }, "跳到主要內容", -1 /* CACHED */)),
     _createElementVNode("div", _hoisted_1, [
       _createCommentVNode(" Header "),
       _createElementVNode("header", _hoisted_2, [
@@ -167,7 +170,7 @@ return function render(_ctx, _cache) {
                   _createElementVNode("button", {
                     class: "bc-dismiss",
                     onClick: $event => (_ctx.dismissBuy(m)),
-                    "aria-label": "关闭"
+                    "aria-label": "關閉"
                   }, "×", 8 /* PROPS */, _hoisted_15),
                   _createElementVNode("div", _hoisted_16, [
                     _createElementVNode("span", {
