@@ -109,7 +109,7 @@ if curl -s --connect-timeout 2 -o /dev/null -w '%{http_code}' "$BASE/api/health"
   s=$(caddy GET /)
   check_200 "GET /" "$s"
   b=$(body)
-  check "  has 灵机" "false" "$(echo "$b" | /bin/grep -q '灵机' && echo false || echo true)"
+  check "  has 靈機" "false" "$(echo "$b" | /bin/grep -q '靈機' && echo false || echo true)"
 else
   echo "  (Caddy not running — skipping static checks)"
 fi
@@ -119,18 +119,23 @@ fi
 # ============================================================================
 echo ""
 echo "${BOLD}── Wiki ──${NC}"
-s=$(caddy GET /wiki/)
-check_200 "GET /wiki/" "$s"
-b=$(body)
-check "  redirects to zh-hant" "false" "$(echo "$b" | /bin/grep -q 'zh-hant/index.html' && echo false || echo true)"
-s=$(caddy GET /wiki/zh-hant/index.html)
-check_200 "GET /wiki/zh-hant/index.html" "$s"
-s=$(caddy GET /wiki/entity/)
-check_200 "GET /wiki/entity/" "$s"
-b=$(body)
-check "  entity redirects to ../zh-hant" "false" "$(echo "$b" | /bin/grep -q '../zh-hant/entity/index.html' && echo false || echo true)"
-s=$(caddy GET /wiki/zh-hant/entity/index.html)
-check_200 "GET /wiki/zh-hant/entity/index.html" "$s"
+# Wiki routes only exist in production Caddyfile, not in Caddyfile.local.
+if [ "$BASE" = "http://localhost:8080" ] || [ "$BASE" = "http://127.0.0.1:8080" ]; then
+  echo "  (local Caddy — skipping wiki checks)"
+else
+  s=$(caddy GET /wiki/)
+  check_200 "GET /wiki/" "$s"
+  b=$(body)
+  check "  redirects to zh-hant" "false" "$(echo "$b" | /bin/grep -q 'zh-hant/index.html' && echo false || echo true)"
+  s=$(caddy GET /wiki/zh-hant/index.html)
+  check_200 "GET /wiki/zh-hant/index.html" "$s"
+  s=$(caddy GET /wiki/entity/)
+  check_200 "GET /wiki/entity/" "$s"
+  b=$(body)
+  check "  entity redirects to ../zh-hant" "false" "$(echo "$b" | /bin/grep -q '../zh-hant/entity/index.html' && echo false || echo true)"
+  s=$(caddy GET /wiki/zh-hant/entity/index.html)
+  check_200 "GET /wiki/zh-hant/entity/index.html" "$s"
+fi
 
 # ============================================================================
 # Payment
