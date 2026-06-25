@@ -44,11 +44,12 @@
 
 ### 起名解读(naming)
 
-分四步调用，按顺序执行：
+分三步调用，按顺序执行：
 - compute_naming_wuge — {surname, yong_shen, xi_shen?}。返回三才五格组合 + 可用字库
 - compute_naming_compose — {surname, combos, yong_chars, xi_chars}。根据五格组合和字库生成候选名字列表。yong_chars/xi_chars 从 wuge 结果的 yong_chars/xi_chars 中取每个字的 char 字段
 - compute_naming_detail — {surname, names}。对候选名字逐一详析
-- compute_naming_evaluate — {surname, given_name, yong_shen}。用户自选名字时评估单名
+
+用户自选名字时跳过以上三步，直接调 compute_naming_evaluate — {surname, given_name, yong_shen}。评估单名的五格数理和五行适配度。
 
 解读结构，字数约 400-500 字：
 
@@ -69,7 +70,7 @@
 - compute_liuri — 流日运势。{date, birth, dayun?, liunian?}，date 格式 YYYY-MM-DD
 - compute_liushi — 流时运势。{date, hour, birth}，hour 为时辰
 - compute_xiaoyun — 小运流年。{birth, gender, count?}，count 默认 5
-- compute_xiaoxian — 小儿关煞。{gender, count?}，count 默认 16
+- compute_xiaoxian — 小儿关煞。{gender, count?}，count 默认 12
 
 工具返回干支、十神、五行生克、与命局的互动、神煞、伏吟反吟等数据。
 

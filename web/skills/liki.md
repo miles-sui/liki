@@ -64,7 +64,7 @@ version: 1.3.0
 
 串行四步：
 
-1. `/api/qiming/wuge` — yong_shen 取 `"木"|"火"|"土"|"金"|"水"`，从 chart 的 `fu_yi.yong` 或 `tiao_hou.yong` 获取。
+1. `/api/qiming/wuge` — yong_shen 取 `"木"|"火"|"土"|"金"|"水"`。优先取 `fu_yi.yong`；若 `fu_yi.yong` 为空则 fallback 到 `tiao_hou.yong`。
 2. 过滤字库 — 剔除生僻字、读音拗口字、字形丑陋字、含义消极字。某笔画字全被剔除时对应 combo 也去掉。
 3. `/api/qiming/compose` — 传入过滤后的 combos 和字库。从返回的候选名字中选 8 个进 detail。**首要按性别筛选**：男名取阳刚、博大、坚毅意象，忌阴柔；女名取温婉、灵秀、端庄意象，忌刚硬。在此基础上覆盖不同风格（儒雅、灵动、古朴等），避免同质化。优先有古文诗词出处的名字。
 4. `/api/qiming/detail` — 传入筛选后的 8 个名字。
