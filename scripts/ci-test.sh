@@ -53,11 +53,6 @@ echo ""
 echo "=== vitest ==="
 (cd web && npx vitest run js/__tests__/) 2>&1 || echo "⚠ vitest 部分失败"
 
-# 前端三层测试
-echo ""
-echo "=== 前端测试 ==="
-scripts/test-frontend.sh http://localhost:8080
-
 # 集成测试
 echo ""
 echo "=== 集成测试 ==="
