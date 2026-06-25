@@ -302,59 +302,6 @@ func TestRespondError_WritesEnvelope(t *testing.T) {
 	}
 }
 
-func TestBlackBox_BaZi_Consistency_SameChartFields(t *testing.T) {
-	// computeChart 返回 Year/Month/Day/Hour 柱
-	// 其他端点 (liunian, liuyue 等) 也应该基于同样的出生计算
-	chartBody := `{` + bt15 + `,"gender":"male"}`
-	cr := httptest.NewRequest("POST", "/", strings.NewReader(chartBody))
-	cw := httptest.NewRecorder()
-	computeChart(cw, cr)
-	if cw.Code != http.StatusOK {
-		t.Fatalf("chart: status=%d", cw.Code)
-	}
-	var chartEnv struct {
-		Data struct {
-			Year  struct{ Gan, Zhi string }
-			Month struct{ Gan, Zhi string }
-			Day   struct{ Gan, Zhi string }
-			Hour  struct{ Gan, Zhi string }
-		} `json:"data"`
-	}
-	if err := json.NewDecoder(cw.Body).Decode(&chartEnv); err != nil {
-		t.Fatal(err)
-	}
-
-	// liunian 返回 year_stem, year_branch — 应该等于 chart 的 Year
-	lnBody := `{"year":2025,` + bt15 + `,"gender":"male"}`
-	lnr := httptest.NewRequest("POST", "/", strings.NewReader(lnBody))
-	lnw := httptest.NewRecorder()
-	liuNian(lnw, lnr)
-	if lnw.Code != http.StatusOK {
-		t.Fatalf("liunian: status=%d", lnw.Code)
-	}
-	var lnEnv struct {
-		Data struct {
-			YearStem   string `json:"year_stem"`
-			YearBranch string `json:"year_branch"`
-		} `json:"data"`
-	}
-	if err := json.NewDecoder(lnw.Body).Decode(&lnEnv); err != nil {
-		t.Fatal(err)
-	}
-
-	// liunian year_stem/year_branch 是流年的柱，不是出生年的柱。这个测试设计有问题。
-	// 跳过。改为验证数据非空。
-	_ = chartEnv
-	_ = lnEnv
-}
-
-
-
-
-
-
-
-
 func TestEdge_LiuNian_NegativeYear(t *testing.T) {
 	body := `{"year":-1,` + bt15 + `,"gender":"male"}`
 	r := httptest.NewRequest("POST", "/", strings.NewReader(body))
