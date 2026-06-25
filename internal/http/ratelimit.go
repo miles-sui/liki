@@ -20,6 +20,8 @@ type RateLimiter struct {
 	mu       sync.Mutex
 	entries  map[string]*ipLimiter
 	cleanupT *time.Ticker
+	done     chan struct{}
+	stopOnce sync.Once
 }
 
 // NewRateLimiter creates a rate limiter that periodically cleans up idle entries.
@@ -27,25 +29,34 @@ func NewRateLimiter() *RateLimiter {
 	rl := &RateLimiter{
 		entries:  make(map[string]*ipLimiter),
 		cleanupT: time.NewTicker(10 * time.Minute),
+		done:     make(chan struct{}),
 	}
 	go rl.cleanup()
 	return rl
 }
 
 func (rl *RateLimiter) cleanup() {
-	for range rl.cleanupT.C {
-		rl.mu.Lock()
-		for ip, e := range rl.entries {
-			if time.Since(e.lastUsed) > 10*time.Minute {
-				delete(rl.entries, ip)
+	for {
+		select {
+		case <-rl.cleanupT.C:
+			rl.mu.Lock()
+			for ip, e := range rl.entries {
+				if time.Since(e.lastUsed) > 10*time.Minute {
+					delete(rl.entries, ip)
+				}
 			}
+			rl.mu.Unlock()
+		case <-rl.done:
+			return
 		}
-		rl.mu.Unlock()
 	}
 }
 
-// Stop stops the cleanup goroutine.
+// Stop stops the cleanup goroutine. Safe to call multiple times.
 func (rl *RateLimiter) Stop() {
+	rl.stopOnce.Do(func() {
+		close(rl.done)
+	})
 	rl.cleanupT.Stop()
 }
 

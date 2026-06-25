@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"liki/internal/agent"
@@ -79,17 +80,29 @@ func NewStore(db *sql.DB) (*Store, error) {
 	// Drop legacy pdf_path column from pre-lingji schema. Column may not
 	// exist on fresh installs — failure is expected and harmless.
 	if _, err := db.Exec(dropPdfPath); err != nil {
-		slog.Info("payment: drop pdf_path (expected on fresh installs)", "err", err)
+		if strings.Contains(err.Error(), "no such table") || strings.Contains(err.Error(), "no such column") {
+			slog.Info("payment: drop pdf_path (expected on fresh installs)", "err", err)
+		} else {
+			slog.Error("payment: drop pdf_path failed", "err", err)
+		}
 	}
 	// Add locale column for multi-language report generation. Column may
 	// already exist on upgraded instances — failure is expected and harmless.
 	if _, err := db.Exec(addLocale); err != nil {
-		slog.Info("payment: add locale (expected on upgraded instances)", "err", err)
+		if strings.Contains(err.Error(), "duplicate column") || strings.Contains(err.Error(), "already exists") {
+			slog.Info("payment: add locale (expected on upgraded instances)", "err", err)
+		} else {
+			slog.Error("payment: add locale failed", "err", err)
+		}
 	}
 	// Add provider column for tracking payment gateway. Column may
 	// already exist on upgraded instances — failure is expected and harmless.
 	if _, err := db.Exec(addProvider); err != nil {
-		slog.Info("payment: add provider (expected on upgraded instances)", "err", err)
+		if strings.Contains(err.Error(), "duplicate column") || strings.Contains(err.Error(), "already exists") {
+			slog.Info("payment: add provider (expected on upgraded instances)", "err", err)
+		} else {
+			slog.Error("payment: add provider failed", "err", err)
+		}
 	}
 	return &Store{db: db}, nil
 }
