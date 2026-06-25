@@ -51,8 +51,9 @@ func bazhaiChart(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	ts, ok := timesetOrRespond(w, q.Birth)
-	if !ok {
+	ts, err := parseTimeset(q.Birth)
+	if err != nil {
+		respondInvalidRequest(w, err.Error())
 		return
 	}
 	result := bazhai.ComputeChart(ts.Solar, q.Gender)
@@ -88,8 +89,9 @@ func xuankongChart(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	ts, ok := timesetOrRespond(w, q.Birth)
-	if !ok {
+	ts, err := parseTimeset(q.Birth)
+	if err != nil {
+		respondInvalidRequest(w, err.Error())
 		return
 	}
 	result := xuankong.ComputeChart(ts.Solar, *q.SitMountain, *q.FaceMountain)

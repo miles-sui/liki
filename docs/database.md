@@ -6,7 +6,7 @@ SQLite，单文件，WAL 模式。代码位置：`internal/payment/store.go`。
 
 | 参数 | 值 | 说明 |
 |------|-----|------|
-| 驱动 | `github.com/mattn/go-sqlite3` | CGo 绑定 |
+| 驱动 | `modernc.org/sqlite` | 纯 Go |
 | 日志模式 | WAL | 预写式日志 |
 | 忙超时 | 5000ms | 锁等待超时 |
 | 外键 | ON | 已启用，但未定义外键约束 |
@@ -54,6 +54,8 @@ CREATE INDEX IF NOT EXISTS idx_orders_stale ON orders(status, created_at);
 | locale | TEXT | NOT NULL DEFAULT 'zh-Hans' | 报告语言 locale，结账时写入 |
 | created_at | TEXT | NOT NULL | 创建时间，格式 `2006-01-02 15:04:05` |
 | updated_at | TEXT | NOT NULL | 更新时间，格式同上 |
+
+所有 datetime 字段使用 UTC 时间。
 
 ### 索引
 

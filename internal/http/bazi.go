@@ -128,8 +128,9 @@ func computeChart(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	ts, ok := timesetOrRespond(w, req.Birth)
-	if !ok {
+	ts, err := parseTimeset(req.Birth)
+	if err != nil {
+		respondInvalidRequest(w, err.Error())
 		return
 	}
 	cr := bazi.ComputeChart(ts.Solar, req.Gender)
@@ -141,12 +142,14 @@ func bondCharts(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	tsA, ok := timesetOrRespond(w, req.A.Birth)
-	if !ok {
+	tsA, err := parseTimeset(req.A.Birth)
+	if err != nil {
+		respondInvalidRequest(w, err.Error())
 		return
 	}
-	tsB, ok := timesetOrRespond(w, req.B.Birth)
-	if !ok {
+	tsB, err := parseTimeset(req.B.Birth)
+	if err != nil {
+		respondInvalidRequest(w, err.Error())
 		return
 	}
 	cra := bazi.ComputeChart(tsA.Solar, req.A.Gender)
@@ -160,8 +163,9 @@ func liuNian(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	ts, ok := timesetOrRespond(w, req.Birth)
-	if !ok {
+	ts, err := parseTimeset(req.Birth)
+	if err != nil {
+		respondInvalidRequest(w, err.Error())
 		return
 	}
 	chart := bazi.ComputeChart(ts.Solar, req.Gender)
@@ -178,8 +182,9 @@ func liuYue(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	ts, ok := timesetOrRespond(w, req.Birth)
-	if !ok {
+	ts, err := parseTimeset(req.Birth)
+	if err != nil {
+		respondInvalidRequest(w, err.Error())
 		return
 	}
 	chart := bazi.ComputeChart(ts.Solar, req.Gender)
@@ -196,8 +201,9 @@ func liuRi(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	ts, ok := timesetOrRespond(w, req.Birth)
-	if !ok {
+	ts, err := parseTimeset(req.Birth)
+	if err != nil {
+		respondInvalidRequest(w, err.Error())
 		return
 	}
 	chart := bazi.ComputeChart(ts.Solar, req.Gender)
@@ -214,8 +220,9 @@ func liuShi(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	ts, ok := timesetOrRespond(w, req.Birth)
-	if !ok {
+	ts, err := parseTimeset(req.Birth)
+	if err != nil {
+		respondInvalidRequest(w, err.Error())
 		return
 	}
 	chart := bazi.ComputeChart(ts.Solar, req.Gender)
@@ -232,8 +239,9 @@ func xiaoYun(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	ts, ok := timesetOrRespond(w, req.Birth)
-	if !ok {
+	ts, err := parseTimeset(req.Birth)
+	if err != nil {
+		respondInvalidRequest(w, err.Error())
 		return
 	}
 	pillars := bazi.ComputeXiaoYun(ts.Solar, req.Gender, req.Count)

@@ -66,8 +66,9 @@ func handleLiuyaoChart(w http.ResponseWriter, r *http.Request) {
 		respondInvalidRequest(w, err.Error())
 		return
 	}
-	ts, ok := timesetOrRespond(w, req.Birth)
-	if !ok {
+	ts, err := parseTimeset(req.Birth)
+	if err != nil {
+		respondInvalidRequest(w, err.Error())
 		return
 	}
 	chart := liuyao.ComputeChart(ts.Solar, ys, req.Fixed)

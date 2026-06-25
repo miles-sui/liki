@@ -40,8 +40,9 @@ func handleQimenPan(w http.ResponseWriter, r *http.Request) {
 	if req.Kind == "" {
 		req.Kind = "shi"
 	}
-	ts, ok := timesetOrRespond(w, req.Birth)
-	if !ok {
+	ts, err := parseTimeset(req.Birth)
+	if err != nil {
+		respondInvalidRequest(w, err.Error())
 		return
 	}
 	chart := qimen.ComputeChart(ts.Solar, req.Kind)

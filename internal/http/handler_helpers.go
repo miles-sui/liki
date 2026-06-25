@@ -99,15 +99,13 @@ func validateTimePoint(value any) error {
 	return nil
 }
 
-// timesetOrRespond converts timePoint to tianwen.Timeset, writing an error
-// response and returning false on failure. Callers should return immediately.
-func timesetOrRespond(w http.ResponseWriter, tp timePoint) (tianwen.Timeset, bool) {
+// parseTimeset converts timePoint to tianwen.Timeset, returning an error on failure.
+func parseTimeset(tp timePoint) (tianwen.Timeset, error) {
 	ts, err := tp.Timeset()
 	if err != nil {
-		respondInvalidRequest(w, err.Error())
-		return tianwen.Timeset{}, false
+		return tianwen.Timeset{}, err
 	}
-	return ts, true
+	return ts, nil
 }
 
 

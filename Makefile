@@ -66,10 +66,9 @@ test-deploy:
 	@echo "✅ 部署验证全部通过。"
 
 deploy:
-	scripts/deploy-lingji.sh $(filter-out deploy,$(MAKECMDGOALS))
+	scripts/deploy-lingji.sh $${TARGET:-all}
 
-us cn:
-	@:
+# Usage: TARGET=us make deploy
 
 # ---- Frontend test targets ----
 

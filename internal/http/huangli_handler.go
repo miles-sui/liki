@@ -57,8 +57,9 @@ func huangliBondDate(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	ts, ok := timesetOrRespond(w, req.Birth)
-	if !ok {
+	ts, err := parseTimeset(req.Birth)
+	if err != nil {
+		respondInvalidRequest(w, err.Error())
 		return
 	}
 	entry, err := huangli.ComputeBondDay(ts.Solar, req.EventType, req.Date)
@@ -88,8 +89,9 @@ func huangliBondMonth(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	ts, ok := timesetOrRespond(w, req.Birth)
-	if !ok {
+	ts, err := parseTimeset(req.Birth)
+	if err != nil {
+		respondInvalidRequest(w, err.Error())
 		return
 	}
 	entries, err := huangli.ComputeBondMonth(ts.Solar, req.EventType, req.Month)
