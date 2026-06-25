@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"liki/internal/engine/ganzhi"
@@ -36,7 +37,7 @@ func openapiParams(tool string) json.RawMessage {
 		return nil
 	}
 	if t, ok := api.XAgentTools[tool]; ok {
-		return t.Parameters
+		return resolveRefs(t.Parameters)
 	}
 	for _, methods := range api.Paths {
 		for _, op := range methods {
@@ -44,7 +45,7 @@ func openapiParams(tool string) json.RawMessage {
 				continue
 			}
 			if s, ok := op.RequestBody.Content["application/json"]; ok {
-				return s.Schema
+				return resolveRefs(s.Schema)
 			}
 			if len(op.Parameters) > 0 {
 				props := map[string]any{}
@@ -68,12 +69,120 @@ func openapiParams(tool string) json.RawMessage {
 				if err != nil {
 					panic("openapiParams: marshal schema: " + err.Error())
 				}
-				return json.RawMessage(b)
+				return resolveRefs(json.RawMessage(b))
 			}
 			return nil
 		}
 	}
 	return nil
+}
+
+// schemaCache holds the schemas from openapi.json's components/schemas,
+// used to resolve $ref references in tool parameter schemas.
+var schemaCache map[string]json.RawMessage
+
+func getSchemaCache() map[string]json.RawMessage {
+	if schemaCache != nil {
+		return schemaCache
+	}
+	var raw struct {
+		Components struct {
+			Schemas map[string]json.RawMessage `json:"schemas"`
+		} `json:"components"`
+	}
+	if err := json.Unmarshal(doc.OpenAPIJSON, &raw); err != nil {
+		schemaCache = map[string]json.RawMessage{}
+		return schemaCache
+	}
+	schemaCache = raw.Components.Schemas
+	return schemaCache
+}
+
+// resolveRefs resolves all $ref and allOf in a JSON Schema, returning an
+// inline schema that LLMs can understand.
+func resolveRefs(raw json.RawMessage) json.RawMessage {
+	var node any
+	if err := json.Unmarshal(raw, &node); err != nil {
+		return raw
+	}
+	resolved := resolveNode(node, 0)
+	b, err := json.Marshal(resolved)
+	if err != nil {
+		return raw
+	}
+	return b
+}
+
+func resolveNode(node any, depth int) any {
+	if depth > 10 {
+		return node
+	}
+	switch n := node.(type) {
+	case map[string]any:
+		if ref, ok := n["$ref"].(string); ok && len(n) == 1 {
+			const prefix = "#/components/schemas/"
+			if strings.HasPrefix(ref, prefix) {
+				name := ref[len(prefix):]
+				if schema, ok := getSchemaCache()[name]; ok {
+					var resolved any
+					if err := json.Unmarshal(schema, &resolved); err == nil {
+						return resolveNode(resolved, depth+1)
+					}
+				}
+			}
+			return node
+		}
+		if allOf, ok := n["allOf"].([]any); ok {
+			return resolveAllOf(allOf, depth+1)
+		}
+		for k, v := range n {
+			n[k] = resolveNode(v, depth+1)
+		}
+		return n
+	case []any:
+		for i, v := range n {
+			n[i] = resolveNode(v, depth+1)
+		}
+		return n
+	}
+	return node
+}
+
+func resolveAllOf(allOf []any, depth int) map[string]any {
+	result := map[string]any{
+		"type":       "object",
+		"properties": map[string]any{},
+	}
+	var required []string
+	for _, item := range allOf {
+		obj := resolveNode(item, depth)
+		m, ok := obj.(map[string]any)
+		if !ok {
+			continue
+		}
+		if props, ok := m["properties"].(map[string]any); ok {
+			for k, v := range props {
+				result["properties"].(map[string]any)[k] = v
+			}
+		}
+		if req, ok := m["required"].([]any); ok {
+			for _, r := range req {
+				if s, ok := r.(string); ok {
+					required = append(required, s)
+				}
+			}
+		}
+		// Carry over description if the merged schema has one.
+		if desc, ok := m["description"].(string); ok {
+			if _, exists := result["description"]; !exists {
+				result["description"] = desc
+			}
+		}
+	}
+	if len(required) > 0 {
+		result["required"] = required
+	}
+	return result
 }
 
 type ChatToolRegistry struct {
