@@ -145,7 +145,9 @@ func TestLangToLocale(t *testing.T) {
 		expected string
 	}{
 		{"zh", "zh-Hans"},
+		{"zh-Hans", "zh-Hans"},
 		{"hk", "zh-Hant"},
+		{"zh-Hant", "zh-Hant"},
 		{"en", "en"},
 		{"unknown", "zh-Hans"},
 		{"", "zh-Hans"},

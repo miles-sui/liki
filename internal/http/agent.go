@@ -176,9 +176,9 @@ func sanitizeLocation(s string) string {
 // langToLocale maps frontend language code to BCP 47 locale.
 func langToLocale(lang string) string {
 	switch lang {
-	case "zh":
+	case "zh", "zh-Hans":
 		return "zh-Hans"
-	case "hk":
+	case "hk", "zh-Hant":
 		return "zh-Hant"
 	case "en":
 		return "en"
