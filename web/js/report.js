@@ -542,6 +542,9 @@ class ReportApp {
       }
     } catch (e) {
       console.error('parse chart data:', e);
+      this.error = t('report.loadError');
+      this.phase = 'error';
+      this.render();
     }
   }
 
@@ -662,6 +665,8 @@ class ReportApp {
     if (ogTitle) ogTitle.content = title;
     const twTitle = document.querySelector('meta[name="twitter:title"]');
     if (twTitle) twTitle.content = title;
+    const ogUrl = document.getElementById('og-url');
+    if (ogUrl) ogUrl.content = window.location.href;
   }
 
   copyLink() {

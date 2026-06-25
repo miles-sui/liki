@@ -242,11 +242,11 @@ var i18nextHttpBackend=(function(){let e=[];e.forEach,e.slice;let t=[`__proto__`
     connectedCallback() {
       var variant = this.getAttribute('variant') || 'static';
       var pb = variant === 'dynamic'
-        ? '<button id="btn-print" class="btn-print">🖨 打印 / 保存 PDF</button>'
-        : '<button class="btn-print" onclick="window.print()" data-i18n="report.print">🖨 打印 / 保存 PDF</button>';
+        ? '<button id="btn-print" class="btn-print" aria-label="打印 / 保存 PDF"><span aria-hidden="true">🖨</span> 打印 / 保存 PDF</button>'
+        : '<button class="btn-print" onclick="window.print()" data-i18n="report.print" aria-label="打印 / 保存 PDF"><span aria-hidden="true">🖨</span> 打印 / 保存 PDF</button>';
       var sb = variant === 'dynamic'
-        ? '<button id="btn-share" class="btn-share">↗ 分享</button>'
-        : '<button class="btn-share" onclick="shareDemo()" data-i18n="report.share">↗ 分享</button>';
+        ? '<button id="btn-share" class="btn-share" aria-label="分享"><span aria-hidden="true">↗</span> 分享</button>'
+        : '<button class="btn-share" onclick="shareDemo()" data-i18n="report.share" aria-label="分享"><span aria-hidden="true">↗</span> 分享</button>';
       this.innerHTML = '<div class="print-bar no-print" style="display:flex;gap:.5rem;justify-content:center;">' + pb + sb + '</div>';
     }
   }
@@ -268,10 +268,10 @@ var i18nextHttpBackend=(function(){let e=[];e.forEach,e.slice;let t=[`__proto__`
       this.innerHTML =
         '<section class="mt-12">' +
         '<h2 class="text-xl font-bold text-stone-800 mb-6 text-center">安全与隐私</h2>' +
-        '<div class="trust-badges">' +
-        '<div class="trust-badge">🔒 SSL/TLS 加密传输</div>' +
-        '<div class="trust-badge">🛡 隐私数据保护</div>' +
-        '<div class="trust-badge">🔄 支付后自动清除敏感数据</div>' +
+        '<div class="trust-badges" role="list">' +
+        '<div class="trust-badge" role="listitem"><span aria-hidden="true">🔒</span> SSL/TLS 加密传输</div>' +
+        '<div class="trust-badge" role="listitem"><span aria-hidden="true">🛡</span> 隐私数据保护</div>' +
+        '<div class="trust-badge" role="listitem"><span aria-hidden="true">🔄</span> 支付后自动清除敏感数据</div>' +
         '</div></section>';
     }
   }
