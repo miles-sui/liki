@@ -22,21 +22,28 @@
 		format json
 	}
 
-	# Public endpoints — no Origin check needed
-	handle /api/health {
-		reverse_proxy lingji:8080
+	# Protected routes — require same-origin
+	handle /api/agent/* {
+		@external {
+			header Origin *
+			not header Origin https://{$DOMAIN:localhost}
+		}
+		respond @external 403
+		reverse_proxy lingji:8080 {
+			flush_interval -1
+		}
 	}
-	handle /api/openapi.json {
+	handle /api/orders/*/retry {
+		@external {
+			header Origin *
+			not header Origin https://{$DOMAIN:localhost}
+		}
+		respond @external 403
 		reverse_proxy lingji:8080
 	}
 
-	# All other API routes require same-origin
-	@external {
-		header Origin *
-		not header Origin https://{$DOMAIN:localhost}
-	}
+	# Free API, health, openapi — no Origin check
 	handle /api/* {
-		respond @external 403
 		reverse_proxy lingji:8080 {
 			flush_interval -1
 			health_uri /api/health

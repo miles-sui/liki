@@ -376,11 +376,13 @@ if curl -s --connect-timeout 2 -o /dev/null -w '%{http_code}' "$BASE/api/health"
       -H 'Origin: https://evil.com')
     check_403 "POST /api/orders/{id}/retry (external Origin)" "$s"
 
-    # Public APIs with external Origin → normal response
-    s=$(curl -s -w '%{http_code}' -o /dev/null "$BASE/api/health" \
-      -H 'Origin: https://evil.com')
-    check_200 "GET /api/health (external Origin ignored)" "$s"
+    # Free API — accessible by external agents (no Origin header)
+    s=$(curl -s -w '%{http_code}' -o /dev/null -X POST "$BASE/api/bazi/chart" \
+      -H 'Content-Type: application/json' \
+      -d "{\"birth\":$BT,\"gender\":\"male\"}")
+    check_200 "POST /api/bazi/chart (no Origin, external agent)" "$s"
 
+    # Free API — also accessible cross-origin (no Origin blocking on Free API)
     s=$(curl -s -w '%{http_code}' -o /dev/null -X POST "$BASE/api/bazi/chart" \
       -H 'Content-Type: application/json' \
       -H 'Origin: https://evil.com' \
