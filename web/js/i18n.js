@@ -19,7 +19,7 @@
       nsSeparator: false,
       load: 'languageOnly',
       backend: { loadPath: '/i18n/{{lng}}.json' },
-      detection: { order: ['path', 'navigator'], lookupFromPathIndex: 0, caches: [] }
+      detection: { order: ['path'], lookupFromPathIndex: 0, caches: [] }
     });
 
   document.documentElement.lang = i18next.language;
