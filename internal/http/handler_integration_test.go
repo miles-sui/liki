@@ -85,7 +85,7 @@ func TestCheckoutToReportLifecycle(t *testing.T) {
 	db := openHandlerTestDB(t)
 	svc := newHandlerTestService(t, db)
 
-	// 1. Create an order directly in DB (simulating agent's purchase tool).
+	// 1. Create an order directly in DB (simulating agent's purchase call).
 	createHandlerTestOrder(t, db, "lifecycle-1", payment.OrderPending, `{"chart":{}}`, "")
 
 	// 2. Checkout — creates checkout session.

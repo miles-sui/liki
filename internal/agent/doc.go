@@ -13,7 +13,7 @@
 //	Chat             — streaming chat: collection → compute → teaser → Q&A → purchase
 //	GenerateFromData — non-streaming report generation from pre-computed data
 //	ChatResult       — outcome of Chat: updated messages + optional PurchaseInfo
-//	PurchaseInfo     — order details triggered by purchase tool
+//	PurchaseInfo     — order details triggered by purchase call
 //
 // Products
 //

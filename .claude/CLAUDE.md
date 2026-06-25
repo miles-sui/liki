@@ -103,7 +103,7 @@ internal/
   - purchase 由 ChatAgent 硬编码处理，不在 tool registry 中
   - 流程: Chat（收集 → compute_* → teaser → Q&A(~8轮, 最多推荐购买 3 次) → purchase → done）
   - compute 工具返回 `{"_product":"...","data":{...}}`, LLM 根据 _product 选择报告格式
-  - 购买由 LLM 自然引导，purchase tool 触发订单创建。
+  - 购买由 LLM 自然引导，purchase 调用 触发订单创建。
 - Tool schema 从 `doc.OpenAPIJSON`（openapi.json）提取，`openapiParams()` 解析 `x-agent-tools` 和 path schema。
 - 公开索引: `web/llms.txt`（Caddy 静态 serve，llms.txt spec 格式）。
 - Go 代码中无 LLM prompt，只有 UI 进度文案。
@@ -112,7 +112,7 @@ internal/
 
 ### 流程
 - **Form 流**: POST /api/bazi/chart (或 /api/bazi/bond, /api/qiming/generate) → engine+LLM → 预览 → 支付 → 报告页
-- **Chat 流**: POST /api/agent/chat → SSE 通道 → ChatAgent.Chat（单流：收集 → compute_* → teaser → Q&A → purchase tool → 创建订单 → done 事件）→ 前端 buy card → 支付 → webhook 触发 GenerateFromData（完整报告）→ GET /api/reports/{id} 返回。购买引导由 LLM 自然完成，purchase tool 触发订单创建。
+- **Chat 流**: POST /api/agent/chat → SSE 通道 → ChatAgent.Chat（单流：收集 → compute_* → teaser → Q&A → purchase 调用 → 创建订单 → done 事件）→ 前端 buy card → 支付 → webhook 触发 GenerateFromData（完整报告）→ GET /api/reports/{id} 返回。购买引导由 LLM 自然完成，purchase 调用 触发订单创建。
 
 ## Don't
 

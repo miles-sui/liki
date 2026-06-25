@@ -59,7 +59,7 @@
                         ┌────────────┐
         session         │ COLLECTING │  参数收集，Agent 追问
         created         └─────┬──────┘
-                              │ LLM purchase tool 触发
+                              │ LLM purchase 调用 触发
                               │ Chat → purchase → done
                               ▼
                         ┌────────────┐
@@ -77,7 +77,7 @@ session 创建即进入 COLLECTING。没有独立的 NEW 状态——首条 POST
 |---|---|---|
 | (创建) → COLLECTING | 首条用户消息，session 创建 | `http/agent.go` handler |
 | COLLECTING → COLLECTING | LLM 追问/teaser/Q&A | `agent/chat_agent.go` Chat() |
-| COLLECTING → CLOSED | purchase tool + CreateOrder + done 事件 | `agent/chat_agent.go` Chat() |
+| COLLECTING → CLOSED | purchase 调用 + CreateOrder + done 事件 | `agent/chat_agent.go` Chat() |
 
 **并发保护：**
 
@@ -297,7 +297,7 @@ Browser                    http/agent.go                 agent.Chat()           
   │  [用户追问 Q&A, 继续对话...]│                         │                      │                  │
   │                             │                         │                      │                  │
   │─ POST /api/agent/chat ─────→│  (purchase intent)      │                      │                  │
-  │  ←══ SSE: text-delta ══════│←══ onEvent(ev) ════════│  ← text-delta ────────│  purchase tool       │
+  │  ←══ SSE: text-delta ══════│←══ onEvent(ev) ════════│  ← text-delta ────────│  purchase 调用       │
   │                             │                         │─ handlePurchase      │                  │
   │                             │                         │─ CreateOrder(chartJSON + Q&A)              │
   │  ←══ SSE: done ════════════│←══ onEvent(ev) ════════│─ done {order_id, amount, product}          │

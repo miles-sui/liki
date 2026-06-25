@@ -58,7 +58,7 @@ Form 流和 Free API 的 HTTP handler 都在 `internal/http`（bazi.go, qiming_h
           ┌──────────────┐
           │  COLLECTING  │◀── POST 追问
           └──────┬───────┘
-                 │ purchase tool 触发
+                 │ purchase 调用 触发
                  ▼
           ┌──────────────┐
           │   CLOSED     │  终态，done 事件已发出
@@ -126,7 +126,7 @@ pending ──(webhook)──→ paid
   │
   ├─ LLM 自然引导购买（最多 3 次）
   │
-  └─ LLM 调 purchase tool → handlePurchase
+  └─ LLM 调 purchase 调用 → handlePurchase
        ├─ CreateOrder(chartJSON, product, amount) → SQLite (status=pending)
        └─ SSE done 事件 {order_id, amount, product}
             └─ sess.SetPhase(PhaseClosed)
