@@ -23,16 +23,25 @@ http://localhost:8080 {
 		}
 	}
 
-	redir /zh /zh/ 308
-	redir /hk /hk/ 308
-	redir /en /en/ 308
+	# Standard BCP 47 paths
+	redir /zh-Hans  /zh-Hans/ 308
+	redir /zh-Hant  /zh-Hant/ 308
+	redir /en  /en/ 308
+
+	# Legacy redirects: old locale paths → new BCP 47 paths
+	redir /zh  /zh-Hans/ 308
+	redir /hk  /zh-Hant/ 308
+	@zh-legacy path_regexp zh ^/zh/(.*)
+	redir @zh-legacy /zh-Hans/{re.zh.1} 308
+	@hk-legacy path_regexp hk ^/hk/(.*)
+	redir @hk-legacy /zh-Hant/{re.hk.1} 308
 
 	# Report pages — serve report.html for all /report/* URLs
-	handle_path /zh/report/* {
+	handle_path /zh-Hans/report/* {
 		root * web
 		try_files /report.html
 	}
-	handle_path /hk/report/* {
+	handle_path /zh-Hant/report/* {
 		root * web
 		try_files /report.html
 	}
@@ -45,11 +54,11 @@ http://localhost:8080 {
 		try_files /report.html
 	}
 
-	handle_path /zh/* {
+	handle_path /zh-Hans/* {
 		root * web
 		try_files {path} {path}.html /
 	}
-	handle_path /hk/* {
+	handle_path /zh-Hant/* {
 		root * web
 		try_files {path} {path}.html /
 	}
