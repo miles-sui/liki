@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 // Copy MSG translations (subset) from i18n JSON for test use
 const MSG = {
-  zh: {
+  'zh-Hans': {
     'site.name': '灵机 Liki',
     'site.tagline': 'AI命理助手',
     'form.year': '出生年',
@@ -12,7 +12,7 @@ const MSG = {
     'error.requestFailed': '请求失败',
     'naming.wuge': '五格: 天{0} 人{1} 地{2} 外{3} 总{4}',
   },
-  hk: {
+  'zh-Hant': {
     'site.name': '靈機 Liki',
     'site.tagline': 'AI命理助手',
     'form.year': '出生年',
@@ -37,16 +37,16 @@ const MSG = {
 // ---- Function copies from i18n.js ----
 
 function detectLang(pathname, navigatorLanguage) {
-  const m = pathname.match(/^\/(zh|hk|en)\b/);
+  const m = pathname.match(/^\/(zh-Hans|zh-Hant|en)\b/);
   if (m) return m[1];
   const nav = (navigatorLanguage || 'en');
-  if (nav === 'zh-HK' || nav === 'zh-TW' || nav === 'zh-MO') return 'hk';
-  if (nav.startsWith('zh')) return 'zh';
+  if (nav === 'zh-HK' || nav === 'zh-TW' || nav === 'zh-MO') return 'zh-Hant';
+  if (nav.startsWith('zh')) return 'zh-Hans';
   return 'en';
 }
 
 function t(lang, key, params) {
-  let s = (MSG[lang] && MSG[lang][key]) || MSG.zh[key] || key;
+  let s = (MSG[lang] && MSG[lang][key]) || MSG['zh-Hans'][key] || key;
   if (params) {
     for (let i = 0; i < params.length; i++) {
       s = s.replace('{' + i + '}', params[i]);
@@ -57,21 +57,21 @@ function t(lang, key, params) {
 
 function setLang(l, pathname, localStorage) {
   localStorage.setItem('lingji-lang', l);
-  const path = pathname.replace(/^\/(zh|hk|en)\/?/, '/');
+  const path = pathname.replace(/^\/(zh-Hans|zh-Hant|en)\/?/, '/');
   return '/' + l + (path === '/' ? '/' : path);
 }
 
 // ---- Tests ----
 
 describe('detectLang', () => {
-  it('returns "zh" for /zh/ paths', () => {
-    expect(detectLang('/zh/')).toBe('zh');
-    expect(detectLang('/zh/chat.html')).toBe('zh');
+  it('returns "zh-Hans" for /zh-Hans/ paths', () => {
+    expect(detectLang('/zh-Hans/')).toBe('zh-Hans');
+    expect(detectLang('/zh-Hans/chat.html')).toBe('zh-Hans');
   });
 
-  it('returns "hk" for /hk/ paths', () => {
-    expect(detectLang('/hk/')).toBe('hk');
-    expect(detectLang('/hk/chat.html')).toBe('hk');
+  it('returns "zh-Hant" for /zh-Hant/ paths', () => {
+    expect(detectLang('/zh-Hant/')).toBe('zh-Hant');
+    expect(detectLang('/zh-Hant/chat.html')).toBe('zh-Hant');
   });
 
   it('returns "en" for /en/ paths', () => {
@@ -80,11 +80,11 @@ describe('detectLang', () => {
   });
 
   it('falls back to navigator.language when path has no locale prefix', () => {
-    expect(detectLang('/chat.html', 'zh-CN')).toBe('zh');
-    expect(detectLang('/chat.html', 'zh-TW')).toBe('hk');
-    expect(detectLang('/chat.html', 'zh-HK')).toBe('hk');
-    expect(detectLang('/chat.html', 'zh-MO')).toBe('hk');
-    expect(detectLang('/chat.html', 'zh-SG')).toBe('zh');
+    expect(detectLang('/chat.html', 'zh-CN')).toBe('zh-Hans');
+    expect(detectLang('/chat.html', 'zh-TW')).toBe('zh-Hant');
+    expect(detectLang('/chat.html', 'zh-HK')).toBe('zh-Hant');
+    expect(detectLang('/chat.html', 'zh-MO')).toBe('zh-Hant');
+    expect(detectLang('/chat.html', 'zh-SG')).toBe('zh-Hans');
     expect(detectLang('/chat.html', 'en-US')).toBe('en');
     expect(detectLang('/chat.html', 'fr')).toBe('en');
   });
@@ -96,34 +96,34 @@ describe('detectLang', () => {
 
   it('handles root path', () => {
     expect(detectLang('/', 'en')).toBe('en');
-    expect(detectLang('/', 'zh-CN')).toBe('zh');
-    expect(detectLang('/', 'zh-HK')).toBe('hk');
+    expect(detectLang('/', 'zh-CN')).toBe('zh-Hans');
+    expect(detectLang('/', 'zh-HK')).toBe('zh-Hant');
   });
 });
 
 describe('t', () => {
   it('returns the translated string for a valid key in current lang', () => {
     expect(t('en', 'site.name', null)).toBe('Liki');
-    expect(t('zh', 'site.name', null)).toBe('灵机 Liki');
-    expect(t('hk', 'site.name', null)).toBe('靈機 Liki');
+    expect(t('zh-Hans', 'site.name', null)).toBe('灵机 Liki');
+    expect(t('zh-Hant', 'site.name', null)).toBe('靈機 Liki');
   });
 
   it('falls back to MSG.zh when current lang lacks the key', () => {
-    MSG.zh['test.zhOnly'] = '仅中文测试';
+    MSG['zh-Hans']['test.zhOnly'] = '仅中文测试';
     expect(t('en', 'test.zhOnly', null)).toBe('仅中文测试');
-    expect(t('hk', 'test.zhOnly', null)).toBe('仅中文测试');
-    delete MSG.zh['test.zhOnly'];
+    expect(t('zh-Hant', 'test.zhOnly', null)).toBe('仅中文测试');
+    delete MSG['zh-Hans']['test.zhOnly'];
   });
 
   it('falls back to the key itself when no translation exists', () => {
     expect(t('en', 'nonexistent.key', null)).toBe('nonexistent.key');
-    expect(t('zh', 'nonexistent.key', null)).toBe('nonexistent.key');
-    expect(t('hk', 'nonexistent.key', null)).toBe('nonexistent.key');
+    expect(t('zh-Hans', 'nonexistent.key', null)).toBe('nonexistent.key');
+    expect(t('zh-Hant', 'nonexistent.key', null)).toBe('nonexistent.key');
   });
 
   it('replaces {0}, {1}, {2} etc. with provided params', () => {
-    expect(t('zh', 'naming.wuge', ['5', '10', '15', '8', '12'])).toBe('五格: 天5 人10 地15 外8 总12');
-    expect(t('hk', 'naming.wuge', ['5', '10', '15', '8', '12'])).toBe('五格: 天5 人10 地15 外8 總12');
+    expect(t('zh-Hans', 'naming.wuge', ['5', '10', '15', '8', '12'])).toBe('五格: 天5 人10 地15 外8 总12');
+    expect(t('zh-Hant', 'naming.wuge', ['5', '10', '15', '8', '12'])).toBe('五格: 天5 人10 地15 外8 總12');
     expect(t('en', 'naming.wuge', ['5', '10', '15', '8', '12'])).toBe('Wu Ge: Heaven5 Person10 Earth15 Outer8 Total12');
   });
 
@@ -150,28 +150,28 @@ describe('setLang', () => {
   });
 
   it('stores the language preference in localStorage', () => {
-    setLang('en', '/zh/chat.html', storage);
+    setLang('en', '/zh-Hans/chat.html', storage);
     expect(storage._data['lingji-lang']).toBe('en');
   });
 
   it('returns redirect URL for switching to en from zh', () => {
-    expect(setLang('en', '/zh/chat.html', storage)).toBe('/en/chat.html');
+    expect(setLang('en', '/zh-Hans/chat.html', storage)).toBe('/en/chat.html');
   });
 
   it('returns redirect URL for switching to zh from en', () => {
-    expect(setLang('zh', '/en/chat.html', storage)).toBe('/zh/chat.html');
+    expect(setLang('zh-Hans', '/en/chat.html', storage)).toBe('/zh-Hans/chat.html');
   });
 
   it('returns redirect URL for switching to hk from zh', () => {
-    expect(setLang('hk', '/zh/chat.html', storage)).toBe('/hk/chat.html');
+    expect(setLang('zh-Hant', '/zh-Hans/chat.html', storage)).toBe('/zh-Hant/chat.html');
   });
 
   it('returns redirect URL for switching to zh from hk', () => {
-    expect(setLang('zh', '/hk/chat.html', storage)).toBe('/zh/chat.html');
+    expect(setLang('zh-Hans', '/zh-Hant/chat.html', storage)).toBe('/zh-Hans/chat.html');
   });
 
   it('handles root path', () => {
-    expect(setLang('zh', '/en/', storage)).toBe('/zh/');
-    expect(setLang('hk', '/', storage)).toBe('/hk/');
+    expect(setLang('zh-Hans', '/en/', storage)).toBe('/zh-Hans/');
+    expect(setLang('zh-Hant', '/', storage)).toBe('/zh-Hant/');
   });
 });

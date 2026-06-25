@@ -58,7 +58,7 @@ async function mockGreeting(page, text = '你好，我是灵机 Liki，精通八
   });
 }
 
-async function gotoChat(page, lang = 'zh') {
+async function gotoChat(page, lang = 'zh-Hans') {
   await page.goto(`/${lang}/chat.html`);
   await page.waitForSelector('.chat-shell');
 }

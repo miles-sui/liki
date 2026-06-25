@@ -5,38 +5,38 @@ import { test, expect } from '../fixtures.js';
 
 // Pages that don't depend on async API data.
 const STATIC_PAGES = [
-  { path: '/zh/',              marker: '[data-i18n]',      name: 'index ZH' },
-  { path: '/zh/chart.html',    marker: '[data-i18n]',      name: 'chart ZH' },
-  { path: '/zh/naming.html',   marker: '[data-i18n]',      name: 'naming ZH' },
-  { path: '/zh/about.html',    marker: '[data-i18n]',      name: 'about ZH' },
-  { path: '/zh/privacy.html',  marker: '[data-i18n]',      name: 'privacy ZH' },
-  { path: '/zh/terms.html',    marker: '[data-i18n]',      name: 'terms ZH' },
-  { path: '/zh/disclaimer.html', marker: '[data-i18n]',    name: 'disclaimer ZH' },
-  { path: '/zh/compatibility.html', marker: '[data-i18n]', name: 'compatibility ZH' },
+  { path: '/zh-Hans/',              marker: '[data-i18n]',      name: 'index ZH-Hans' },
+  { path: '/zh-Hans/chart.html',    marker: '[data-i18n]',      name: 'chart ZH-Hans' },
+  { path: '/zh-Hans/naming.html',   marker: '[data-i18n]',      name: 'naming ZH-Hans' },
+  { path: '/zh-Hans/about.html',    marker: '[data-i18n]',      name: 'about ZH-Hans' },
+  { path: '/zh-Hans/privacy.html',  marker: '[data-i18n]',      name: 'privacy ZH-Hans' },
+  { path: '/zh-Hans/terms.html',    marker: '[data-i18n]',      name: 'terms ZH-Hans' },
+  { path: '/zh-Hans/disclaimer.html', marker: '[data-i18n]',    name: 'disclaimer ZH-Hans' },
+  { path: '/zh-Hans/compatibility.html', marker: '[data-i18n]', name: 'compatibility ZH-Hans' },
   { path: '/en/',              marker: '[data-i18n]',      name: 'index EN' },
   { path: '/en/about.html',    marker: '[data-i18n]',      name: 'about EN' },
   { path: '/en/privacy.html',  marker: '[data-i18n]',      name: 'privacy EN' },
   { path: '/en/terms.html',    marker: '[data-i18n]',      name: 'terms EN' },
   { path: '/en/chart.html',    marker: '[data-i18n]',      name: 'chart EN' },
   { path: '/en/naming.html',   marker: '[data-i18n]',      name: 'naming EN' },
-  { path: '/hk/',              marker: '[data-i18n]',      name: 'index HK' },
-  { path: '/hk/about.html',    marker: '[data-i18n]',      name: 'about HK' },
-  { path: '/hk/privacy.html',  marker: '[data-i18n]',      name: 'privacy HK' },
-  { path: '/hk/terms.html',    marker: '[data-i18n]',      name: 'terms HK' },
-  { path: '/hk/chart.html',    marker: '[data-i18n]',      name: 'chart HK' },
-  { path: '/hk/naming.html',   marker: '[data-i18n]',      name: 'naming HK' },
+  { path: '/zh-Hant/',              marker: '[data-i18n]',      name: 'index ZH-Hant' },
+  { path: '/zh-Hant/about.html',    marker: '[data-i18n]',      name: 'about ZH-Hant' },
+  { path: '/zh-Hant/privacy.html',  marker: '[data-i18n]',      name: 'privacy ZH-Hant' },
+  { path: '/zh-Hant/terms.html',    marker: '[data-i18n]',      name: 'terms ZH-Hant' },
+  { path: '/zh-Hant/chart.html',    marker: '[data-i18n]',      name: 'chart ZH-Hant' },
+  { path: '/zh-Hant/naming.html',   marker: '[data-i18n]',      name: 'naming ZH-Hant' },
 ];
 
 // Pages that require Vue mount (API-free after mount).
 const VUE_PAGES = [
-  { path: '/zh/chat.html', name: 'chat ZH' },
+  { path: '/zh-Hans/chat.html', name: 'chat ZH-Hans' },
   { path: '/en/chat.html', name: 'chat EN' },
-  { path: '/hk/chat.html', name: 'chat HK' },
+  { path: '/zh-Hant/chat.html', name: 'chat ZH-Hant' },
 ];
 
 // Pages that make async API calls on init — only check console errors.
 const ASYNC_PAGES = [
-  { path: '/zh/report/test-id', marker: '#report-header-title', name: 'report ZH' },
+  { path: '/zh-Hans/report/test-id', marker: '#report-header-title', name: 'report ZH-Hans' },
   { path: '/en/report/test-id', marker: '#report-header-title', name: 'report EN' },
 ];
 
@@ -144,7 +144,7 @@ test.describe('Async pages — no console errors on load', () => {
 
 test.describe('Images load without error', () => {
   test('index page images are valid', async ({ page }) => {
-    await page.goto('/zh/', { waitUntil: 'domcontentloaded' });
+    await page.goto('/zh-Hans/', { waitUntil: 'domcontentloaded' });
     await expect(page.locator('[data-i18n]').first()).toBeVisible({ timeout: 10000 });
 
     const imgs = page.locator('img');
@@ -154,12 +154,12 @@ test.describe('Images load without error', () => {
       const src = await img.getAttribute('src');
       if (!src || src.startsWith('data:')) continue;
       const w = await img.evaluate(el => el.naturalWidth);
-      if (w === 0) throw new Error(`Broken image on /zh/: src="${src}"`);
+      if (w === 0) throw new Error(`Broken image on /zh-Hans/: src="${src}"`);
     }
   });
 
   test('chart demo page images are valid', async ({ page }) => {
-    await page.goto('/zh/chart.html', { waitUntil: 'domcontentloaded' });
+    await page.goto('/zh-Hans/chart.html', { waitUntil: 'domcontentloaded' });
     await expect(page.locator('[data-i18n]').first()).toBeVisible({ timeout: 10000 });
 
     const imgs = page.locator('img');
@@ -169,7 +169,7 @@ test.describe('Images load without error', () => {
       const src = await img.getAttribute('src');
       if (!src || src.startsWith('data:')) continue;
       const w = await img.evaluate(el => el.naturalWidth);
-      if (w === 0) throw new Error(`Broken image on /zh/chart.html: src="${src}"`);
+      if (w === 0) throw new Error(`Broken image on /zh-Hans/chart.html: src="${src}"`);
     }
   });
 });
@@ -178,7 +178,7 @@ test.describe('Images load without error', () => {
 
 test.describe('Naming demo page', () => {
   test('ZH naming page renders all sections', async ({ page }) => {
-    await page.goto('/zh/naming.html', { waitUntil: 'domcontentloaded' });
+    await page.goto('/zh-Hans/naming.html', { waitUntil: 'domcontentloaded' });
     await page.waitForSelector('[data-i18n]', { timeout: 10000 });
     await expect(page.locator('header')).toBeVisible();
     await expect(page.locator('main .section-card').first()).toBeVisible({ timeout: 5000 });

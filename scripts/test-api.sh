@@ -168,7 +168,7 @@ check_200 "GET /api/location" "$s"
 s=$(api GET /api/stats)
 check_200 "GET /api/stats" "$s"
 
-s=$(api POST /api/analytics/pageview '{"path":"/zh/"}')
+s=$(api POST /api/analytics/pageview '{"path":"/zh-Hans/"}')
 check_204 "POST /api/analytics/pageview" "$s"
 
 # ============================================================================

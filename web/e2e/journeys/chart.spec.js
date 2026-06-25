@@ -17,7 +17,7 @@ test.describe('Chart demo page', () => {
   // ── content rendering ──
 
   test('ZH page renders all sections: summary, zhu, elements, dayun, interpretation, CTA', async () => {
-    await page.goto('/zh/chart.html');
+    await page.goto('/zh-Hans/chart.html');
     await page.waitForSelector('[data-i18n]', { timeout: 10000 });
 
     // Header — use h1[data-i18n] to avoid strict-mode conflict with <liki-header> brand h1.
@@ -64,7 +64,7 @@ test.describe('Chart demo page', () => {
   // ── print and share buttons ──
 
   test('print button exists and triggers print dialog', async () => {
-    await page.goto('/zh/chart.html');
+    await page.goto('/zh-Hans/chart.html');
     await page.waitForSelector('[data-i18n]', { timeout: 10000 });
 
     const printBtn = page.locator('.btn-print');
@@ -73,7 +73,7 @@ test.describe('Chart demo page', () => {
   });
 
   test('share button exists', async () => {
-    await page.goto('/zh/chart.html');
+    await page.goto('/zh-Hans/chart.html');
     await page.waitForSelector('[data-i18n]', { timeout: 10000 });
 
     const shareBtn = page.locator('.btn-share');
@@ -84,7 +84,7 @@ test.describe('Chart demo page', () => {
   // ── zhu table data correctness ──
 
   test('year zhu shows correct data (甲 七殺 → 子, 癸 · 海中金)', async () => {
-    await page.goto('/zh/chart.html');
+    await page.goto('/zh-Hans/chart.html');
     await page.waitForSelector('[data-i18n]', { timeout: 10000 });
 
     // Mobile zhu cards.
@@ -101,7 +101,7 @@ test.describe('Chart demo page', () => {
   });
 
   test('day zhu shows 戊 (比肩) → 辰 with 華蓋 shensha', async () => {
-    await page.goto('/zh/chart.html');
+    await page.goto('/zh-Hans/chart.html');
     await page.waitForSelector('[data-i18n]', { timeout: 10000 });
 
     const dayRow = page.locator('.hide-mobile tbody tr').nth(2);
@@ -111,7 +111,7 @@ test.describe('Chart demo page', () => {
   // ── CTA link ──
 
   test('CTA button links to chat page', async () => {
-    await page.goto('/zh/chart.html');
+    await page.goto('/zh-Hans/chart.html');
     await page.waitForSelector('[data-i18n]', { timeout: 10000 });
 
     const ctaLink = page.locator('.cta-bar a.btn-primary');
@@ -127,7 +127,7 @@ test.describe('Chart demo page', () => {
       await route.fulfill({ status: 200, contentType: 'application/json', body: '{"data":{"ok":true}}' });
     });
 
-    await page.goto('/zh/chart.html');
+    await page.goto('/zh-Hans/chart.html');
     await page.waitForSelector('[data-i18n]', { timeout: 10000 });
 
     // Analytics should have been called with the correct path.

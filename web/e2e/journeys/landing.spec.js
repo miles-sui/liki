@@ -32,8 +32,8 @@ test.describe('Landing page', () => {
     await expect(page.locator('footer')).toBeVisible();
   });
 
-  test('ZH page renders Chinese content from MSG.zh', async () => {
-    await page.goto('/zh/');
+  test('ZH-Hans page renders Chinese content from MSG['zh-Hans']', async () => {
+    await page.goto('/zh-Hans/');
     await page.waitForSelector('[data-i18n]', { timeout: 10000 });
 
     await expect(page.locator('h1')).toContainText('灵机');
@@ -57,8 +57,8 @@ test.describe('Landing page', () => {
 
     // Open lang dropdown and click zh option
     await page.locator('[data-lang-toggle]').click();
-    await page.locator('[data-lang-option="zh"]').click();
-    await page.waitForURL(/\/zh\//);
+    await page.locator('[data-lang-option="zh-Hans"]').click();
+    await page.waitForURL(/\/zh-Hans\//);
     await expect(page.locator('h1')).toContainText('灵机');
   });
 

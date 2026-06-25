@@ -91,7 +91,7 @@ test.describe('Purchase flow', () => {
       });
     });
 
-    await page.goto('/zh/chat.html');
+    await page.goto('/zh-Hans/chat.html');
     await page.waitForSelector('.chat-shell', { timeout: 10000 });
 
     // Send a message.
@@ -139,7 +139,7 @@ test.describe('Purchase flow', () => {
       });
     });
 
-    await page.goto(`/zh/report/${ORDER_ID}`);
+    await page.goto(`/zh-Hans/report/${ORDER_ID}`);
     await page.waitForSelector('#report-header-title', { timeout: 10000 });
 
     // Report content should be visible.
@@ -184,7 +184,7 @@ test.describe('Purchase flow', () => {
       });
     });
 
-    await page.goto('/zh/chat.html');
+    await page.goto('/zh-Hans/chat.html');
     await page.waitForSelector('.chat-shell', { timeout: 10000 });
 
     await page.locator('.chat-input-bar input').fill('排盘');
@@ -227,7 +227,7 @@ test.describe('Purchase flow', () => {
       });
     });
 
-    await page.goto('/zh/chat.html');
+    await page.goto('/zh-Hans/chat.html');
     await page.waitForSelector('.chat-shell', { timeout: 10000 });
 
     await page.locator('.chat-input-bar input').fill('排盘');
@@ -281,7 +281,7 @@ test.describe('Purchase flow', () => {
       });
     });
 
-    await page.goto('/zh/chat.html');
+    await page.goto('/zh-Hans/chat.html');
     await page.waitForSelector('.chat-shell', { timeout: 10000 });
 
     await page.locator('.chat-input-bar input').fill('排盘');
@@ -352,7 +352,7 @@ test.describe('Purchase flow', () => {
       });
     });
 
-    await page.goto('/zh/chat.html');
+    await page.goto('/zh-Hans/chat.html');
     await page.waitForSelector('.chat-shell', { timeout: 10000 });
 
     await page.locator('.chat-input-bar input').fill('排盘');

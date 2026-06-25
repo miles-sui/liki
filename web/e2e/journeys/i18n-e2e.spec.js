@@ -18,10 +18,10 @@ test.describe('i18n cross-page', () => {
     await page.goto('/en/');
     await page.waitForSelector('[data-lang-toggle]', { timeout: 10000 });
 
-    // Click language toggle → click zh option → setLang('zh') → redirect to /zh/
+    // Click language toggle → click zh-Hans option → setLang('zh-Hans') → redirect to /zh-Hans/
     await page.locator('[data-lang-toggle]').click();
-    await page.locator('[data-lang-option="zh"]').click();
-    await page.waitForURL(/\/zh\//);
+    await page.locator('[data-lang-option="zh-Hans"]').click();
+    await page.waitForURL(/\/zh-Hans\//);
     await expect(page.locator('h1')).toContainText('灵机');
   });
 
@@ -30,7 +30,7 @@ test.describe('i18n cross-page', () => {
     await page.waitForSelector('[data-lang-toggle]', { timeout: 10000 });
     await expect(page.locator('h1')).toContainText('Liki');
 
-    await page.goto('/zh/');
+    await page.goto('/zh-Hans/');
     await page.waitForSelector('[data-lang-toggle]', { timeout: 10000 });
     await expect(page.locator('h1')).toContainText('灵机');
   });
@@ -39,7 +39,7 @@ test.describe('i18n cross-page', () => {
     await page.goto('/en/chat.html');
     await page.waitForSelector('.chat-shell', { timeout: 10000 });
 
-    await page.goto('/zh/chat.html');
+    await page.goto('/zh-Hans/chat.html');
     await page.waitForSelector('.chat-shell', { timeout: 10000 });
   });
 });

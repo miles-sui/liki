@@ -166,7 +166,7 @@ test.describe('Report page', () => {
 
   test('paid chart report renders markdown and summary cards', async () => {
     await mockChartReport(page);
-    await page.goto('/zh/report/dead-beef');
+    await page.goto('/zh-Hans/report/dead-beef');
     await page.waitForSelector('#report-header-title', { timeout: 10000 });
 
     // Phase transitions to ready — report content becomes visible.
@@ -204,7 +204,7 @@ test.describe('Report page', () => {
 
   test('paid bond report renders bond-specific data', async () => {
     await mockBondReport(page);
-    await page.goto('/zh/report/cafe-fade');
+    await page.goto('/zh-Hans/report/cafe-fade');
     await page.waitForSelector('#report-header-title', { timeout: 10000 });
 
     await expect(page.locator('#report-content')).toBeVisible({ timeout: 10000 });
@@ -222,7 +222,7 @@ test.describe('Report page', () => {
 
   test('paid naming report renders candidates', async () => {
     await mockNamingReport(page);
-    await page.goto('/zh/report/babe-face');
+    await page.goto('/zh-Hans/report/babe-face');
     await page.waitForSelector('#report-header-title', { timeout: 10000 });
 
     await expect(page.locator('#report-content')).toBeVisible({ timeout: 10000 });
@@ -267,7 +267,7 @@ test.describe('Report page', () => {
       }
     });
 
-    await page.goto('/zh/report/abba-123');
+    await page.goto('/zh-Hans/report/abba-123');
     await page.waitForSelector('#report-header-title', { timeout: 10000 });
 
     // Starts in payment polling phase.
@@ -316,7 +316,7 @@ test.describe('Report page', () => {
       }
     });
 
-    await page.goto('/zh/report/cafe-456');
+    await page.goto('/zh-Hans/report/cafe-456');
     await page.waitForSelector('#report-header-title', { timeout: 10000 });
 
     // Starts in generating phase.
@@ -331,7 +331,7 @@ test.describe('Report page', () => {
 
   test('banner close persists across page reloads via sessionStorage', async () => {
     await mockChartReport(page, 'face-fade');
-    await page.goto('/zh/report/face-fade');
+    await page.goto('/zh-Hans/report/face-fade');
     await page.waitForSelector('#report-header-title', { timeout: 10000 });
 
     // Banner visible initially.
@@ -352,7 +352,7 @@ test.describe('Report page', () => {
 
   test('copy link button updates text on click', async () => {
     await mockChartReport(page, 'cafe-feed');
-    await page.goto('/zh/report/cafe-feed');
+    await page.goto('/zh-Hans/report/cafe-feed');
     await page.waitForSelector('#report-header-title', { timeout: 10000 });
 
     await expect(page.locator('#report-content')).toBeVisible({ timeout: 10000 });

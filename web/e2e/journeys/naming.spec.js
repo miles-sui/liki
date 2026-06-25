@@ -17,7 +17,7 @@ test.describe('Naming demo page', () => {
   // ── content rendering ──
 
   test('ZH page renders all sections: summary, candidates, interpretation, CTA', async () => {
-    await page.goto('/zh/naming.html');
+    await page.goto('/zh-Hans/naming.html');
     await page.waitForSelector('[data-i18n]', { timeout: 10000 });
 
     // Header — use h1[data-i18n] to avoid strict-mode conflict with <liki-header> brand h1.
@@ -44,7 +44,7 @@ test.describe('Naming demo page', () => {
   // ── name candidate cards ──
 
   test('first name card shows 陳煜霖 with correct details', async () => {
-    await page.goto('/zh/naming.html');
+    await page.goto('/zh-Hans/naming.html');
     await page.waitForSelector('[data-i18n]', { timeout: 10000 });
 
     const firstCard = page.locator('.name-card').nth(0);
@@ -58,7 +58,7 @@ test.describe('Naming demo page', () => {
   });
 
   test('all three candidates have different names', async () => {
-    await page.goto('/zh/naming.html');
+    await page.goto('/zh-Hans/naming.html');
     await page.waitForSelector('[data-i18n]', { timeout: 10000 });
 
     const titles = page.locator('.name-title');
@@ -73,7 +73,7 @@ test.describe('Naming demo page', () => {
   // ── interpretation content ──
 
   test('interpretation has three sections: 命理基礎, 候選分析, 選擇建議', async () => {
-    await page.goto('/zh/naming.html');
+    await page.goto('/zh-Hans/naming.html');
     await page.waitForSelector('[data-i18n]', { timeout: 10000 });
 
     const h3s = page.locator('.report-content h3');
@@ -86,7 +86,7 @@ test.describe('Naming demo page', () => {
   // ── print and share ──
 
   test('print and share buttons exist', async () => {
-    await page.goto('/zh/naming.html');
+    await page.goto('/zh-Hans/naming.html');
     await page.waitForSelector('[data-i18n]', { timeout: 10000 });
 
     await expect(page.locator('.btn-print')).toBeVisible();
@@ -96,7 +96,7 @@ test.describe('Naming demo page', () => {
   // ── CTA ──
 
   test('CTA links to chat page', async () => {
-    await page.goto('/zh/naming.html');
+    await page.goto('/zh-Hans/naming.html');
     await page.waitForSelector('[data-i18n]', { timeout: 10000 });
 
     const ctaLink = page.locator('.cta-bar a.btn-primary');
@@ -106,7 +106,7 @@ test.describe('Naming demo page', () => {
   // ── sample note ──
 
   test('sample note is visible', async () => {
-    await page.goto('/zh/naming.html');
+    await page.goto('/zh-Hans/naming.html');
     await page.waitForSelector('[data-i18n]', { timeout: 10000 });
 
     // "此为示例报告" text near top.

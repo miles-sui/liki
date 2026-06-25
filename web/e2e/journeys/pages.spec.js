@@ -7,33 +7,33 @@ import { test, expect } from '../fixtures.js';
 
 // Pages to test with their framework-specific render marker and i18n content checks.
 const PAGES = [
-  { path: '/zh/',              marker: '[data-i18n]',      name: 'index (vanilla)',
+  { path: '/zh-Hans/',              marker: '[data-i18n]',      name: 'index (vanilla)',
     checks: [
       { selector: 'h1.font-brand', text: '灵机 Liki' },
       { selector: 'main h2:first-of-type', text: 'AI命理助手' },
       { selector: 'section.text-center p', text: '八字分析' },
     ] },
-  { path: '/zh/chat.html',     marker: '.chat-shell',     name: 'chat (Vue)',
+  { path: '/zh-Hans/chat.html',     marker: '.chat-shell',     name: 'chat (Vue)',
     checks: [
       { selector: '.brand', text: '灵机对话' },
     ] },
-  { path: '/zh/chart.html',    marker: '[data-i18n]',      name: 'chart (vanilla)',
+  { path: '/zh-Hans/chart.html',    marker: '[data-i18n]',      name: 'chart (vanilla)',
     checks: [
       { selector: 'h1', text: '八字报告' },
     ] },
-  { path: '/zh/naming.html',   marker: '[data-i18n]',      name: 'naming (vanilla)',
+  { path: '/zh-Hans/naming.html',   marker: '[data-i18n]',      name: 'naming (vanilla)',
     checks: [
       { selector: 'h1', text: '起名报告' },
     ] },
-  { path: '/zh/disclaimer.html', marker: '[data-i18n]',    name: 'disclaimer (vanilla)',
+  { path: '/zh-Hans/disclaimer.html', marker: '[data-i18n]',    name: 'disclaimer (vanilla)',
     checks: [
       { selector: 'h1', text: '免责声明' },
     ] },
-  { path: '/zh/compatibility.html', marker: '[data-i18n]', name: 'compatibility (vanilla)',
+  { path: '/zh-Hans/compatibility.html', marker: '[data-i18n]', name: 'compatibility (vanilla)',
     checks: [
       { selector: 'h1', text: '合盘报告' },
     ] },
-  { path: '/zh/report/test-id', marker: '#report-header-title', name: 'report (vanilla)',
+  { path: '/zh-Hans/report/test-id', marker: '#report-header-title', name: 'report (vanilla)',
     checks: [
       { selector: 'h1', text: '命理报告' },
     ] },
@@ -51,21 +51,21 @@ const PAGES = [
     checks: [
       { selector: 'h1', text: 'Report' },
     ] },
-  { path: '/hk/',              marker: '[data-i18n]',      name: 'index HK',
+  { path: '/zh-Hant/',              marker: '[data-i18n]',      name: 'index ZH-Hant',
     checks: [
       { selector: 'h1.font-brand', text: '靈機 Liki' },
       { selector: 'main h2:first-of-type', text: 'AI命理助手' },
       { selector: 'section.text-center p', text: '八字分析' },
     ] },
-  { path: '/hk/chat.html',     marker: '.chat-shell',     name: 'chat HK',
+  { path: '/zh-Hant/chat.html',     marker: '.chat-shell',     name: 'chat ZH-Hant',
     checks: [
       { selector: '.brand', text: '靈機對話' },
     ] },
   // Legal pages — marker renders, i18n resolves, keys don't leak
-  { path: '/zh/about.html',    marker: '[data-i18n]',    name: 'about (vanilla)', skipI18nCheck: true },
-  { path: '/zh/contact.html',  marker: '[data-i18n]',    name: 'contact (vanilla)', skipI18nCheck: true },
-  { path: '/zh/privacy.html',  marker: '[data-i18n]',    name: 'privacy (vanilla)', skipI18nCheck: true },
-  { path: '/zh/terms.html',    marker: '[data-i18n]',    name: 'terms (vanilla)', skipI18nCheck: true },
+  { path: '/zh-Hans/about.html',    marker: '[data-i18n]',    name: 'about (vanilla)', skipI18nCheck: true },
+  { path: '/zh-Hans/contact.html',  marker: '[data-i18n]',    name: 'contact (vanilla)', skipI18nCheck: true },
+  { path: '/zh-Hans/privacy.html',  marker: '[data-i18n]',    name: 'privacy (vanilla)', skipI18nCheck: true },
+  { path: '/zh-Hans/terms.html',    marker: '[data-i18n]',    name: 'terms (vanilla)', skipI18nCheck: true },
   // Static resources
   { path: '/skills/liki.md',   marker: null,             name: 'skills',   resource: true },
   { path: '/llms.txt',         marker: null,             name: 'llms.txt', resource: true },
