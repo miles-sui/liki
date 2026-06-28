@@ -296,7 +296,7 @@ function mountApp() {
 
       messages.value.push({ role: 'user', content: text, time: new Date().toISOString() });
 
-      const asst = reactive({ role: 'assistant', content: '', thinking: '', html: '', time: new Date().toISOString() });
+      const asst = reactive({ role: 'advisor', content: '', thinking: '', html: '', time: new Date().toISOString() });
       messages.value.push(asst);
       renderer = createStreamRenderer(asst);
       scrollDown();
@@ -466,7 +466,7 @@ function mountApp() {
 
         greeting.value = t('chat.greeting');
         messages.value.push({
-          role: 'assistant',
+          role: 'advisor',
           content: greeting.value,
           html: renderMD(greeting.value),
           time: new Date().toISOString(),

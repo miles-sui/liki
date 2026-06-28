@@ -300,14 +300,14 @@ return function render(_ctx, _cache) {
                         }, null, 8 /* PROPS */, _hoisted_36))
                       : _createCommentVNode("v-if", true),
                     _createCommentVNode(" Assistant bubble "),
-                    (m.role === 'assistant' && m.html)
+                    (m.role === 'advisor' && m.html)
                       ? (_openBlock(), _createElementBlock("div", {
                           key: 2,
                           class: "msg msg-asst",
                           innerHTML: m.html
                         }, null, 8 /* PROPS */, _hoisted_37))
                       : _createCommentVNode("v-if", true),
-                    (m.role === 'assistant' && m.html && m.time)
+                    (m.role === 'advisor' && m.html && m.time)
                       ? (_openBlock(), _createElementBlock("div", {
                           key: 3,
                           class: "msg-time msg-time-asst",
@@ -315,7 +315,7 @@ return function render(_ctx, _cache) {
                         }, null, 8 /* PROPS */, _hoisted_38))
                       : _createCommentVNode("v-if", true),
                     _createCommentVNode(" Loading dots in assistant bubble "),
-                    (m.role === 'assistant' && !m.html && _ctx.ui.substate === 'loading')
+                    (m.role === 'advisor' && !m.html && _ctx.ui.substate === 'loading')
                       ? (_openBlock(), _createElementBlock("div", _hoisted_39, [
                           _withDirectives(_createElementVNode("div", {
                             class: "phase-status",

@@ -119,10 +119,10 @@
         <div v-if="m.role === 'user'" class="msg msg-user" v-text="m.content"></div>
         <div v-if="m.role === 'user' && m.time" class="msg-time msg-time-user" v-text="formatTime(m.time)"></div>
         <!-- Assistant bubble -->
-        <div v-if="m.role === 'assistant' && m.html" class="msg msg-asst" v-html="m.html"></div>
-        <div v-if="m.role === 'assistant' && m.html && m.time" class="msg-time msg-time-asst" v-text="formatTime(m.time)"></div>
+        <div v-if="m.role === 'advisor' && m.html" class="msg msg-asst" v-html="m.html"></div>
+        <div v-if="m.role === 'advisor' && m.html && m.time" class="msg-time msg-time-asst" v-text="formatTime(m.time)"></div>
         <!-- Loading dots in assistant bubble -->
-        <div v-if="m.role === 'assistant' && !m.html && ui.substate === 'loading'" class="msg msg-asst">
+        <div v-if="m.role === 'advisor' && !m.html && ui.substate === 'loading'" class="msg msg-asst">
           <div v-show="phaseStatus" class="phase-status" v-text="phaseStatus"></div>
           <div class="typing-dots"><span></span><span></span><span></span></div>
         </div>
