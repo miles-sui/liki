@@ -1,30 +1,27 @@
 #!/bin/bash
-# LingJi 部署脚本 — 本地构建 Docker 镜像后上传到服务器部署
+# Liki 部署脚本 — 本地构建 Docker 镜像后上传到服务器部署
 #
 # 用法:
-#   ./scripts/deploy-lingji.sh        # 部署到两台服务器 (us + cn)
-#   ./scripts/deploy-lingji.sh us     # 仅海外
-#   ./scripts/deploy-lingji.sh cn     # 仅国内
+#   ./scripts/deploy-liki.sh        # 部署到两台服务器 (us + cn)
+#   ./scripts/deploy-liki.sh us     # 仅海外
+#   ./scripts/deploy-liki.sh cn     # 仅国内
 #
 # 环境变量:
-#   LINGJI_SERVER       海外服务器 IP (默认: 43.130.2.209, ubuntu)
-#   LINGJI_SERVER_CN    国内服务器 IP (默认: 120.79.194.247, root)
+#   LIKI_SERVER       海外服务器 IP (默认: 43.130.2.209, ubuntu)
+#   LIKI_SERVER_CN    国内服务器 IP (默认: 120.79.194.247, root)
 set -eo pipefail
 
-SERVER="${LINGJI_SERVER:-43.130.2.209}"
-SERVER_CN="${LINGJI_SERVER_CN:-120.79.194.247}"
-SERVER_USER="${LINGJI_SERVER_USER:-ubuntu}"
-SERVER_USER_CN="${LINGJI_SERVER_USER_CN:-root}"
+SERVER="${LIKI_SERVER:-43.130.2.209}"
+SERVER_CN="${LIKI_SERVER_CN:-120.79.194.247}"
+SERVER_USER="${LIKI_SERVER_USER:-ubuntu}"
+SERVER_USER_CN="${LIKI_SERVER_USER_CN:-root}"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
-IMAGE_FILE="/tmp/lingji_images.tar.gz"
+IMAGE_FILE="/tmp/liki_images.tar.gz"
 
 # 从 .env 读取各目标的域名和回调 URL
 DOMAIN_US=$(/bin/grep -oP '^DOMAIN_US=\K.*' "$PROJECT_DIR/.env" 2>/dev/null || echo "")
 DOMAIN_CN=$(/bin/grep -oP '^DOMAIN_CN=\K.*' "$PROJECT_DIR/.env" 2>/dev/null || echo "")
-RETURN_URL_US=$(/bin/grep -oP '^RETURN_URL_US=\K.*' "$PROJECT_DIR/.env" 2>/dev/null || echo "")
-RETURN_URL_CN=$(/bin/grep -oP '^RETURN_URL_CN=\K.*' "$PROJECT_DIR/.env" 2>/dev/null || echo "")
-
 # 校验必须变量非空
 fail_missing() {
   echo "ERROR: $1 is not set. Add it to $PROJECT_DIR/.env" >&2
@@ -32,8 +29,6 @@ fail_missing() {
 }
 [ -n "$DOMAIN_US" ] || fail_missing DOMAIN_US
 [ -n "$DOMAIN_CN" ] || fail_missing DOMAIN_CN
-[ -n "$RETURN_URL_US" ] || fail_missing RETURN_URL_US
-[ -n "$RETURN_URL_CN" ] || fail_missing RETURN_URL_CN
 
 if ! command -v docker &>/dev/null; then
   echo "ERROR: docker not found. Install Docker and try again."
@@ -50,28 +45,27 @@ esac
 
 	echo "[1/4] 构建 + 导出镜像..."
 	export DOMAIN="$DOMAIN_US"
-	export RETURN_URL="$RETURN_URL_US"
 	export BUILD_TIME=$(date '+%Y-%m-%d %H:%M:%S')
 	node web/scripts/compile-vue-template.cjs
-	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -ldflags="-s -w -X 'main.BuildTime=$BUILD_TIME'" -o bin/lingji ./cmd/lingji/
-	docker compose -f deploy/lingji/docker-compose.yml build lingji
-	docker save lingji:latest | gzip > "$IMAGE_FILE"
+	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -ldflags="-s -w -X 'main.BuildTime=$BUILD_TIME'" -o bin/liki ./cmd/liki/
+	docker compose -f deploy/liki/docker-compose.yml build liki
+	docker save liki:latest | gzip > "$IMAGE_FILE"
 
 deploy() {
   local target="$1" server="$2" user="$3" mode="$4"
 
   echo ""
   echo "=========================================="
-  echo "  LingJi 部署 — $mode"
+  echo "  Liki 部署 — $mode"
   echo "=========================================="
   echo "服务器: $user@$server"
   echo ""
 
-  # 确定当前目标的域名和回调 URL
-  local DOMAIN RETURN_URL
+  # 确定当前目标的域名
+  local DOMAIN
   case "$target" in
-    us) DOMAIN="$DOMAIN_US" RETURN_URL="$RETURN_URL_US" ;;
-    cn) DOMAIN="$DOMAIN_CN" RETURN_URL="$RETURN_URL_CN" ;;
+    us) DOMAIN="$DOMAIN_US" ;;
+    cn) DOMAIN="$DOMAIN_CN" ;;
   esac
 
   if ssh -o ConnectTimeout=5 -o BatchMode=yes -o StrictHostKeyChecking=accept-new "$user@$server" "echo ok" >/dev/null 2>&1; then
@@ -98,57 +92,78 @@ deploy() {
   find "$TMP_WEB" -name '*.html' -exec sed -i "s|\(src=\"[/]\?js/[^\"]*\)|\1?v=$BUILD_TS|g; s|\(href=\"[/]\?css/[^\"]*\)|\1?v=$BUILD_TS|g" {} +
 	find "$TMP_WEB" -name '*.html' -exec sed -i "s/BUILD_TIME_PLACEHOLDER/$BUILD_TIME/g" {} +
   date '+%Y-%m-%d %H:%M:%S CST' > "$TMP_WEB/build.txt"
-  (cd "$TMP_WEB" && tar czf /tmp/lingji_web.tar.gz .)
+  (cd "$TMP_WEB" && tar czf /tmp/liki_web.tar.gz .)
   rm -rf "$TMP_WEB" "$PROJECT_DIR/web/build.txt"
   # 配置 + 前端 + .env 打成一个包，一次 SCP
   if [ -f "$PROJECT_DIR/.env" ]; then
-    tar czf /tmp/lingji_configs.tar.gz \
-      -C "$PROJECT_DIR/deploy/lingji" docker-compose.yml Caddyfile \
-      -C /tmp lingji_web.tar.gz \
+    tar czf /tmp/liki_configs.tar.gz \
+      -C "$PROJECT_DIR/deploy/liki" docker-compose.yml Caddyfile \
+      -C /tmp liki_web.tar.gz \
       -C "$PROJECT_DIR" .env
   else
-    tar czf /tmp/lingji_configs.tar.gz \
-      -C "$PROJECT_DIR/deploy/lingji" docker-compose.yml Caddyfile \
-      -C /tmp lingji_web.tar.gz
+    tar czf /tmp/liki_configs.tar.gz \
+      -C "$PROJECT_DIR/deploy/liki" docker-compose.yml Caddyfile \
+      -C /tmp liki_web.tar.gz
   fi
-  $SCP_CMD "$IMAGE_FILE" /tmp/lingji_configs.tar.gz "$user@$server:/tmp/"
-  rm -f /tmp/lingji_web.tar.gz /tmp/lingji_configs.tar.gz
+  $SCP_CMD "$IMAGE_FILE" /tmp/liki_configs.tar.gz "$user@$server:/tmp/"
+  rm -f /tmp/liki_web.tar.gz /tmp/liki_configs.tar.gz
 
   echo "[3/4] 服务器部署..."
-  # 通过命令行传入 DOMAIN 和 RETURN_URL 作为远程环境变量
-  $SSH_CMD "$user@$server" "DOMAIN='$DOMAIN' RETURN_URL='$RETURN_URL' bash -s" << 'ENDSSH'
-set -e
-docker ps >/dev/null 2>&1 && D="docker" || D="sudo docker"
+  # 通过命令行传入 DOMAIN 作为远程环境变量
+  $SSH_CMD "$user@$server" "DOMAIN='$DOMAIN' bash -s" << 'ENDSSH'
+	set -e
+	docker ps >/dev/null 2>&1 && D="docker" || D="sudo -E docker"
 
-# Kill legacy processes on port 80/443
-for port in 80 443; do
-  pid=$(sudo lsof -ti :$port 2>/dev/null || true)
-  if [ -n "$pid" ]; then
-    echo "清除占用端口 $port 的旧进程: $pid"
-    sudo kill -9 $pid 2>/dev/null || true
-  fi
-done
+	sudo mkdir -p /opt/liki
+	sudo chown "$(whoami)" /opt/liki
 
-sudo mkdir -p /opt/lingji
-sudo chown "$(whoami)" /opt/lingji
-cd /opt/lingji && $D compose down 2>/dev/null || true
+	# 停止旧容器，释放端口
+	if [ -f /opt/liki/docker-compose.yml ]; then
+	  cd /opt/liki && $D compose down --timeout 10 2>&1 || true
+	fi
 
-# 解出配置包
-tar xzf /tmp/lingji_configs.tar.gz -C /tmp/
-mv /tmp/docker-compose.yml /opt/lingji/docker-compose.yml
-mv /tmp/Caddyfile /opt/lingji/Caddyfile
-[ -f /tmp/.env ] && mv /tmp/.env /opt/lingji/.env
-rm -f /tmp/lingji_configs.tar.gz
+	# 确保端口 80/443 释放（Docker 容器残留 + 非 Docker 进程）
+	for port in 80 443; do
+	  for i in $(seq 1 5); do
+	    cid=$($D ps -q --filter "publish=$port" 2>/dev/null || true)
+	    if [ -n "$cid" ]; then
+	      echo "强制停止占用端口 $port 的容器: $cid"
+	      $D stop "$cid" 2>/dev/null || true
+	      $D rm -f "$cid" 2>/dev/null || true
+	      sleep 1
+	      continue
+	    fi
+	    pid=$(sudo lsof -ti :$port 2>/dev/null || true)
+	    if [ -n "$pid" ]; then
+	      echo "清除占用端口 $port 的旧进程: $pid"
+	      sudo kill -9 $pid 2>/dev/null || true
+	      sleep 1
+	      continue
+	    fi
+	    break
+	  done
+	done
 
-# 将前端文件写入 Docker 命名卷 (lingji_web_data)
-if [ -f /tmp/lingji_web.tar.gz ]; then
-  $D volume create lingji_web_data 2>/dev/null || true
-  $D run --rm -i -v lingji_web_data:/dest alpine sh -c "find /dest -mindepth 1 -delete 2>/dev/null; tar xzf - -C /dest" < /tmp/lingji_web.tar.gz
-  rm -f /tmp/lingji_web.tar.gz
+	# 解出配置包
+	tar xzf /tmp/liki_configs.tar.gz -C /tmp/
+mv /tmp/docker-compose.yml /opt/liki/docker-compose.yml
+mv /tmp/Caddyfile /opt/liki/Caddyfile
+[ -f /tmp/.env ] && mv /tmp/.env /opt/liki/.env
+rm -f /tmp/liki_configs.tar.gz
+
+# 将前端文件写入 Docker 命名卷 (liki_web_data)
+if [ -f /tmp/liki_web.tar.gz ]; then
+  $D volume create liki_web_data 2>/dev/null || true
+  $D run --rm -i -v liki_web_data:/dest alpine sh -c "find /dest -mindepth 1 -delete 2>/dev/null; tar xzf - -C /dest" < /tmp/liki_web.tar.gz
+  rm -f /tmp/liki_web.tar.gz
 fi
 
-cd /opt/lingji
-$D load < /tmp/lingji_images.tar.gz
+# 确保 DB volume 对容器内的 liki 用户 (uid 1000) 可写
+$D volume create liki_data 2>/dev/null || true
+$D run --rm -v liki_data:/data alpine chown 1000:1000 /data
+
+cd /opt/liki
+$D load < /tmp/liki_images.tar.gz
 $D compose up -d
 $D image prune -f
 
@@ -156,7 +171,7 @@ echo "等待服务就绪..."
 sleep 5
 $D compose ps
 
-rm -f /tmp/lingji_images.tar.gz
+rm -f /tmp/liki_images.tar.gz
 ENDSSH
 
   echo ""

@@ -41,7 +41,7 @@ jobs:
           fi
 
       - name: Build
-        run: go build -o /dev/null ./cmd/lingji/
+        run: go build -o /dev/null ./cmd/liki/
 
   docker-build:
     runs-on: ubuntu-latest
@@ -53,10 +53,10 @@ jobs:
           go-version: '1.26'
           cache: true
       - name: Build binary
-        run: CGO_ENABLED=0 go build -o bin/lingji ./cmd/lingji/
+        run: CGO_ENABLED=0 go build -o bin/liki ./cmd/liki/
       - uses: docker/setup-buildx-action@v3
       - name: Build Docker image
-        run: docker build -f deploy/lingji/Dockerfile -t lingji:ci .
+        run: docker build -f deploy/liki/Dockerfile -t liki:ci .
         env:
           DOCKER_BUILDKIT: 1
 
@@ -134,11 +134,11 @@ jobs:
           chmod +x caddy
 
       - name: Build Go server
-        run: go build -o bin/lingji ./cmd/lingji/
+        run: go build -o bin/liki ./cmd/liki/
 
       - name: Start servers
         run: |
-          ./bin/lingji -addr :8081 -db /tmp/lingji-ci.db &
+          ./bin/liki -addr :8081 -db /tmp/liki-ci.db &
           # Wait for Go server to be ready before starting Caddy (avoids 503 on reverse_proxy)
           for i in $(seq 1 10); do
             if curl -sf http://localhost:8081/api/health 2>/dev/null | grep -q '"ok"'; then
@@ -148,10 +148,10 @@ jobs:
             sleep 1
           done
           if [ "$i" = "10" ]; then echo "Go server failed to start" >&2; exit 1; fi
-          ./caddy run --config deploy/lingji/Caddyfile.local &
+          ./caddy run --config deploy/liki/Caddyfile.local &
           # Wait for Caddy to be ready (static files + API proxy)
           for i in $(seq 1 30); do
-            if curl -sf http://localhost:8080/zh/ 2>/dev/null | grep -q '<html'; then
+            if curl -sf http://localhost:8080/zh-Hans/ 2>/dev/null | grep -q '<html'; then
               if curl -sf http://localhost:8080/api/health 2>/dev/null | grep -q '"ok"'; then
                 echo "Server ready"
                 break

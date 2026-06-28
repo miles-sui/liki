@@ -1,24 +1,22 @@
-# LingJi — AI Chinese Metaphysics Service
-# Build:  docker compose -f deploy/lingji/docker-compose.yml build
-# Start:  docker compose -f deploy/lingji/docker-compose.yml up -d
+# Liki — AI Chinese Metaphysics Service
+# Build:  docker compose -f deploy/liki/docker-compose.yml build
+# Start:  docker compose -f deploy/liki/docker-compose.yml up -d
 
 services:
-  lingji:
-    image: lingji:latest
+  liki:
+    image: liki:latest
     build:
       context: ../..
-      dockerfile: deploy/lingji/Dockerfile
+      dockerfile: deploy/liki/Dockerfile
     expose: ["8080"]
     restart: unless-stopped
     env_file:
       - .env
     environment:
       - LISTEN_ADDR=:8080
-      - DB_PATH=/var/lib/lingji/lingji.db
-      - PDF_DIR=/var/lib/lingji/pdfs
-      - RETURN_URL=${RETURN_URL}
+      - DB_PATH=/var/lib/liki/liki.db
     volumes:
-      - lingji_data:/var/lib/lingji
+      - liki_data:/var/lib/liki
     deploy:
       resources:
         limits:
@@ -37,7 +35,7 @@ services:
       - web_data:/srv/web:ro
       - caddy_data:/data
     depends_on:
-      lingji:
+      liki:
         condition: service_started
     restart: unless-stopped
     deploy:
@@ -47,6 +45,8 @@ services:
           cpus: '0.5'
 
 volumes:
-  lingji_data:
+  liki_data:
+    name: liki_data
   caddy_data:
   web_data:
+    name: liki_web_data
