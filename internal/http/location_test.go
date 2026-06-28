@@ -116,7 +116,7 @@ func TestHandleLocation_GeoAPI(t *testing.T) {
 
 	r := httptest.NewRequest("GET", "/api/location", nil)
 	// Use public IP to trigger geo API lookup.
-	r.RemoteAddr = "8.8.8.8:12345"
+	r.RemoteAddr = "203.0.113.1:12345"
 	w := httptest.NewRecorder()
 	handleLocation(w, r)
 
@@ -149,7 +149,7 @@ func TestHandleLocation_CFOverridesGeoAPI(t *testing.T) {
 
 	r := httptest.NewRequest("GET", "/api/location", nil)
 	r.Header.Set("CF-IPCountry", "CN")
-	r.RemoteAddr = "8.8.8.8:12345"
+	r.RemoteAddr = "203.0.113.1:12345"
 	w := httptest.NewRecorder()
 	handleLocation(w, r)
 
@@ -183,7 +183,7 @@ func TestHandleLocation_GeoAPIError(t *testing.T) {
 	defer func() { locationClient = orig }()
 
 	r := httptest.NewRequest("GET", "/api/location", nil)
-	r.RemoteAddr = "8.8.8.8:12345"
+	r.RemoteAddr = "203.0.113.1:12345"
 	w := httptest.NewRecorder()
 	handleLocation(w, r)
 
@@ -226,8 +226,8 @@ func TestEd3_Location_DifferentTPs(t *testing.T) {
 		{"normal XFF", "1.2.3.4, 10.0.0.1", "10.0.0.1:12345"},
 		{"private XFF", "10.0.0.1, 192.168.1.1", "10.0.0.1:12345"},
 		{"loopback", "127.0.0.1", "127.0.0.1:12345"},
-		{"no XFF, public", "", "8.8.8.8:12345"},
-		{"no XFF, no port", "", "8.8.8.8"},
+		{"no XFF, public", "", "10.99.99.99:12345"},
+		{"no XFF, no port", "", "10.99.99.99"},
 		{"invalid IP in XFF", "not-an-ip", "10.0.0.1:12345"},
 		{"empty XFF", "", "10.0.0.1:12345"},
 		{"IPv6", "::1", "[::1]:12345"},
