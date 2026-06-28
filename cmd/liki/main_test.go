@@ -5,6 +5,12 @@ import (
 	"testing"
 )
 
+func TestBuildTime(t *testing.T) {
+	if BuildTime != "dev" {
+		t.Logf("BuildTime = %q (set via -ldflags)", BuildTime)
+	}
+}
+
 func TestEnvOr(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -49,8 +55,11 @@ func TestEnvOrBool(t *testing.T) {
 		{name: "true from env", key: "TEST_ENVBOOL_TRUE", def: false, envValue: "true", setEnv: true, want: true},
 		{name: "false from env", key: "TEST_ENVBOOL_FALSE", def: true, envValue: "false", setEnv: true, want: false},
 		{name: "1 means true", key: "TEST_ENVBOOL_1", def: false, envValue: "1", setEnv: true, want: true},
+		{name: "0 means false", key: "TEST_ENVBOOL_0", def: true, envValue: "0", setEnv: true, want: false},
 		{name: "returns default for invalid value", key: "TEST_ENVBOOL_INVALID", def: true, envValue: "notabool", setEnv: true, want: true},
 		{name: "returns default for empty string", key: "TEST_ENVBOOL_EMPTY", def: true, envValue: "", setEnv: true, want: true},
+		{name: "T means true", key: "TEST_ENVBOOL_T", def: false, envValue: "T", setEnv: true, want: true},
+		{name: "F means false", key: "TEST_ENVBOOL_F", def: true, envValue: "F", setEnv: true, want: false},
 	}
 
 	for _, tt := range tests {

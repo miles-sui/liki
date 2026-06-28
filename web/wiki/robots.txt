@@ -1,0 +1,4 @@
+Sitemap: https://liki.hk/wiki/sitemap.xml
+
+User-agent: *
+Allow: /

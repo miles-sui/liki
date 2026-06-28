@@ -53,7 +53,7 @@ func findMaXing(driveZhi ganzhi.Zhi) PalaceIndex {
 
 // findKongWang returns the two 空亡 palaces.
 func findKongWang(driveZhu ganzhi.Zhu) [2]PalaceIndex {
-	idx := ganzhi.SixtyCycleName(driveZhu.Gan, driveZhu.Zhi) // 0-59
+	idx := ganzhi.SixtyCycleIndex(driveZhu.Gan, driveZhu.Zhi) // 0-59
 	xunIdx := idx / 10                                       // 0-5
 	kongWangZhi := [6][2]ganzhi.Zhi{
 		{11, 12}, // 甲子旬: 戌亥

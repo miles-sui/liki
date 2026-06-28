@@ -1,4 +1,4 @@
-package handler
+package http
 
 import (
 	"encoding/json"
@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-var locHTTPClient = &http.Client{Timeout: 5 * time.Second}
+var locationClient = &http.Client{Timeout: 15 * time.Second}
 
 // locationResult holds IP geolocation data.
 type locationResult struct {
@@ -19,12 +19,13 @@ type locationResult struct {
 
 // handleLocation returns IP-based geolocation with city-level data from ip-api.com.
 func handleLocation(w http.ResponseWriter, r *http.Request) {
-	country := r.Header.Get("CF-IPCountry")
+	cfCountry := r.Header.Get("CF-IPCountry")
+	geoCountry := ""
 	city := ""
 
 	ip := clientIP(r)
 	if ip != "" && !isPrivateIP(ip) {
-		resp, err := locHTTPClient.Get("https://ip-api.com/json/" + ip + "?fields=countryCode,city")
+		resp, err := locationClient.Get("https://ip-api.com/json/" + ip + "?fields=countryCode,city")
 		if err == nil {
 			defer resp.Body.Close()
 			var raw struct {
@@ -32,14 +33,16 @@ func handleLocation(w http.ResponseWriter, r *http.Request) {
 				City        string `json:"city"`
 			}
 			if json.NewDecoder(resp.Body).Decode(&raw) == nil {
-				if country == "" {
-					country = raw.CountryCode
-				}
+				geoCountry = raw.CountryCode
 				city = raw.City
 			}
 		}
 	}
 
+	country := cfCountry
+	if country == "" {
+		country = geoCountry
+	}
 	if country == "" {
 		country = "unknown"
 	}
@@ -47,7 +50,7 @@ func handleLocation(w http.ResponseWriter, r *http.Request) {
 	respondJSON(w, http.StatusOK, locationResult{
 		Country:  country,
 		City:     city,
-		Currency: detectCurrency(r),
+		Currency: string(detectCurrency(r, geoCountry)),
 	})
 }
 

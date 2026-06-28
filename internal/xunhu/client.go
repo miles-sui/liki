@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/md5"
 	"crypto/rand"
+	"crypto/subtle"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -15,7 +16,7 @@ import (
 	"strings"
 	"time"
 
-	"liki/internal/agent"
+	"liki/internal/product"
 	"liki/internal/payment"
 )
 
@@ -43,7 +44,7 @@ func New(appID, appSecret string) *Client {
 }
 
 // CreateCheckout creates a XunhuPay checkout session.
-func (c *Client) CreateCheckout(ctx context.Context, product agent.Product, amount int, orderID, email, returnURL string) (*payment.CheckoutResult, error) {
+func (c *Client) CreateCheckout(ctx context.Context, product product.Product, amount int, orderID, email, returnURL string) (*payment.CheckoutResult, error) {
 	webhookURL := deriveWebhookURL(returnURL)
 
 	nonce := make([]byte, 16)
@@ -135,7 +136,7 @@ func (c *Client) VerifyWebhook(rawBody []byte, headers http.Header) (*payment.We
 		params[k] = values.Get(k)
 	}
 	expected := sign(params, c.appSecret)
-	if hash != expected {
+	if !hmacEqual(hash, expected) {
 		return nil, fmt.Errorf("xunhu: signature mismatch")
 	}
 
@@ -184,11 +185,16 @@ func sign(params map[string]string, secret string) string {
 	return hex.EncodeToString(h[:])
 }
 
+// hmacEqual compares two strings in constant time.
+func hmacEqual(a, b string) bool {
+	return subtle.ConstantTimeCompare([]byte(a), []byte(b)) == 1
+}
+
 // deriveWebhookURL extracts the base URL from returnURL and appends the webhook path.
 func deriveWebhookURL(returnURL string) string {
 	u, err := url.Parse(returnURL)
 	if err != nil || u.Scheme == "" || u.Host == "" {
 		return returnURL
 	}
-	return u.Scheme + "://" + u.Host + "/api/webhook"
+	return u.Scheme + "://" + u.Host + "/api/payments/webhook"
 }

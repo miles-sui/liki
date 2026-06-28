@@ -9,18 +9,11 @@ import (
 )
 
 func computeZiweiHandler(ctx context.Context, raw json.RawMessage) (json.RawMessage, error) {
-	var p Person
-	if err := json.Unmarshal(raw, &p); err != nil {
-		return nil, fmt.Errorf("compute_ziwei: %w", err)
-	}
-	if err := validateGender(p.Gender); err != nil {
-		return nil, fmt.Errorf("compute_ziwei: %w", err)
-	}
-	ts, err := p.Birth.Timeset()
+	solar, gender, err := resolvePerson(raw, "compute_ziwei")
 	if err != nil {
-		return nil, fmt.Errorf("compute_ziwei: %w", err)
+		return nil, err
 	}
-	result := ziwei.ComputeChart(ts.Solar, p.Gender)
+	result := ziwei.ComputeChart(solar, gender)
 	return wrapResult("ziwei", result)
 }
 

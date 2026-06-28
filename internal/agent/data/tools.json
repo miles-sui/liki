@@ -1,0 +1,121 @@
+{
+  "tools": [
+    {
+      "name": "query_city",
+      "description": "根据城市名查询经纬度",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "name": {"type": "string", "description": "城市名称"}
+        },
+        "required": ["name"]
+      }
+    },
+    {
+      "name": "compute_time",
+      "description": "计算真太阳时和时辰（八字排盘用）",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "time": {"type": "string", "description": "ISO 8601 出生时间，含时区，如 2026-06-25T14:00:00+08:00"},
+          "longitude": {"type": "number", "description": "出生地经度，从 query_city 获取"}
+        },
+        "required": ["time", "longitude"]
+      }
+    },
+    {
+      "name": "compute_chart",
+      "description": "排八字命盘",
+      "parameters": {
+        "type": "object",
+        "description": "命主信息",
+        "properties": {
+          "birth": {
+            "type": "object",
+            "description": "出生时间地点",
+            "properties": {
+              "time": {"type": "string", "format": "date-time", "description": "出生时间（RFC3339），如 1984-02-04T06:00:00+08:00"},
+              "longitude": {"type": "number", "description": "出生地经度，用于真太阳时校正。北京≈116.4，上海≈121.5"}
+            },
+            "required": ["time", "longitude"]
+          },
+          "gender": {"type": "string", "enum": ["male", "female"], "description": "性别"}
+        },
+        "required": ["birth", "gender"]
+      }
+    },
+    {
+      "name": "compute_ziwei",
+      "description": "紫微斗数命盘",
+      "parameters": {
+        "type": "object",
+        "description": "命主信息",
+        "properties": {
+          "birth": {
+            "type": "object",
+            "description": "出生时间地点",
+            "properties": {
+              "time": {"type": "string", "format": "date-time", "description": "出生时间（RFC3339），如 1984-02-04T06:00:00+08:00"},
+              "longitude": {"type": "number", "description": "出生地经度，用于真太阳时校正。北京≈116.4，上海≈121.5"}
+            },
+            "required": ["time", "longitude"]
+          },
+          "gender": {"type": "string", "enum": ["male", "female"], "description": "性别"}
+        },
+        "required": ["birth", "gender"]
+      }
+    },
+    {
+      "name": "compute_naming_wuge",
+      "description": "起名五格计算",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "surname": {"type": "string", "minLength": 1, "maxLength": 2, "description": "姓氏"},
+          "yong_shen": {"type": "string", "enum": ["木", "火", "土", "金", "水"], "description": "用神五行"},
+          "xi_shen": {"type": "array", "items": {"type": "string", "enum": ["木", "火", "土", "金", "水"]}, "description": "喜神五行（可选）"}
+        },
+        "required": ["surname", "yong_shen"]
+      }
+    },
+    {
+      "name": "compute_naming_compose",
+      "description": "起名候选名字组合",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "surname": {"type": "string", "minLength": 1, "maxLength": 2, "description": "姓氏"},
+          "combos": {"type": "array", "description": "五格组合（从 wuge 返回的 combos 中选取）"},
+          "yong_chars": {"type": "object", "description": "用神字库（从 wuge 返回的 yong_chars）"},
+          "xi_chars": {"type": "object", "description": "喜神字库（从 wuge 返回的 xi_chars）"}
+        },
+        "required": ["surname", "combos", "yong_chars"]
+      }
+    },
+    {
+      "name": "compute_naming_detail",
+      "description": "起名候选名字详析",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "surname": {"type": "string", "minLength": 1, "maxLength": 2, "description": "姓氏"},
+          "names": {"type": "array", "items": {"type": "string"}, "description": "候选名字列表"}
+        },
+        "required": ["surname", "names"]
+      }
+    },
+    {
+      "name": "compute_naming_evaluate",
+      "description": "起名单名评分",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "surname": {"type": "string", "minLength": 1, "maxLength": 2, "description": "姓氏"},
+          "given_name": {"type": "string", "description": "名字"},
+          "yong_shen": {"type": "string", "enum": ["木", "火", "土", "金", "水"], "description": "用神五行"}
+        },
+        "required": ["surname", "given_name", "yong_shen"]
+      }
+    }
+  ]
+}

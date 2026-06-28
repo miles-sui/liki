@@ -11,11 +11,11 @@ wuge → LLM 筛字库（去生僻/拗口/消极）→ compose → LLM 选 8 名
 设计原则：
 - 五行和音韵由算法处理，LLM 不重复判断
 - LLM 专注于算法做不了的事：字义筛选、性别适配、典故查找、风格多样性
-- 报告模板（report-naming.md）是起名报告的唯一真源，skill agent 和 GenerateFromData 共用
+- 报告模板（report-naming.md）是起名报告格式参考，LLM 对话内按此格式输出报告
 
 ## API
 
-### POST /api/qiming/wuge
+### qiming.wuge
 
 枚举吉数笔画组合 + 候选字。
 
@@ -29,7 +29,7 @@ wuge → LLM 筛字库（去生僻/拗口/消极）→ compose → LLM 选 8 名
 
 字数据为 `CharLite{char, tone}`，按笔画分组 `map[int][]CharLite`。
 
-### POST /api/qiming/compose
+### qiming.compose
 
 字池笛卡尔积 + 平仄过滤，返回名字列表。
 
@@ -42,7 +42,7 @@ wuge → LLM 筛字库（去生僻/拗口/消极）→ compose → LLM 选 8 名
 
 组合规则：yong+yong、yong+xi、xi+yong（不允许 xi+xi）。
 
-### POST /api/qiming/detail
+### qiming.detail
 
 批量查询五格三才音韵。
 
@@ -53,7 +53,7 @@ wuge → LLM 筛字库（去生僻/拗口/消极）→ compose → LLM 选 8 名
 
 返回 `{results: [{name, characters: [Character], wu_ge: WuGe, san_cai: SanCai, phonetic: Phonetic}]}`。
 
-### POST /api/qiming/evaluate
+### qiming.evaluate
 
 单名评测。
 

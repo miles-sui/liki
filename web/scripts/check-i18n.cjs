@@ -60,6 +60,29 @@ function checkPrices(locales) {
   }
 }
 
+function checkHtmlKeys(locales) {
+  // Extract all data-i18n keys from HTML files and verify they exist in all locales.
+  const allKeys = new Set();
+  for (const [name, data] of Object.entries(locales)) {
+    for (const k of Object.keys(data)) allKeys.add(k);
+  }
+
+  const htmlDir = path.resolve(__dirname, '..');
+  const htmlFiles = fs.readdirSync(htmlDir).filter(f => f.endsWith('.html'));
+  const keyRe = /data-i18n="([^"]+)"/g;
+
+  for (const file of htmlFiles) {
+    const html = fs.readFileSync(path.join(htmlDir, file), 'utf-8');
+    let m;
+    while ((m = keyRe.exec(html)) !== null) {
+      const key = m[1];
+      if (!allKeys.has(key)) {
+        errors.push(`${file}: data-i18n="${key}" not found in any locale file`);
+      }
+    }
+  }
+}
+
 function checkEmptyValues(locales) {
   for (const [locale, data] of Object.entries(locales)) {
     for (const [key, value] of Object.entries(data)) {
@@ -87,6 +110,7 @@ function main() {
   checkKeyAlignment(locales);
   checkPrices(locales);
   checkEmptyValues(locales);
+  checkHtmlKeys(locales);
 
   if (errors.length > 0) {
     console.error(`\n${errors.length} i18n violation(s):\n`);

@@ -1299,7 +1299,7 @@ func TestTianMaPos_InvalidZhi(t *testing.T) {
 }
 
 // =============================================================================
-// 补充 marsIndex / lingxingIndex — 非三合组
+// 补充 huoXingIndex / lingXingIndex — 非三合组
 // =============================================================================
 
 func TestMarsIndex_Other(t *testing.T) {
@@ -1307,15 +1307,15 @@ func TestMarsIndex_Other(t *testing.T) {
 	// All zhi 1-12 are covered by the 4 groups. But what if value out of range?
 	// The switch has cases for all 4 sanhe groups; any unmatch falls to default 0.
 	// Since all 12 zhi are covered, just verify behaviour.
-	if got := marsIndex(1, 1); got != 3 { // 子→申子辰 → (1+2)%12=3
-		t.Errorf("marsIndex(1,1) = %d, want 3", got)
+	if got := huoXingIndex(1, 1); got != 3 { // 子→申子辰 → (1+2)%12=3
+		t.Errorf("huoXingIndex(1,1) = %d, want 3", got)
 	}
 }
 
 func TestLingxingIndex_Group1(t *testing.T) {
 	// 寅午戌 → (hourZhi+3)%12
-	if got := lingxingIndex(3, 1); got != 4 {
-		t.Errorf("lingxingIndex(3,1) = %d, want 4", got)
+	if got := lingXingIndex(3, 1); got != 4 {
+		t.Errorf("lingXingIndex(3,1) = %d, want 4", got)
 	}
 }
 
@@ -1464,15 +1464,18 @@ func TestFindPatterns_XiongSuQianYuan(t *testing.T) {
 // =============================================================================
 
 func TestFindPatterns_RiYueBingMing(t *testing.T) {
-	// 日月并明: sun/moon bright.
-	// sunMoonBright checks palaces [0,6,8,10].
-	// TaiYang at 午 (index 6, zhi=7, miao).
+	// 日月并明: both sun AND moon must be bright.
+	// 太阳 at 午 (Zhi=7, 庙) in palace 6 (迁移).
+	// 太阴 at 子 (Zhi=1, 庙) in palace 0 (命).
 	var palaces [12]palace
 	for i := range palaces {
 		palaces[i] = palace{Index: palaceIndex(i), Zhi: Zhi((i)%12 + 1)}
 	}
-	palaces[6] = palace{Index: 6, Zhi: 7, // 午=7
+	palaces[6] = palace{Index: 6, Zhi: 7, // 午=7, 太阳庙
 		Stars: []starInfo{{Star: TaiYang, Name: "太阳", IsMajor: true}},
+	}
+	palaces[0] = palace{Index: 0, Zhi: 1, // 子=1, 太阴庙
+		Stars: []starInfo{{Star: TaiYin, Name: "太阴", IsMajor: true}},
 	}
 	patterns := findPatterns(palaces)
 	for _, p := range patterns {
@@ -1499,7 +1502,7 @@ func TestLiuNianSiHua_VariousYears(t *testing.T) {
 }
 
 // =============================================================================
-// marsIndex — 火星安星，四组三合局全覆盖
+// huoXingIndex — 火星安星，四组三合局全覆盖
 // =============================================================================
 
 func TestMarsIndex_AllGroups(t *testing.T) {
@@ -1530,16 +1533,16 @@ func TestMarsIndex_AllGroups(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := marsIndex(tt.yearZhi, tt.hourZhi)
+			got := huoXingIndex(tt.yearZhi, tt.hourZhi)
 			if got != tt.want {
-				t.Errorf("marsIndex(%d,%d)=%d, want %d", tt.yearZhi, tt.hourZhi, got, tt.want)
+				t.Errorf("huoXingIndex(%d,%d)=%d, want %d", tt.yearZhi, tt.hourZhi, got, tt.want)
 			}
 		})
 	}
 }
 
 // =============================================================================
-// lingxingIndex — 铃星安星，四组三合局全覆盖
+// lingXingIndex — 铃星安星，四组三合局全覆盖
 // =============================================================================
 
 func TestLingxingIndex_AllGroups(t *testing.T) {
@@ -1567,9 +1570,9 @@ func TestLingxingIndex_AllGroups(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := lingxingIndex(tt.yearZhi, tt.hourZhi)
+			got := lingXingIndex(tt.yearZhi, tt.hourZhi)
 			if got != tt.want {
-				t.Errorf("lingxingIndex(%d,%d)=%d, want %d", tt.yearZhi, tt.hourZhi, got, tt.want)
+				t.Errorf("lingXingIndex(%d,%d)=%d, want %d", tt.yearZhi, tt.hourZhi, got, tt.want)
 			}
 		})
 	}
@@ -1896,6 +1899,80 @@ func TestPlaceMainStars_FullCoverage(t *testing.T) {
 			t.Errorf("紫微在%d: TianFu not found at position %d", ziweiPos, tianfuExpect)
 		}
 	}
+}
+
+// =============================================================================
+// leap month — 闰月排盘
+// =============================================================================
+
+func TestComputeChart_LeapMonth(t *testing.T) {
+	// 2025年农历闰六月十八，午时，男性
+	// 闰月按传统命理规则视同下一个月（七月）计算。
+	// Verify the chart is valid and consistent.
+	lt := tianwen.LunarTime{Year: 2025, Month: 6, Day: 18, Leap: true}
+	gt := tianwen.LunarToGregorian(lt)
+	if gt.Time().IsZero() {
+		t.Fatal("LunarToGregorian returned zero time for leap month date")
+	}
+	st := tianwen.GregorianToSolar(gt.Time(), 116.4, 8)
+	chart := ComputeChart(st, ganzhi.Male)
+
+	if len(chart.Palaces) != 12 {
+		t.Errorf("expected 12 palaces, got %d", len(chart.Palaces))
+	}
+	if chart.JuShu < 2 || chart.JuShu > 6 {
+		t.Errorf("JuShu = %d, want [2,6]", chart.JuShu)
+	}
+	if chart.MingGong >= 12 {
+		t.Errorf("MingGong = %d, want [0,11]", chart.MingGong)
+	}
+	for i, p := range chart.Palaces {
+		if p.Gan < 1 || p.Gan > 10 {
+			t.Errorf("palace[%d].Gan = %d, want [1,10]", i, p.Gan)
+		}
+		if p.Zhi < 1 || p.Zhi > 12 {
+			t.Errorf("palace[%d].Zhi = %d, want [1,12]", i, p.Zhi)
+		}
+	}
+
+	dx := ComputeDaXian(chart)
+	if len(dx) != 12 {
+		t.Errorf("DaXian len = %d, want 12", len(dx))
+	}
+
+	t.Logf("Leap month chart: JuShu=%s MingGong=%d ShenGong=%d ZiweiPos=%d",
+		chart.JuShuName, chart.MingGong, chart.ShenGong, chart.ZiweiPos)
+}
+
+func TestComputeChart_LeapMonthVsNormalMonth(t *testing.T) {
+	// 同一年，闰六月十八 vs 七月十八 — 两个命盘应该不同（月份不同）。
+	// 闰月出生 → 命宫按闰月的地支算。
+	ltLeap := tianwen.LunarTime{Year: 2025, Month: 6, Day: 18, Leap: true}
+	gtLeap := tianwen.LunarToGregorian(ltLeap)
+	if gtLeap.Time().IsZero() {
+		t.Fatal("LunarToGregorian returned zero for leap month")
+	}
+
+	ltNormal := tianwen.LunarTime{Year: 2025, Month: 7, Day: 18, Leap: false}
+	gtNormal := tianwen.LunarToGregorian(ltNormal)
+	if gtNormal.Time().IsZero() {
+		t.Fatal("LunarToGregorian returned zero for normal month")
+	}
+
+	stLeap := tianwen.GregorianToSolar(gtLeap.Time(), 116.4, 8)
+	stNormal := tianwen.GregorianToSolar(gtNormal.Time(), 116.4, 8)
+
+	chartLeap := ComputeChart(stLeap, ganzhi.Male)
+	chartNormal := ComputeChart(stNormal, ganzhi.Male)
+
+	// Month 6 (leap) vs month 7 (normal) should produce different charts.
+	if chartLeap.JuShu == chartNormal.JuShu &&
+		chartLeap.MingGong == chartNormal.MingGong &&
+		chartLeap.ZiweiPos == chartNormal.ZiweiPos {
+		t.Error("leap month 6 and normal month 7 should produce different charts")
+	}
+	t.Logf("Leap JuShu=%s MingGong=%d Normal JuShu=%s MingGong=%d",
+		chartLeap.JuShuName, chartLeap.MingGong, chartNormal.JuShuName, chartNormal.MingGong)
 }
 
 // =============================================================================

@@ -176,10 +176,13 @@ func (w *Wuxing) UnmarshalJSON(data []byte) error {
 	}
 	var i int
 	if err := json.Unmarshal(data, &i); err == nil {
+		if i < int(WxMu) || i > int(WxShui) {
+			return fmt.Errorf("wuxing value %d out of range [%d,%d]", i, WxMu, WxShui)
+		}
 		*w = Wuxing(i)
 		return nil
 	}
-	return &json.UnmarshalTypeError{Value: string(data), Type: nil}
+	return fmt.Errorf("cannot unmarshal %q as Wuxing", string(data))
 }
 
 func (g *Gan) UnmarshalJSON(data []byte) error {
@@ -187,17 +190,20 @@ func (g *Gan) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, &name); err == nil {
 		parsed, err := ParseGan(name)
 		if err != nil {
-			return &json.UnmarshalTypeError{Value: "string", Type: nil, Field: name}
+			return fmt.Errorf("unknown gan: %q", name)
 		}
 		*g = parsed
 		return nil
 	}
 	var i int
 	if err := json.Unmarshal(data, &i); err == nil {
+		if i < 1 || i > 10 {
+			return fmt.Errorf("gan value %d out of range [1,10]", i)
+		}
 		*g = Gan(i)
 		return nil
 	}
-	return &json.UnmarshalTypeError{Value: string(data), Type: nil}
+	return fmt.Errorf("cannot unmarshal %q as Gan", string(data))
 }
 
 func (z *Zhi) UnmarshalJSON(data []byte) error {
@@ -205,17 +211,20 @@ func (z *Zhi) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, &name); err == nil {
 		parsed, err := ParseZhi(name)
 		if err != nil {
-			return &json.UnmarshalTypeError{Value: "string", Type: nil, Field: name}
+			return fmt.Errorf("unknown zhi: %q", name)
 		}
 		*z = parsed
 		return nil
 	}
 	var i int
 	if err := json.Unmarshal(data, &i); err == nil {
+		if i < 1 || i > 12 {
+			return fmt.Errorf("zhi value %d out of range [1,12]", i)
+		}
 		*z = Zhi(i)
 		return nil
 	}
-	return &json.UnmarshalTypeError{Value: string(data), Type: nil}
+	return fmt.Errorf("cannot unmarshal %q as Zhi", string(data))
 }
 
 func (z Zhu) MarshalJSON() ([]byte, error) {

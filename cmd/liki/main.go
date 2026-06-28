@@ -12,16 +12,15 @@ import (
 	"syscall"
 	"time"
 
-	doc "liki"
 	"liki/internal/agent"
 	"liki/internal/dodo"
+	"liki/internal/product"
 	"liki/internal/xunhu"
 
 	"liki/internal/email"
-	"liki/internal/http"
+	apphttp "liki/internal/http"
 	"liki/internal/llm"
 	"liki/internal/payment"
-	"liki/internal/session"
 )
 
 // BuildTime is set at compile time via -ldflags.
@@ -29,7 +28,7 @@ var BuildTime = "dev"
 
 func main() {
 	addr := flag.String("addr", ":8080", "listen address")
-	dbPath := flag.String("db", "/var/lib/lingji/lingji.db", "SQLite database path")
+	dbPath := flag.String("db", "/var/lib/liki/liki.db", "SQLite database path")
 	flag.Parse()
 
 	// Structured logging
@@ -50,14 +49,12 @@ func main() {
 	}
 
 	// Init services
-	emailFrom := envOr("RESEND_FROM", envOr("EMAIL_FROM", "Liki <report@lingji.email>"))
+	emailFrom := envOr("RESEND_FROM", envOr("EMAIL_FROM", "Liki <report@liki.email>"))
 	emailClient := email.New(envOr("RESEND_API_KEY", ""), emailFrom)
 
 	dodoTest := envOrBool("DODO_TEST_MODE", false)
-	dodoProducts := map[agent.Product]string{
-		agent.ProductChart:  os.Getenv("DODO_PRODUCT_CHART"),
-		agent.ProductBond:   os.Getenv("DODO_PRODUCT_BOND"),
-		agent.ProductNaming: os.Getenv("DODO_PRODUCT_NAMING"),
+	dodoProducts := map[product.Product]string{
+		product.ProductNaming: os.Getenv("DODO_PRODUCT_NAMING"),
 	}
 	dodoClient := dodo.New(envOr("DODO_API_KEY", ""), envOr("DODO_WEBHOOK_KEY", ""), dodoTest, dodoProducts)
 
@@ -66,13 +63,16 @@ func main() {
 		envOr("XUNHU_APPSECRET", ""),
 	)
 
-	// Chat tools call foundation packages (bazi, qiming) directly.
-	chatTools := agent.NewChatToolRegistry()
-	chatAgent := agent.NewChatAgent(llm.New(envOr("DEEPSEEK_API_KEY", "")), chatTools, doc.ChatPrompt)
-	chatAgent.Greeting = "你好，我是灵机（Liki），一款 AI 命理助手，为你提供命盘解读、运势分析、合盘配对及起名等服务。有什么事，不妨一起看看。"
+	// Validate tools.json at startup so config errors fail fast.
+	if err := agent.ValidateTools(); err != nil {
+		slog.Error("validate tools.json", "err", err)
+		os.Exit(1)
+	}
 
-	sessionStore := session.NewStore(30*time.Minute, 500)
-	defer sessionStore.Stop()
+	// Naming chat tools.
+	llmClient := llm.New(envOr("DEEPSEEK_API_KEY", ""))
+	namingTools := agent.NewNamingToolRegistry()
+	chatAgent := agent.NewChatAgent(llmClient, namingTools, agent.NamingPrompt)
 
 	returnURL := envOr("RETURN_URL", "")
 	if returnURL == "" {
@@ -85,39 +85,28 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	// Report agents — one per product, each with its own prompt.
-	llmClient := llm.New(envOr("DEEPSEEK_API_KEY", ""))
-	reportTools := agent.NewCheckToolRegistry()
-	reportAgents := map[agent.Product]*agent.ReportAgent{
-		agent.ProductChart:    agent.NewReportAgent(llmClient, reportTools, doc.ReportPrompt, doc.ChartReportPrompt),
-		agent.ProductBond:     agent.NewReportAgent(llmClient, reportTools, doc.ReportPrompt, doc.BondReportPrompt),
-		agent.ProductNaming:   agent.NewReportAgent(llmClient, reportTools, doc.ReportPrompt, doc.NamingReportPrompt),
-		agent.ProductZiwei:    agent.NewReportAgent(llmClient, reportTools, doc.ReportPrompt, doc.ZiweiReportPrompt),
-		agent.ProductBazhai:   agent.NewReportAgent(llmClient, reportTools, doc.ReportPrompt, doc.BazhaiReportPrompt),
-		agent.ProductXuankong: agent.NewReportAgent(llmClient, reportTools, doc.ReportPrompt, doc.XuankongReportPrompt),
-	}
-	paymentSvc := payment.NewService(dodoClient, xunhuClient, emailClient, store, returnURL, adminEmail, reportAgents, ctx)
-	chatAgent.Amounts = map[agent.Product]int{agent.ProductChart: 990, agent.ProductBond: 1990, agent.ProductNaming: 2990}
+	paymentSvc := payment.NewService(dodoClient, xunhuClient, emailClient, store, returnURL, adminEmail, ctx)
 
-	// Dev mode controls CORS localhost origins.
-	if envOrBool("DEV_MODE", false) {
-		handler.SetDevMode(true)
+	// Validate JWT_SECRET at startup so config errors fail fast.
+	if err := apphttp.ValidateJWTSecret(); err != nil {
+		slog.Error("validate JWT_SECRET", "err", err)
+		os.Exit(1)
 	}
+
+	devMode := envOrBool("DEV_MODE", false)
 
 	// Setup HTTP
-	rateLimiter := handler.NewRateLimiter()
+	rateLimiter := apphttp.NewRateLimiter()
 	defer rateLimiter.Stop()
 
 	mux := http.NewServeMux()
-	handler.RegisterRoutes(mux, handler.ServerDeps{
-		Payment:      paymentSvc,
-		Store:        store,
-		ChatAgent:    chatAgent,
-		SessionStore: sessionStore,
-		Analytics:    handler.NewAnalytics(),
+	h := apphttp.RegisterRoutes(mux, apphttp.ServerDeps{
+		Payment:   paymentSvc,
+		Store:     store,
+		ChatAgent: chatAgent,
+		Analytics: apphttp.NewAnalytics(),
+		DevMode:   devMode,
 	}, BuildTime, rateLimiter)
-
-	h := handler.SecurityHeaders(handler.CORSMiddleware(handler.BodyLimit(mux)))
 
 	// Write timeout must accommodate LLM calls (~120s)
 	srv := &http.Server{
@@ -135,12 +124,19 @@ func main() {
 	// Signal handling
 	go handleSignals(srv)
 
-	slog.Info("lingji listening", "addr", srv.Addr)
+	slog.Info("liki listening", "addr", srv.Addr)
 	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		slog.Error("server", "err", err)
 		os.Exit(1)
 	}
 	slog.Info("server stopped")
+
+	// Phased shutdown: drain emails within a deadline so we don't block forever.
+	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer shutdownCancel()
+	if err := paymentSvc.Shutdown(shutdownCtx); err != nil {
+		slog.Error("shutdown payment service", "err", err)
+	}
 }
 
 func envOr(key, def string) string {

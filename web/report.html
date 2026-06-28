@@ -3,20 +3,20 @@
 <head>
 <meta charset="UTF-8">
     <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-<meta name="description" content="靈機（Liki）AI命理助手 | 命理報告。">
-<meta property="og:title" content="命理報告 · 靈機 Liki">
-<meta property="og:description" content="靈機（Liki）AI命理助手 | 命理報告。">
+<meta name="description" data-i18n-content="report.meta.ogDesc" content="靈機（Liki）AI 起名顧問 | 起名報告。">
+<meta property="og:title" data-i18n-content="report.meta.ogTitle" content="起名報告 · 靈機 Liki">
+<meta property="og:description" data-i18n-content="report.meta.ogDesc" content="靈機（Liki）AI 起名顧問 | 起名報告。">
 <meta property="og:type" content="website">
 	<meta property="og:url" id="og-url" content="https://liki.hk/report.html">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="命理報告 · 靈機 Liki">
-<meta name="twitter:description" content="靈機（Liki）AI命理助手 | 命理報告。">
+<meta name="twitter:title" data-i18n-content="report.meta.twitterTitle" content="起名報告 · 靈機 Liki">
+<meta name="twitter:description" data-i18n-content="report.meta.twitterDesc" content="靈機（Liki）AI 起名顧問 | 起名報告。">
 	<meta property="og:image" content="https://liki.hk/img/og-image.png">
 	<meta property="og:image:width" content="1200">
 	<meta property="og:image:height" content="630">
 	<meta name="twitter:image" content="https://liki.hk/img/og-image.png">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>命理報告 · 靈機 Liki</title>
+<title>起名報告 · 靈機 Liki</title>
 <script defer src="/js/marked.min.js"></script>
 <script defer src="/js/purify.min.js"></script>
 <script defer src="/js/api.js"></script>
@@ -26,22 +26,22 @@
 </head>
 <body class="bg-stone-50 min-h-screen">
 
-<a href="#main" class="skip-link">跳到主要內容</a>
+<a href="#main" class="skip-link" data-i18n="a11y.skipLink">跳到主要內容</a>
 
 <!-- Save banner -->
 <div id="report-banner" style="display:none">
 <div class="save-banner">
   <div class="max-w-4xl mx-auto px-4 py-2 flex items-center justify-between">
-    <span class="text-sm text-amber-800">🔗 這是您的專屬報告鏈接，建議收藏或複製保存。</span>
+    <span class="text-sm text-amber-800" data-i18n="report.banner.text">🔗 這是您的專屬報告鏈接，建議收藏或複製保存。</span>
     <div class="flex gap-2">
-      <button id="banner-copy-btn" class="btn-sm bg-white border border-amber-200 text-amber-700 hover:bg-amber-50 rounded"><span id="banner-copy-text">複製鏈接</span></button>
+      <button id="banner-copy-btn" class="btn-sm bg-white border border-amber-200 text-amber-700 hover:bg-amber-50 rounded"><span id="banner-copy-text" data-i18n="report.copyLink">複製鏈接</span></button>
       <button id="banner-close-btn" class="btn-sm text-amber-500 hover:text-amber-700">×</button>
     </div>
   </div>
 </div>
 </div>
 
-<liki-header title="命理報告"></liki-header>
+<liki-header title="起名報告"></liki-header>
 
 <main id="main" class="max-w-4xl mx-auto px-4 py-8">
 
@@ -52,13 +52,13 @@
         <circle cx="40" cy="40" r="36" fill="none" stroke="var(--stone-200)" stroke-width="2"/>
         <circle cx="40" cy="40" r="36" fill="none" stroke="var(--amber-600)" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="226" stroke-dashoffset="226" class="seal-ring"/>
       </svg>
-      <span class="seal-char">命</span>
+      <span class="seal-char">名</span>
     </div>
-    <p id="transition-text" class="text-stone-600 mt-4 font-medium">✓ 支付成功，正在爲您解鎖報告…</p>
+    <p id="transition-text" class="text-stone-600 mt-4 font-medium" data-i18n="report.transition.text">✓ 支付成功，正在爲您解鎖報告…</p>
   </div>
 
   <!-- Print cover -->
-  <print-cover product="八字命理報告"></print-cover>
+  <print-cover data-i18n-product="report.productName" product="八字起名報告"></print-cover>
     <div class="pc-date" id="print-date"></div>
 
   <!-- Status card container -->
@@ -69,54 +69,12 @@
 
     <print-brand></print-brand>
 
-    <!-- === CHART === -->
-    <div id="chart-section" style="display:none">
-      <div class="section-card"><h2>命盤摘要</h2><div id="chart-summary"></div></div>
-
-      <div class="section-card">
-        <h2>八字</h2>
-        <div class="table-wrap">
-          <table>
-            <thead><tr>
-              <th>柱</th><th>天幹</th><th>地支</th><th>藏幹</th><th>納音</th><th>神煞</th>
-            </tr></thead>
-            <tbody id="chart-table-body"></tbody>
-          </table>
-        </div>
-      </div>
-
-      <div class="section-card">
-        <h2>五行分布</h2>
-        <div class="flex flex-wrap gap-2" id="chart-wuxing"></div>
-      </div>
-
-      <div id="chart-tiaohou" style="display:none"></div>
-      <div id="chart-dayun" style="display:none"></div>
-
-      <div class="section-card">
-        <h2>命理解讀</h2>
-        <div class="report-content" id="chart-interpretation"></div>
-      </div>
-    </div>
-
-    <!-- === BOND === -->
-    <div id="bond-section" style="display:none">
-      <div id="bond-day-masters"></div>
-      <div id="bond-gan-rel" style="display:none"></div>
-      <div id="bond-zhi-rel" style="display:none"></div>
-      <div id="bond-key-hints" style="display:none"></div>
-      <div class="section-card">
-        <h2>合盤解讀</h2>
-        <div class="report-content" id="bond-interpretation"></div>
-      </div>
-    </div>
-
     <!-- === NAMING === -->
     <div id="naming-section" style="display:none">
       <div id="naming-summary"></div>
       <div id="naming-candidates"></div>
       <div class="section-card">
-        <h2>起名解讀</h2>
+        <h2 data-i18n="report.section.naming">起名解讀</h2>
         <div class="report-content" id="naming-interpretation"></div>
       </div>
     </div>

@@ -25,13 +25,12 @@ func computeChart(bz ganzhi.Bazi, st tianwen.SolarTime, gender ganzhi.Gender) Ch
 				break
 			}
 		}
-		pz := ganzhi.Zhu{Gan: ps[i].Gan, Zhi: ps[i].Zhi}
-		pi := zhuInfo{Gan: ps[i].Gan, Zhi: ps[i].Zhi, NaYin: ny[i], CangGan: hs[i], ShiShens: tgTable[i], ChangSheng: lsTable[i], ShenSha: shensha[i], IsVoid: isVoid}
-		pi.IsSelfHe = isSelfHe(pz)
+		pi := zhuInfo{Zhu: ps[i], NaYin: ny[i], CangGan: hs[i], ShiShens: tgTable[i], ChangSheng: lsTable[i], ShenSha: shensha[i], IsVoid: isVoid}
+		pi.IsSelfHe = isSelfHe(ps[i])
 		if pi.IsSelfHe {
-			pi.SelfHeName = selfHeName(pz)
+			pi.SelfHeName = selfHeName(ps[i])
 		}
-		pi.IsKuiGang = isKuiGang(pz)
+		pi.IsKuiGang = isKuiGang(ps[i])
 		return pi
 	}
 
@@ -58,7 +57,7 @@ func computeChart(bz ganzhi.Bazi, st tianwen.SolarTime, gender ganzhi.Gender) Ch
 	cr.TiaoHou, _ = computeTiaohou(cr.Ri.Gan, cr.Yue.Zhi)
 	cr.DaYun = computeDaYun(st, bz.Yue, bz.Nian.Gan, bz.Ri.Gan, gender)
 	birthMonth := (int(bz.Yue.Zhi) + 9) % 12 + 1
-	cr.TaiYuanMingGong = computeTaiYuanMingGong(bz.Yue, bz.Nian.Gan, birthMonth, int(bz.Shi.Zhi))
+	cr.SanYuan = computeSanYuan(bz.Yue, bz.Nian.Gan, birthMonth, int(bz.Shi.Zhi))
 	return cr
 }
 
@@ -82,7 +81,7 @@ func computeCangGan(bz ganzhi.Bazi) [4]cangGanOut {
 func computeNaYin(bz ganzhi.Bazi) [4]string {
 	var ny [4]string
 	for i, z := range bz.Slice() {
-		ny[i] = ganzhi.NaYinLabel(z.Gan, z.Zhi)
+		ny[i] = ganzhi.NayinLabel(z.Gan, z.Zhi)
 	}
 	return ny
 }
@@ -179,8 +178,8 @@ func computeNaYinRelations(nayins [4]string) []naYinGuanXi {
 	var rels []naYinGuanXi
 	for i := 0; i < 4; i++ {
 		for j := i + 1; j < 4; j++ {
-			ae := ganzhi.NaYinWuxing(nayins[i])
-			be := ganzhi.NaYinWuxing(nayins[j])
+			ae := ganzhi.NayinWuxing(nayins[i])
+			be := ganzhi.NayinWuxing(nayins[j])
 			rel := "相同"
 			if ae != 0 && be != 0 && ae != be {
 				if ganzhi.Sheng(ae, be) || ganzhi.Sheng(be, ae) {

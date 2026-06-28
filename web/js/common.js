@@ -19,14 +19,29 @@ var i18nextHttpBackend=(function(){let e=[];e.forEach,e.slice;let t=[`__proto__`
       fallbackLng: 'zh-Hant',
       keySeparator: false,
       nsSeparator: false,
-      load: 'languageOnly',
+      load: 'currentOnly',
       backend: { loadPath: '/i18n/{{lng}}.json' },
       detection: { order: ['path', 'navigator'], lookupFromPathIndex: 0, caches: [] }
     });
 
-  document.documentElement.lang = i18next.language;
+  function getNavigatorLocale() {
+    var list = [];
+    if (navigator.languages) {
+      for (var i = 0; i < navigator.languages.length; i++) list.push(navigator.languages[i]);
+    }
+    if (navigator.language) list.push(navigator.language);
+    if (navigator.userLanguage) list.push(navigator.userLanguage);
+    for (var i = 0; i < list.length; i++) {
+      var lang = list[i];
+      if (lang === 'zh-CN' || lang === 'zh-SG' || lang.indexOf('zh-Hans') === 0) return 'zh-Hans';
+      if (lang.indexOf('zh') === 0) return 'zh-Hant';
+      if (lang.indexOf('en') === 0) return 'en';
+    }
+    return 'zh-Hant';
+  }
 
-  var l = i18next.language || 'zh-Hant';
+  var pathLocale = (location.pathname.match(/^\/(zh-Hans|zh-Hant|en)\//) || [])[1];
+  var l = pathLocale || i18next.language || getNavigatorLocale() || 'zh-Hant';
 
   // ── DOM localization ──
   function localizeDOM() {
@@ -39,6 +54,7 @@ var i18nextHttpBackend=(function(){let e=[];e.forEach,e.slice;let t=[`__proto__`
   }
 
   function finish() {
+    document.documentElement.lang = i18next.language;
     localizeDOM();
     setMeta();
     if (!foucDone) { foucDone = true; clearTimeout(foucTimer); style.remove(); }
@@ -113,42 +129,73 @@ var i18nextHttpBackend=(function(){let e=[];e.forEach,e.slice;let t=[`__proto__`
     connectedCallback() {
       var self = this;
       this.style.position = 'relative';
-      build();
+
+      // Close dropdown on outside click (stored for cleanup)
+      this._outsideClick = function(e) {
+        if (!self.contains(e.target)) {
+          var dd = self.querySelector('[data-lang-dropdown]');
+          if (dd) dd.classList.add('hidden');
+        }
+      };
+      document.addEventListener('click', this._outsideClick);
+
+      // Defer build until i18next initialized (async)
+      if (i18next && i18next.isInitialized) {
+        build();
+      } else {
+        i18next.on('initialized', function onInit() {
+          i18next.off('initialized', onInit);
+          build();
+        });
+      }
 
       function build() {
-        var cur = (i18next && i18next.language) || 'zh-Hant';
+        var cur = i18next.language || 'zh-Hant';
         self.innerHTML =
-          '<button data-lang-toggle class="flex items-center gap-1.5 text-amber-400 hover:text-amber-100 transition-colors bg-transparent border-0 cursor-pointer px-3 py-1.5 rounded" aria-label="Switch language">' + SVG + '</button>' +
-          '<div data-lang-dropdown class="hidden absolute right-0 top-full mt-1 bg-white border border-stone-200 rounded-lg shadow-lg py-1 z-50 min-w-[130px]">' +
+          '<button data-lang-toggle class="flex items-center gap-1.5 text-amber-400 hover:text-amber-100 transition-colors bg-transparent border-0 cursor-pointer px-3 py-1.5 rounded" aria-label="Switch language" aria-expanded="false">' + SVG + '</button>' +
+          '<div data-lang-dropdown class="hidden absolute right-0 top-full mt-1 bg-white border border-stone-200 rounded-lg shadow-lg py-1 z-50 min-w-[130px]" role="menu">' +
           LOCALES.map(function(loc) {
             var cls = loc === cur ? 'bg-amber-50 text-amber-700 font-medium block px-4 py-2 text-sm transition-colors' : 'text-stone-600 hover:bg-stone-50 block px-4 py-2 text-sm transition-colors';
-            return '<a href="#" data-lang-option="' + loc + '" class="' + cls + '">' + LANG_NAME[loc] + '</a>';
+            return '<a href="#" data-lang-option="' + loc + '" class="' + cls + '" role="menuitem">' + LANG_NAME[loc] + '</a>';
           }).join('') + '</div>';
 
         var toggle = self.querySelector('[data-lang-toggle]');
         var dropdown = self.querySelector('[data-lang-dropdown]');
         if (!toggle || !dropdown) return;
 
+        function openDropdown() {
+          dropdown.classList.remove('hidden');
+          toggle.setAttribute('aria-expanded', 'true');
+        }
+        function closeDropdown() {
+          dropdown.classList.add('hidden');
+          toggle.setAttribute('aria-expanded', 'false');
+        }
+
         toggle.addEventListener('click', function(e) {
           e.preventDefault(); e.stopPropagation();
-          dropdown.classList.toggle('hidden');
+          dropdown.classList.contains('hidden') ? openDropdown() : closeDropdown();
+        });
+        toggle.addEventListener('keydown', function(e) {
+          if (e.key === 'Escape') { closeDropdown(); toggle.focus(); }
         });
         dropdown.querySelectorAll('[data-lang-option]').forEach(function(opt) {
           opt.addEventListener('click', function(e) {
             e.preventDefault();
-            dropdown.classList.add('hidden');
+            closeDropdown();
             setLang(opt.dataset.langOption);
+          });
+          opt.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') { closeDropdown(); toggle.focus(); }
           });
         });
       }
+    }
 
-      // Close dropdown on outside click
-      document.addEventListener('click', function(e) {
-        if (!self.contains(e.target)) {
-          var dd = self.querySelector('[data-lang-dropdown]');
-          if (dd) dd.classList.add('hidden');
-        }
-      });
+    disconnectedCallback() {
+      if (this._outsideClick) {
+        document.removeEventListener('click', this._outsideClick);
+      }
     }
   }
   customElements.define('lang-switcher', LangSwitcher);
@@ -199,7 +246,7 @@ var i18nextHttpBackend=(function(){let e=[];e.forEach,e.slice;let t=[`__proto__`
         '<footer class="' + cls + '">' +
         '<div class="max-w-4xl mx-auto px-4 flex flex-wrap items-center justify-between gap-4">' +
         '<div class="text-left">' +
-        '<p class="text-stone-600 text-sm" data-i18n="index.footer">灵机 Liki · AI命理助手</p>' +
+        '<p class="text-stone-600 text-sm" data-i18n="index.footer">灵机 Liki · AI 起名顾问</p>' +
         '<p class="text-stone-500 text-xs mt-0.5" data-i18n="site.footer">&copy; 2026 Liki. All rights reserved.</p><p class="text-stone-400 text-xs mt-0.5"><a href="https://github.com/miles-sui/liki" target="_blank" rel="noopener" class="hover:text-stone-600 transition-colors">GitHub</a></p>' +
         '</div>' +
         '<p class="text-xs text-stone-500 flex flex-wrap gap-3">' +
@@ -217,10 +264,11 @@ var i18nextHttpBackend=(function(){let e=[];e.forEach,e.slice;let t=[`__proto__`
 
   class PrintCover extends HTMLElement {
     connectedCallback() {
-      var product = this.getAttribute('product') || '';
+      var productKey = this.getAttribute('data-i18n-product') || '';
+      var product = (productKey ? i18next.t(productKey) : '') || this.getAttribute('product') || '';
       this.innerHTML =
         '<div class="print-cover no-print" style="display:none;">' +
-        '<h1 class="font-brand">灵机 Liki</h1>' +
+        '<h1 class="font-brand">Liki</h1>' +
         '<div class="pc-sub" id="print-cover-sub">' + esc(product) + '</div>' +
         '<div class="pc-date" id="print-date"></div></div>';
     }
@@ -231,7 +279,7 @@ var i18nextHttpBackend=(function(){let e=[];e.forEach,e.slice;let t=[`__proto__`
 
   class PrintBrand extends HTMLElement {
     connectedCallback() {
-      this.innerHTML = '<div class="print-brand no-print" style="display:none;" id="print-brand" data-i18n="report.printBrand">灵机 Liki · 命理報告</div>';
+      this.innerHTML = '<div class="print-brand no-print" style="display:none;" id="print-brand" data-i18n="report.printBrand">灵机 Liki · 起名報告</div>';
     }
   }
   customElements.define('print-brand', PrintBrand);
@@ -242,60 +290,16 @@ var i18nextHttpBackend=(function(){let e=[];e.forEach,e.slice;let t=[`__proto__`
     connectedCallback() {
       var variant = this.getAttribute('variant') || 'static';
       var pb = variant === 'dynamic'
-        ? '<button id="btn-print" class="btn-print" aria-label="打印 / 保存 PDF"><span aria-hidden="true">🖨</span> 打印 / 保存 PDF</button>'
-        : '<button class="btn-print" onclick="window.print()" data-i18n="report.print" aria-label="打印 / 保存 PDF"><span aria-hidden="true">🖨</span> 打印 / 保存 PDF</button>';
+        ? '<button id="btn-print" class="btn-print" data-i18n-aria="report.printAriaLabel" aria-label="' + i18next.t('report.printAriaLabel') + '"><span aria-hidden="true">🖨</span> ' + i18next.t('report.print') + '</button>'
+        : '<button class="btn-print" onclick="window.print()" data-i18n="report.print" data-i18n-aria="report.printAriaLabel" aria-label="' + i18next.t('report.printAriaLabel') + '"><span aria-hidden="true">🖨</span> ' + i18next.t('report.print') + '</button>';
       var sb = variant === 'dynamic'
-        ? '<button id="btn-share" class="btn-share" aria-label="分享"><span aria-hidden="true">↗</span> 分享</button>'
-        : '<button class="btn-share" onclick="shareDemo()" data-i18n="report.share" aria-label="分享"><span aria-hidden="true">↗</span> 分享</button>';
+        ? '<button id="btn-share" class="btn-share" data-i18n-aria="report.shareAriaLabel" aria-label="' + i18next.t('report.shareAriaLabel') + '"><span aria-hidden="true">↗</span> ' + i18next.t('report.share') + '</button>'
+        : '<button class="btn-share" onclick="shareDemo()" data-i18n="report.share" data-i18n-aria="report.shareAriaLabel" aria-label="' + i18next.t('report.shareAriaLabel') + '"><span aria-hidden="true">↗</span> ' + i18next.t('report.share') + '</button>';
       this.innerHTML = '<div class="print-bar no-print" style="display:flex;gap:.5rem;justify-content:center;">' + pb + sb + '</div>';
     }
   }
   customElements.define('print-bar', PrintBar);
 
-  // ── <sample-banner> ──
-
-  class SampleBanner extends HTMLElement {
-    connectedCallback() {
-      this.innerHTML = '<div class="max-w-4xl mx-auto px-4 pt-2"><p class="text-xs text-stone-500 text-center" data-i18n="demo.sampleNote">此为示例报告，实际内容根据您的命盘生成</p></div>';
-    }
-  }
-  customElements.define('sample-banner', SampleBanner);
-
-  // ── <security-section> ──
-
-  class SecuritySection extends HTMLElement {
-    connectedCallback() {
-      this.innerHTML =
-        '<section class="mt-12">' +
-        '<h2 class="text-xl font-bold text-stone-800 mb-6 text-center">安全与隐私</h2>' +
-        '<div class="trust-badges" role="list">' +
-        '<div class="trust-badge" role="listitem"><span aria-hidden="true">🔒</span> SSL/TLS 加密传输</div>' +
-        '<div class="trust-badge" role="listitem"><span aria-hidden="true">🛡</span> 隐私数据保护</div>' +
-        '<div class="trust-badge" role="listitem"><span aria-hidden="true">🔄</span> 支付后自动清除敏感数据</div>' +
-        '</div></section>';
-    }
-  }
-  customElements.define('security-section', SecuritySection);
-
-  // ── <cta-section> ──
-
-  class CtaSection extends HTMLElement {
-    connectedCallback() {
-      var p = this.getAttribute('product') || '';
-      var fallbacks = {
-        chart:  ['获取您的专属八字报告', 'AI 深度解读您的命理格局、用神喜忌、大运流年，仅需 $9.90'],
-        bond:   ['获取您和 TA 的专属合盘报告', 'AI 深度解读你们的合盘关系，仅需 $19.90'],
-        naming: ['获取您的专属起名报告', 'AI 精选吉祥名字，仅需 $29.90'],
-      };
-      var fb = fallbacks[p] || ['', ''];
-      this.innerHTML =
-        '<div class="cta-bar no-print">' +
-        '<h2 data-i18n="demo.ctaHeading.' + p + '">' + esc(fb[0]) + '</h2>' +
-        '<p data-i18n="demo.ctaDesc.' + p + '">' + esc(fb[1]) + '</p>' +
-        '<a href="/chat.html" class="btn btn-primary" data-i18n="demo.ctaButton">立即获取 →</a></div>';
-    }
-  }
-  customElements.define('cta-section', CtaSection);
 })();
 fetch('/api/analytics/pageview', {
   method: 'POST',

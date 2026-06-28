@@ -52,7 +52,7 @@ func taiSui(year int) ganzhi.Zhi {
 // lookupRiZhu returns the stem-branch and na-yin for a given date.
 func lookupRiZhu(t time.Time) riZhuInfo {
 	p := tianwen.RiZhu(tianwen.GregorianTime(t))
-	return riZhuInfo{Gan: p.Gan, Zhi: p.Zhi, NaYin: ganzhi.NaYinLabel(p.Gan, p.Zhi)}
+	return riZhuInfo{Gan: p.Gan, Zhi: p.Zhi, NaYin: ganzhi.NayinLabel(p.Gan, p.Zhi)}
 }
 
 // lookupJianChu returns the JianChu (建除) god for a given date.

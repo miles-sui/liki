@@ -1,4 +1,4 @@
-package handler
+package http
 
 import (
 	"io"
@@ -111,31 +111,6 @@ func TestDecodeAndValidate_WritesErrorResponse(t *testing.T) {
 	if err != nil { t.Fatal(err) }
 	if !strings.Contains(string(body), "error") {
 		t.Error("error response should contain 'error' key")
-	}
-}
-
-func TestSanitizeLocation(t *testing.T) {
-	tests := []struct {
-		name     string
-		input    string
-		expected string
-	}{
-		{"chinese_city", "北京", "北京"},
-		{"english_city", "Beijing", "Beijing"},
-		{"city_with_space", "New York", "New York"},
-		{"city_with_hyphen", "New-York", "New-York"},
-		{"dangerous_chars", "foo; rm -rf /", ""},
-		{"too_long", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", ""},
-		{"empty", "", ""},
-		{"shell_injection", "$(whoami)", ""},
-		{"angle_brackets", "<script>", ""},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := sanitizeLocation(tt.input); got != tt.expected {
-				t.Errorf("sanitizeLocation(%q) = %q, want %q", tt.input, got, tt.expected)
-			}
-		})
 	}
 }
 

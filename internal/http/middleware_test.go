@@ -1,4 +1,4 @@
-package handler
+package http
 
 import (
 	"net/http"
@@ -10,28 +10,42 @@ import (
 func TestDetectCurrency_CN(t *testing.T) {
 	r := httptest.NewRequest("GET", "/", nil)
 	r.Header.Set("CF-IPCountry", "CN")
-	if got := detectCurrency(r); got != "CNY" {
-		t.Errorf("detectCurrency(CN) = %s, want CNY", got)
+	if got := detectCurrency(r, ""); got != "CNY" {
+		t.Errorf("detectCurrency(CF=CN, geo=) = %s, want CNY", got)
+	}
+}
+
+func TestDetectCurrency_GeoCountryCN(t *testing.T) {
+	r := httptest.NewRequest("GET", "/", nil)
+	if got := detectCurrency(r, "CN"); got != "CNY" {
+		t.Errorf("detectCurrency(CF=, geo=CN) = %s, want CNY", got)
 	}
 }
 
 func TestDetectCurrency_NonCN(t *testing.T) {
-	tests := []string{"US", "JP", "GB", ""}
-	for _, country := range tests {
-		t.Run("country="+country, func(t *testing.T) {
+	tests := []struct {
+		country, want string
+	}{
+		{"US", "USD"},
+		{"JP", "USD"},
+		{"GB", "USD"},
+		{"", "CNY"},
+	}
+	for _, tc := range tests {
+		t.Run("country="+tc.country, func(t *testing.T) {
 			r := httptest.NewRequest("GET", "/", nil)
-			if country != "" {
-				r.Header.Set("CF-IPCountry", country)
+			if tc.country != "" {
+				r.Header.Set("CF-IPCountry", tc.country)
 			}
-			if got := detectCurrency(r); got != "USD" {
-				t.Errorf("detectCurrency(%s) = %s, want USD", country, got)
+			if got := detectCurrency(r, ""); string(got) != tc.want {
+				t.Errorf("detectCurrency(%s) = %s, want %s", tc.country, got, tc.want)
 			}
 		})
 	}
 }
 
 func TestCORSMiddleware_Headers(t *testing.T) {
-	handler := CORSMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	handler := CORSMiddleware(false, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}))
 
@@ -52,7 +66,7 @@ func TestCORSMiddleware_Headers(t *testing.T) {
 }
 
 func TestCORSMiddleware_NoOrigin(t *testing.T) {
-	handler := CORSMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	handler := CORSMiddleware(false, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}))
 
@@ -66,7 +80,7 @@ func TestCORSMiddleware_NoOrigin(t *testing.T) {
 }
 
 func TestCORSMiddleware_UnknownOrigin(t *testing.T) {
-	handler := CORSMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	handler := CORSMiddleware(false, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}))
 
@@ -81,7 +95,7 @@ func TestCORSMiddleware_UnknownOrigin(t *testing.T) {
 }
 
 func TestCORSMiddleware_OPTIONS(t *testing.T) {
-	handler := CORSMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	handler := CORSMiddleware(false, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		t.Error("handler should not be called for OPTIONS")
 	}))
 
@@ -146,27 +160,8 @@ func TestSecurityHeaders(t *testing.T) {
 	}
 }
 
-func TestSetDevMode(t *testing.T) {
-	// Save and restore
-	prev := devMode
-	defer func() { devMode = prev }()
-
-	SetDevMode(true)
-	if !devMode {
-		t.Error("devMode should be true after SetDevMode(true)")
-	}
-	SetDevMode(false)
-	if devMode {
-		t.Error("devMode should be false after SetDevMode(false)")
-	}
-}
-
 func TestCORSMiddleware_DevMode(t *testing.T) {
-	prev := devMode
-	devMode = true
-	defer func() { devMode = prev }()
-
-	handler := CORSMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	handler := CORSMiddleware(true, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}))
 

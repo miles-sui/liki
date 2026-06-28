@@ -349,7 +349,7 @@ func addSiFei(out *[4][]shenShaEntry, bz ganzhi.Bazi, seasonIdx int) {
 
 func addShiEDaBai(out *[4][]shenShaEntry, bz ganzhi.Bazi) {
 	zhus := bz.Slice()
-	if _, ok := shiEDaBai[ganzhi.SixtyCycleName(zhus[2].Gan, zhus[2].Zhi)]; ok {
+	if _, ok := shiEDaBai[ganzhi.SixtyCycleIndex(zhus[2].Gan, zhus[2].Zhi)]; ok {
 		(*out)[2] = append((*out)[2], shenShaEntry{
 			Name: "十恶大败", Category: catXiong, Description: "日柱十恶大败日，主财库不聚，须谨慎理财",
 		})
@@ -374,7 +374,7 @@ func appendShenShaByStemLookup(out *[4][]shenShaEntry, bz ganzhi.Bazi, s ganzhi.
 // computeKongWang returns pillar indices whose branches fall in the void (空亡)
 // of the day pillar's 旬.
 func computeKongWang(bz ganzhi.Bazi) []int {
-	sbIdx := ganzhi.SixtyCycleName(bz.Ri.Gan, bz.Ri.Zhi)
+	sbIdx := ganzhi.SixtyCycleIndex(bz.Ri.Gan, bz.Ri.Zhi)
 	xunIdx := sbIdx / 10
 
 	voidPairs := [6][2]ganzhi.Zhi{

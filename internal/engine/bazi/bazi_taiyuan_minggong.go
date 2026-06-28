@@ -4,15 +4,15 @@ import (
 	"liki/internal/engine/ganzhi"
 )
 
-// TaiYuanMingGong holds the 胎元, 命宫 and 身宫 pillars for a chart.
-type TaiYuanMingGong struct {
+// SanYuan holds the 胎元, 命宫 and 身宫 pillars for a chart.
+type SanYuan struct {
 	TaiYuan  ganzhi.Zhu `json:"tai_yuan"`
 	MingGong ganzhi.Zhu `json:"ming_gong"`
 	ShenGong ganzhi.Zhu `json:"shen_gong"`
 }
 
-// computeTaiYuanMingGong computes the 三垣 (three palaces): 胎元, 命宫, 身宫.
-func computeTaiYuanMingGong(monthZhu ganzhi.Zhu, yearStem ganzhi.Gan, birthMonth, birthHour int) TaiYuanMingGong {
+// computeSanYuan computes the 三垣 (three palaces): 胎元, 命宫, 身宫.
+func computeSanYuan(monthZhu ganzhi.Zhu, yearStem ganzhi.Gan, birthMonth, birthHour int) SanYuan {
 	// 胎元: month stem+1 (mod 10), month branch+3 (mod 12)
 	tyStem := int(monthZhu.Gan) + 1
 	if tyStem > 10 {
@@ -60,5 +60,5 @@ func computeTaiYuanMingGong(monthZhu ganzhi.Zhu, yearStem ganzhi.Gan, birthMonth
 
 	shenGong := ganzhi.Zhu{Gan: ganzhi.Gan(sgStem), Zhi: ganzhi.Zhi(sgBranch)}
 
-	return TaiYuanMingGong{TaiYuan: taiYuan, MingGong: mingGong, ShenGong: shenGong}
+	return SanYuan{TaiYuan: taiYuan, MingGong: mingGong, ShenGong: shenGong}
 }

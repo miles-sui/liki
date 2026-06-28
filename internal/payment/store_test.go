@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"strings"
 	"testing"
-	"liki/internal/agent"
+	"liki/internal/product"
 
 	"time"
 
@@ -70,7 +70,7 @@ func TestCreateAndGetOrder(t *testing.T) {
 	ctx := context.Background()
 
 	orderID := "test-order-1"
-	if err := store.CreateOrder(ctx, orderID, agent.ProductChart, 990, "USD", `{"chart":{}}`, "", "zh-Hans", ""); err != nil {
+	if err := store.CreateOrder(ctx, orderID, product.ProductNaming, 990, "USD", "", `{"chart":{}}`, "", ""); err != nil {
 		t.Fatalf("CreateOrder: %v", err)
 	}
 
@@ -81,7 +81,7 @@ func TestCreateAndGetOrder(t *testing.T) {
 	if o.OrderID != orderID {
 		t.Errorf("OrderID = %q, want %q", o.OrderID, orderID)
 	}
-	if o.Product != agent.ProductChart {
+	if o.Product != product.ProductNaming {
 		t.Errorf("Product = %q, want chart", o.Product)
 	}
 	if o.Amount != 990 {
@@ -110,22 +110,22 @@ func TestMarkPaid(t *testing.T) {
 	ctx := context.Background()
 
 	orderID := "test-order-paid"
-	if err := store.CreateOrder(ctx, orderID, agent.ProductBond, 1990, "USD", `{"bond":{}}`, "", "zh-Hans", ""); err != nil {
+	if err := store.CreateOrder(ctx, orderID, product.ProductNaming, 1990, "USD", "", `{"bond":{}}`, "", ""); err != nil {
 		t.Fatalf("CreateOrder: %v", err)
 	}
 	if err := store.UpdateEmail(ctx, orderID, "user@test.com"); err != nil {
 		t.Fatalf("UpdateEmail: %v", err)
 	}
 
-	_, email, product, _, err := store.MarkPaidIdempotent(ctx, orderID, "pay-123")
+	_, email, prod, err := store.MarkPaidIdempotent(ctx, orderID, "pay-123")
 	if err != nil {
 		t.Fatalf("MarkPaid: %v", err)
 	}
 	if email != "user@test.com" {
 		t.Errorf("email = %q, want user@test.com", email)
 	}
-	if product != agent.ProductBond {
-		t.Errorf("product = %q, want bond", product)
+	if prod != product.ProductNaming {
+		t.Errorf("product = %q, want bond", prod)
 	}
 
 	o, err := store.GetOrder(ctx, orderID)
@@ -158,7 +158,7 @@ func TestMarkPaid_NotFound(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewStore: %v", err)
 	}
-	_, _, _, _, err = store.MarkPaidIdempotent(context.Background(), "nonexistent", "pay-1")
+	_, _, _, err = store.MarkPaidIdempotent(context.Background(), "nonexistent", "pay-1")
 	if err != ErrOrderNotFound {
 		t.Errorf("expected ErrOrderNotFound, got %v", err)
 	}
@@ -173,7 +173,7 @@ func TestUpdateLlmJSON(t *testing.T) {
 	ctx := context.Background()
 
 	orderID := "test-order-llm"
-	if err := store.CreateOrder(ctx, orderID, agent.ProductNaming, 2990, "USD", `{"naming":{}}`, "", "zh-Hans", ""); err != nil {
+	if err := store.CreateOrder(ctx, orderID, product.ProductNaming, 2990, "USD", "", `{"naming":{}}`, "", ""); err != nil {
 		t.Fatalf("CreateOrder: %v", err)
 	}
 	if err := store.UpdateLlmJSON(ctx, orderID, "# Report\n\ncontent"); err != nil {
@@ -198,15 +198,15 @@ func TestCleanStale(t *testing.T) {
 	ctx := context.Background()
 
 	// Create a paid order (should survive).
-	if err := store.CreateOrder(ctx, "paid-order", agent.ProductChart, 990, "USD", `{}`, "", "zh-Hans", ""); err != nil {
+	if err := store.CreateOrder(ctx, "paid-order", product.ProductNaming, 990, "USD", "", `{}`, "", ""); err != nil {
 		t.Fatalf("CreateOrder paid: %v", err)
 	}
-	if _, _, _, _, err := store.MarkPaidIdempotent(ctx, "paid-order", "pay-1"); err != nil {
+	if _, _, _, err := store.MarkPaidIdempotent(ctx, "paid-order", "pay-1"); err != nil {
 		t.Fatalf("MarkPaidIdempotent: %v", err)
 	}
 
 	// Create a pending order (should be cleaned).
-	if err := store.CreateOrder(ctx, "pending-order", agent.ProductChart, 990, "USD", `{}`, "", "zh-Hans", ""); err != nil {
+	if err := store.CreateOrder(ctx, "pending-order", product.ProductNaming, 990, "USD", "", `{}`, "", ""); err != nil {
 		t.Fatalf("CreateOrder pending: %v", err)
 	}
 	// Backdate created_at so it falls within the stale window.
@@ -256,7 +256,7 @@ func TestSchemaColumnMatch(t *testing.T) {
 	}
 
 	// Columns used in CreateOrder INSERT (must be subset of schema).
-	insertCols := []string{"order_id", "product", "amount", "currency", "chart_json", "llm_json"}
+	insertCols := []string{"order_id", "product", "amount", "currency", "email", "chart_json", "llm_json"}
 
 	schemaSet := make(map[string]bool, len(schemaCols))
 	for _, c := range schemaCols {
@@ -292,11 +292,11 @@ func TestMarkPaid_Idempotent(t *testing.T) {
 	ctx := context.Background()
 
 	orderID := "test-idempotent"
-	if err := store.CreateOrder(ctx, orderID, agent.ProductChart, 990, "USD", `{}`, "", "zh-Hans", ""); err != nil {
+	if err := store.CreateOrder(ctx, orderID, product.ProductNaming, 990, "USD", "", `{}`, "", ""); err != nil {
 		t.Fatalf("CreateOrder: %v", err)
 	}
 
-	newPayment, _, _, _, err := store.MarkPaidIdempotent(ctx, orderID, "pay-1")
+	newPayment, _, _, err := store.MarkPaidIdempotent(ctx, orderID, "pay-1")
 	if err != nil {
 		t.Fatalf("first MarkPaid: %v", err)
 	}
@@ -304,54 +304,12 @@ func TestMarkPaid_Idempotent(t *testing.T) {
 		t.Error("first MarkPaid should be new payment")
 	}
 
-	newPayment2, _, _, _, err := store.MarkPaidIdempotent(ctx, orderID, "pay-2")
+	newPayment2, _, _, err := store.MarkPaidIdempotent(ctx, orderID, "pay-2")
 	if err != nil {
 		t.Fatalf("second MarkPaid: %v", err)
 	}
 	if newPayment2 {
 		t.Error("second MarkPaid should not be new payment")
-	}
-}
-
-func TestUpdateLlmJSONIfEmpty(t *testing.T) {
-	db := openTestDB(t)
-	store, err := NewStore(db)
-	if err != nil {
-		t.Fatalf("NewStore: %v", err)
-	}
-	ctx := context.Background()
-
-	orderID := "test-llm-if-empty"
-	if err := store.CreateOrder(ctx, orderID, agent.ProductChart, 990, "USD", `{}`, "", "zh-Hans", ""); err != nil {
-		t.Fatalf("CreateOrder: %v", err)
-	}
-
-	updated, err := store.UpdateLlmJSONIfEmpty(ctx, orderID, "report content")
-	if err != nil {
-		t.Fatalf("UpdateLlmJSONIfEmpty: %v", err)
-	}
-	if !updated {
-		t.Error("first UpdateLlmJSONIfEmpty should have updated")
-	}
-
-	o, err := store.GetOrder(ctx, orderID)
-	if err != nil { t.Fatalf("GetOrder: %v", err) }
-	if o.LlmJSON != "report content" {
-		t.Errorf("LlmJSON = %q, want 'report content'", o.LlmJSON)
-	}
-
-	updated2, err := store.UpdateLlmJSONIfEmpty(ctx, orderID, "new content")
-	if err != nil {
-		t.Fatalf("second UpdateLlmJSONIfEmpty: %v", err)
-	}
-	if updated2 {
-		t.Error("second UpdateLlmJSONIfEmpty should not have updated")
-	}
-
-	o2, err := store.GetOrder(ctx, orderID)
-	if err != nil { t.Fatalf("GetOrder: %v", err) }
-	if o2.LlmJSON != "report content" {
-		t.Errorf("LlmJSON after second call = %q, want 'report content'", o2.LlmJSON)
 	}
 }
 
@@ -363,10 +321,10 @@ func TestCreateOrder_DuplicateID(t *testing.T) {
 	}
 	ctx := context.Background()
 
-	if err := store.CreateOrder(ctx, "dup-order", agent.ProductChart, 990, "USD", `{}`, "", "zh-Hans", ""); err != nil {
+	if err := store.CreateOrder(ctx, "dup-order", product.ProductNaming, 990, "USD", "", `{}`, "", ""); err != nil {
 		t.Fatalf("CreateOrder: %v", err)
 	}
-	err = store.CreateOrder(ctx, "dup-order", agent.ProductBond, 1990, "CNY", `{}`, "", "zh-Hans", "")
+	err = store.CreateOrder(ctx, "dup-order", product.ProductNaming, 1990, "CNY", "", `{}`, "", "")
 	if err == nil {
 		t.Error("expected error for duplicate order_id")
 	}

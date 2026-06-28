@@ -4,17 +4,17 @@
 
 ## 数据来源
 
-- chart（`POST /api/ziwei/chart`）：
+- chart（`ziwei.chart`）：
   - `palaces[]` — 十二宫。每宫含 `index`/`name`/`gan`/`zhi`/`is_body_palace`/`stars[]`。
   - `stars[]` — 星曜。每星含 `star`(索引)/`name`/`is_major`/`si_hua`(有则禄权科忌)/`brightness`(庙旺利平陷)。
   - `ming_gong` — 命宫索引（恒为0）、`shen_gong` — 身宫索引、`ju_shu`/`ju_shu_name` — 局数、`ziwei_pos` — 紫微星宫位。
   - `si_hua` — 本命四化（starIndex→禄权科忌）、`year_gan`/`hour_zhi` — 年干/时支、`birth_year`/`gender`。
   - `patterns[]` — 格局。每项 `name`/`description`/`score`（0下格、1中格、2上格）。
-- daxian（`POST /api/ziwei/daxian`）：`[{start_age, end_age, palace, name}]`，12项，每项为十年大限。
-- liunian（`POST /api/ziwei/liunian`）：`ming_gong`/`ming_gong_name`、`si_hua`（流年四化）、`si_hua_palace`（各化星落宫）、`minor_stars`（流年辅星位置）。
-- liuyue（`POST /api/ziwei/liuyue`）：`ming_gong`/`ming_gong_name`/`si_hua`。
-- liuri（`POST /api/ziwei/liuri`）：`ming_gong`/`ming_gong_name`/`si_hua`。
-- bond（`POST /api/ziwei/bond`）：`a_into_b`/`b_into_a`（双方命宫互入）、`star_cross[]`（`star`/`from_a`/`into_b`）、`sihua_cross[]`（`star`/`type`/`into_b`）。
+- daxian（`ziwei.daxian`）：`[{start_age, end_age, palace, name}]`，12项，每项为十年大限。
+- liunian（`ziwei.liunian`）：`ming_gong`/`ming_gong_name`、`si_hua`（流年四化）、`si_hua_palace`（各化星落宫）、`minor_stars`（流年辅星位置）。
+- liuyue（`ziwei.liuyue`）：`ming_gong`/`ming_gong_name`/`si_hua`。
+- liuri（`ziwei.liuri`）：`ming_gong`/`ming_gong_name`/`si_hua`。
+- bond（`ziwei.bond`）：`a_into_b`/`b_into_a`（双方命宫互入）、`star_cross[]`（`star`/`from_a`/`into_b`）、`sihua_cross[]`（`star`/`type`/`into_b`）。
 
 只引用数据中实际存在的字段。若某字段数据中不存在，跳过该分析维度，不编造。
 

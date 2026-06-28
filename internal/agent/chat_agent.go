@@ -4,14 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log/slog"
 	"strings"
 	"time"
 
-
 	"liki/internal/llm"
-
-	"github.com/google/uuid"
 )
 
 func emitIf(fn func(ChatEvent), ev ChatEvent) {
@@ -27,10 +23,10 @@ type ChatEventType string
 const (
 	EventTextDelta     ChatEventType = "text-delta"
 	EventPhase         ChatEventType = "phase"
-	EventDone          ChatEventType = "done"
 	EventError         ChatEventType = "error"
 	EventThinking      ChatEventType = "thinking"
 	EventThinkingDelta ChatEventType = "thinking-delta"
+	EventReportReady   ChatEventType = "report-ready"
 )
 
 // ChatEvent is emitted during streaming report generation and sent as SSE.
@@ -40,21 +36,35 @@ type ChatEvent struct {
 	Data    any           `json:"data,omitempty"`
 }
 
+// IsNamingReport returns true if the assistant content contains a naming report heading.
+// Matches lines starting with "# " (h1) followed by "起名报告" (Simplified or Traditional).
+func IsNamingReport(content string) bool {
+	for _, line := range strings.Split(content, "\n") {
+		line = strings.TrimSpace(line)
+		if !strings.HasPrefix(line, "# ") {
+			continue
+		}
+		if strings.Contains(line, "起名报告") || strings.Contains(line, "起名報吿") {
+			return true
+		}
+	}
+	return false
+}
+
 const (
-	defaultCurrency  = "USD"
 	chatRoundTimeout = 120 * time.Second
 	maxChatRounds    = 20
 )
 
-// Chat runs the full chat pipeline: collection → compute → teaser → Q&A → purchase.
-// onEvent receives text-delta and phase events for real-time client feedback; may be nil.
-func (a *ChatAgent) Chat(ctx context.Context, locale string, messages []llm.Message, onEvent func(ChatEvent), orderCreator OrderCreator, amounts map[Product]int) (*ChatResult, error) {
+// NamingChat runs the naming chat pipeline with tool-calling.
+// onEvent receives SSE events for real-time client feedback; may be nil.
+func (a *ChatAgent) NamingChat(ctx context.Context, locale string, messages []llm.Message, onEvent func(ChatEvent)) ([]llm.Message, error) {
 	if len(messages) == 0 {
-		return nil, fmt.Errorf("agent: chat: no messages")
+		return nil, fmt.Errorf("agent: naming chat: no messages")
 	}
 	emitIf(onEvent, ChatEvent{Type: EventThinking})
 
-	msgs := a.ensureSystemPrompt(locale, messages)
+	msgs := a.ensureNamingPrompt(locale, messages)
 	tools := a.tools.Schemas()
 
 	for round := 0; round < maxChatRounds; round++ {
@@ -63,7 +73,7 @@ func (a *ChatAgent) Chat(ctx context.Context, locale string, messages []llm.Mess
 		streamCh, err := a.llm.ChatStreamWithTools(roundCtx, msgs, tools)
 		if err != nil {
 			roundCancel()
-			return nil, fmt.Errorf("agent: chat round %d: %w", round, err)
+			return nil, fmt.Errorf("agent: naming round %d: %w", round, err)
 		}
 
 		var contentBuf strings.Builder
@@ -100,31 +110,6 @@ func (a *ChatAgent) Chat(ctx context.Context, locale string, messages []llm.Mess
 		}
 
 		for _, tc := range finalToolCalls {
-			if tc.Function.Name == "purchase" {
-				purchase, err := a.handlePurchase(ctx, tc, msgs, orderCreator, amounts, locale)
-				if err != nil {
-					roundCancel()
-					return nil, err
-				}
-
-				msgs = append(msgs, llm.Message{
-					Role:       llm.RoleTool,
-					Content:    fmt.Sprintf(`{"status":"ok","order_id":%q}`, purchase.OrderID),
-					ToolCallID: tc.ID,
-				})
-
-				emitIf(onEvent, ChatEvent{
-					Type:    EventPhase,
-					Content: "正在创建订单…",
-				})
-
-				roundCancel()
-				return &ChatResult{
-					Messages: msgs,
-					Purchase: purchase,
-				}, nil
-			}
-
 			result, err := a.tools.Execute(ctx, tc.Function.Name, json.RawMessage(tc.Function.Arguments))
 			if err != nil {
 				result = json.RawMessage(fmt.Sprintf(`{"error":%q}`, err.Error()))
@@ -145,133 +130,13 @@ func (a *ChatAgent) Chat(ctx context.Context, locale string, messages []llm.Mess
 		roundCancel()
 	}
 
-	return &ChatResult{Messages: msgs}, nil
+	return msgs, nil
 }
 
-// handlePurchase extracts product from purchase args, finds the corresponding
-// compute result and Q&A, and creates an order.
-func (a *ChatAgent) handlePurchase(ctx context.Context, tc llm.ToolCall, msgs []llm.Message, orderCreator OrderCreator, amounts map[Product]int, locale string) (*PurchaseInfo, error) {
-	var args struct {
-		Product string `json:"product"`
-		Email   string `json:"email"`
-	}
-	if err := json.Unmarshal(json.RawMessage(tc.Function.Arguments), &args); err != nil {
-		return nil, fmt.Errorf("agent: purchase: %w", err)
-	}
-	product := Product(args.Product)
-
-	chartJSON := findComputeResult(msgs, string(product))
-	if chartJSON == nil {
-		return nil, fmt.Errorf("agent: purchase: no compute result for %s", product)
-	}
-
-	qaJSON := extractQAMessages(msgs, string(product))
-
-	// Embed Q&A into chart JSON so the full report can reference user questions.
-	if len(qaJSON) > 0 {
-		var chartMap map[string]json.RawMessage
-		if err := json.Unmarshal(chartJSON, &chartMap); err == nil {
-			chartMap["_qa"] = qaJSON
-			var err error
-			chartJSON, err = json.Marshal(chartMap)
-			if err != nil {
-				return nil, fmt.Errorf("agent: purchase: marshal chart+qa: %w", err)
-			}
-		} else {
-			slog.Warn("agent: purchase: chart JSON is not an object, QA not embedded", "err", err)
-		}
-	}
-
-	amount, ok := amounts[product]
-	if !ok {
-		return nil, fmt.Errorf("agent: purchase: no amount configured for %s", product)
-	}
-
-	orderID := uuid.New().String()
-	if err := orderCreator.CreateOrder(ctx, orderID, product, amount, defaultCurrency, string(chartJSON), "", locale, ""); err != nil {
-		return nil, fmt.Errorf("agent: create order: %w", err)
-	}
-
-	if args.Email != "" {
-		if err := orderCreator.UpdateEmail(ctx, orderID, args.Email); err != nil {
-			slog.Warn("agent: update email for order", "orderID", orderID, "err", err)
-		}
-	}
-
-	return &PurchaseInfo{
-		OrderID: orderID,
-		Amount:  amount,
-		Product: product,
-	}, nil
-}
-
-func (a *ChatAgent) ensureSystemPrompt(locale string, messages []llm.Message) []llm.Message {
+func (a *ChatAgent) ensureNamingPrompt(locale string, messages []llm.Message) []llm.Message {
 	if len(messages) > 0 && messages[0].Role == llm.RoleSystem {
 		return messages
 	}
-	return append([]llm.Message{{Role: llm.RoleSystem, Content: a.systemPrompt(locale)}}, messages...)
-}
-
-func findComputeResult(msgs []llm.Message, product string) json.RawMessage {
-	for i := len(msgs) - 1; i >= 0; i-- {
-		if msgs[i].Role != llm.RoleTool {
-			continue
-		}
-		var wrapper struct {
-			Product string          `json:"_product"`
-			Data    json.RawMessage `json:"data"`
-		}
-		if err := json.Unmarshal([]byte(msgs[i].Content), &wrapper); err != nil {
-			continue
-		}
-		if wrapper.Product == product {
-			return wrapper.Data
-		}
-	}
-	return nil
-}
-
-// extractQAMessages extracts user and assistant messages after the last
-// compute_* tool result for the given product.
-func extractQAMessages(msgs []llm.Message, product string) json.RawMessage {
-	toolResultIdx := -1
-	for i := len(msgs) - 1; i >= 0; i-- {
-		if msgs[i].Role != llm.RoleTool {
-			continue
-		}
-		var wrapper struct {
-			Product string `json:"_product"`
-		}
-		if err := json.Unmarshal([]byte(msgs[i].Content), &wrapper); err != nil {
-			continue
-		}
-		if wrapper.Product == product {
-			toolResultIdx = i
-			break
-		}
-	}
-	if toolResultIdx < 0 {
-		return nil
-	}
-
-	// Collect user and assistant messages after the tool result.
-	type qaMsg struct {
-		Role    string `json:"role"`
-		Content string `json:"content"`
-	}
-	var qa []qaMsg
-	for i := toolResultIdx + 1; i < len(msgs); i++ {
-		m := msgs[i]
-		if m.Role == llm.RoleUser || m.Role == llm.RoleAssistant {
-			qa = append(qa, qaMsg{Role: string(m.Role), Content: m.Content})
-		}
-	}
-	if len(qa) == 0 {
-		return nil
-	}
-	raw, err := json.Marshal(qa)
-	if err != nil {
-		return nil
-	}
-	return json.RawMessage(raw)
+	prompt := strings.ReplaceAll(a.prompt, "{locale}", locale)
+	return append([]llm.Message{{Role: llm.RoleSystem, Content: prompt}}, messages...)
 }

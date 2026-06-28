@@ -23,9 +23,9 @@ func computeXiaoYun(bz ganzhi.Bazi, gender ganzhi.Gender, maxAge int) []XiaoYunZ
 
 	var startIdx int
 	if gender == ganzhi.Male {
-		startIdx = ganzhi.SixtyCycleName(3, 3) // 丙寅
+		startIdx = ganzhi.SixtyCycleIndex(3, 3) // 丙寅
 	} else {
-		startIdx = ganzhi.SixtyCycleName(9, 9) // 壬申
+		startIdx = ganzhi.SixtyCycleIndex(9, 9) // 壬申
 	}
 
 	zhus := make([]XiaoYunZhu, 0, maxAge)

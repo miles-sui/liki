@@ -158,10 +158,10 @@ WuxingMu=1, WuxingHuo=2, WuxingTu=3, WuxingJin=4, WuxingShui=5
 
 编排层 `api.go` 收 `tianwen.SolarTime` → `ComputeBazi` → 引擎 `computeChart(bz ganzhi.Bazi, kind string, y, m, d int)` 收精确实体。
 
-### HTTP Route
+### JSON-RPC Method
 
 ```
-POST /api/qimen/pan
+qimen.pan
 ```
 
 请求体：

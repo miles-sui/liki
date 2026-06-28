@@ -17,7 +17,7 @@
       fallbackLng: 'zh-Hant',
       keySeparator: false,
       nsSeparator: false,
-      load: 'languageOnly',
+      load: 'currentOnly',
       backend: { loadPath: '/i18n/{{lng}}.json' },
       detection: { order: ['path', 'navigator'], lookupFromPathIndex: 0, caches: [] }
     });
@@ -33,6 +33,9 @@
     });
     document.querySelectorAll('[data-i18n-html]').forEach(function(el){
       el.innerHTML = i18next.t(el.dataset.i18nHtml);
+    });
+    document.querySelectorAll('[data-i18n-aria]').forEach(function(el){
+      el.setAttribute('aria-label', i18next.t(el.dataset.i18nAria));
     });
   }
 
@@ -53,6 +56,7 @@
   });
 
   // ── hreflang + canonical ──
+  document.querySelectorAll('link[rel=alternate][hreflang], link[rel=canonical]').forEach(function(el){ el.remove(); });
   var base = location.protocol + '//' + location.host;
   var path = location.pathname.replace(/^\/(zh-Hans|zh-Hant|en)\/?/, '/');
   if (path !== '/' && !path.startsWith('/')) path = '/' + path;
@@ -66,7 +70,7 @@
   });
   var xd = document.createElement('link');
   xd.rel = 'alternate'; xd.hreflang = 'x-default';
-  xd.href = base + '/en' + (path === '/' ? '/' : path);
+  xd.href = base + '/zh-Hant' + (path === '/' ? '/' : path);
   document.head.appendChild(xd);
   var canonical = document.createElement('link');
   canonical.rel = 'canonical';

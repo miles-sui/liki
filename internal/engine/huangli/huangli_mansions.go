@@ -47,7 +47,7 @@ var mansionsTable = [28]dayMansion{
 // mansionForDay returns the 28-mansion entry for a given day pillar.
 // The cycle: 甲子日 → 虚宿 (index 10), then advances one mansion per day.
 func mansionForDay(riZhu ganzhi.Zhu) dayMansion {
-	sbIdx := ganzhi.SixtyCycleName(riZhu.Gan, riZhu.Zhi)
+	sbIdx := ganzhi.SixtyCycleIndex(riZhu.Gan, riZhu.Zhi)
 	mi := (sbIdx + 10) % 28
 	return mansionsTable[mi]
 }

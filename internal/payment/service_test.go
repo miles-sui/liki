@@ -5,51 +5,26 @@ import (
 	"database/sql"
 	"errors"
 	"net/http"
-	"strings"
 	"sync"
 	"testing"
-	"time"
 
-	"liki/internal/agent"
-	"liki/internal/llm"
+	"liki/internal/product"
 
 	_ "modernc.org/sqlite"
 )
 
-func TestEmailSubject_KnownUnique(t *testing.T) {
-	products := []agent.Product{agent.ProductChart, agent.ProductBond, agent.ProductNaming}
-	seen := make(map[agent.Product]string)
-	for _, p := range products {
-		s := p.EmailSubject()
-		if s == "" {
-			t.Errorf("EmailSubject(%s) is empty", p)
-		}
-		seen[p] = s
-	}
-	if seen[agent.ProductChart] == seen[agent.ProductBond] || seen[agent.ProductChart] == seen[agent.ProductNaming] || seen[agent.ProductBond] == seen[agent.ProductNaming] {
-		t.Errorf("products must have distinct subjects: %v", seen)
-	}
-}
-
-func TestEmailSubject_Default(t *testing.T) {
-	def := agent.ProductChart.EmailSubject()
-	for _, p := range []agent.Product{"unknown", "", "x"} {
-		if got := p.EmailSubject(); got == def {
-			t.Errorf("EmailSubject(%q) unexpectedly equals chart subject", p)
-		}
-	}
-}
-
 // -- mocks --
 
 type mockPaymentProvider struct {
-	createResult *CheckoutResult
-	createErr    error
-	verifyEvent  *WebhookEvent
-	verifyErr    error
+	createResult  *CheckoutResult
+	createErr     error
+	verifyEvent   *WebhookEvent
+	verifyErr     error
+	lastEmailSent string // email passed to CreateCheckout
 }
 
-func (m *mockPaymentProvider) CreateCheckout(_ context.Context, _ agent.Product, _ int, _, _, _ string) (*CheckoutResult, error) {
+func (m *mockPaymentProvider) CreateCheckout(_ context.Context, _ product.Product, _ int, _, email, _ string) (*CheckoutResult, error) {
+	m.lastEmailSent = email
 	return m.createResult, m.createErr
 }
 
@@ -90,22 +65,6 @@ func newTestDB(t *testing.T) *sql.DB {
 	return db
 }
 
-// waitForCleanup polls the generating map until the goroutine finishes
-// cleanup, avoiding time.Sleep which is flaky on slow CI runners.
-func waitForCleanup(t *testing.T, svc *Service, orderID string) {
-	t.Helper()
-	for i := 0; i < 100; i++ {
-		svc.generatingMu.Lock()
-		_, ok := svc.generating[orderID]
-		svc.generatingMu.Unlock()
-		if !ok {
-			return
-		}
-		time.Sleep(time.Millisecond)
-	}
-	t.Errorf("generating map entry %q not cleaned up after 100ms", orderID)
-}
-
 func newTestSvc(t *testing.T) (*Service, *Store, *mockPaymentProvider, *mockEmailClient) {
 	t.Helper()
 	db := newTestDB(t)
@@ -113,8 +72,7 @@ func newTestSvc(t *testing.T) (*Service, *Store, *mockPaymentProvider, *mockEmai
 	if err != nil {
 		t.Fatalf("NewStore: %v", err)
 	}
-	// Seed a pending order.
-	if err := store.CreateOrder(context.Background(), "order-1", agent.ProductChart, 990, "CNY", `{"chart":"data"}`, "", "zh-Hans", ""); err != nil {
+	if err := store.CreateOrder(context.Background(), "order-1", product.ProductNaming, 990, "CNY", "", `{"chart":"data"}`, "", ""); err != nil {
 		t.Fatalf("seed order: %v", err)
 	}
 
@@ -126,7 +84,7 @@ func newTestSvc(t *testing.T) (*Service, *Store, *mockPaymentProvider, *mockEmai
 	}
 	emailMock := &mockEmailClient{}
 	svc := NewService(dodoMock, xunhuMock, emailMock, store,
-		"https://liki.hk", "admin@liki.hk", nil, context.Background(),
+		"https://liki.hk", "admin@liki.hk", context.Background(),
 	)
 	return svc, store, dodoMock, emailMock
 }
@@ -201,11 +159,29 @@ func TestCreateCheckout_WithEmail(t *testing.T) {
 	}
 }
 
+func TestCreateCheckout_EmailFallback(t *testing.T) {
+	svc, store, dodoMock, _ := newTestSvc(t)
+	if err := store.UpdateEmail(context.Background(), "order-1", "stored@example.com"); err != nil {
+		t.Fatalf("UpdateEmail: %v", err)
+	}
+
+	result, err := svc.CreateCheckout(context.Background(), "dodo", "order-1", "")
+	if err != nil {
+		t.Fatalf("CreateCheckout: %v", err)
+	}
+	if result.CheckoutURL != "https://pay.example.com/checkout" {
+		t.Errorf("CheckoutURL = %q", result.CheckoutURL)
+	}
+	if dodoMock.lastEmailSent != "stored@example.com" {
+		t.Errorf("provider email = %q, want stored@example.com (fallback to order.Email)", dodoMock.lastEmailSent)
+	}
+}
+
 // -- HandleWebhook --
 
 func TestHandleWebhook_VerifyFailure(t *testing.T) {
 	svc, _, dodoMock, _ := newTestSvc(t)
-	xunhuMock := svc.Xunhu.(*mockPaymentProvider)
+	xunhuMock := svc.xunhu.(*mockPaymentProvider)
 	dodoMock.verifyErr = errors.New("bad signature")
 	xunhuMock.verifyErr = errors.New("bad hash")
 	err := svc.HandleWebhook(context.Background(), []byte(`{}`), http.Header{})
@@ -218,7 +194,6 @@ func TestHandleWebhook_VerifyFailure(t *testing.T) {
 }
 
 func TestHandleWebhook_XunhuFallback(t *testing.T) {
-	// Dodo verification fails, xunhu succeeds — dispatch falls back to xunhu.
 	svc, store, dodoMock, emailMock := newTestSvc(t)
 	emailMock.sent = make(chan struct{}, 4)
 
@@ -227,9 +202,9 @@ func TestHandleWebhook_XunhuFallback(t *testing.T) {
 	}
 
 	dodoMock.verifyErr = errors.New("dodo: bad signature")
-	xunhuMock := svc.Xunhu.(*mockPaymentProvider)
+	xunhuMock := svc.xunhu.(*mockPaymentProvider)
 	xunhuMock.verifyEvent = &WebhookEvent{
-		Type: "payment.succeeded",
+		Type: EventPaymentSucceeded,
 		Data: WebhookEventData{OrderID: "order-1", PaymentID: "xunhu-pay-1", Amount: 990},
 	}
 
@@ -254,7 +229,7 @@ func TestHandleWebhook_XunhuFallback(t *testing.T) {
 
 func TestHandleWebhook_BothProvidersFail(t *testing.T) {
 	svc, _, dodoMock, _ := newTestSvc(t)
-	xunhuMock := svc.Xunhu.(*mockPaymentProvider)
+	xunhuMock := svc.xunhu.(*mockPaymentProvider)
 	dodoMock.verifyErr = errors.New("dodo: bad signature")
 	xunhuMock.verifyErr = errors.New("xunhu: bad hash")
 
@@ -270,7 +245,7 @@ func TestHandleWebhook_BothProvidersFail(t *testing.T) {
 func TestHandleWebhook_EmptyOrderID(t *testing.T) {
 	svc, _, dodoMock, _ := newTestSvc(t)
 	dodoMock.verifyEvent = &WebhookEvent{
-		Type: "payment.succeeded",
+		Type: EventPaymentSucceeded,
 		Data: WebhookEventData{OrderID: "", PaymentID: "pay-1", Amount: 990},
 	}
 	err := svc.HandleWebhook(context.Background(), []byte(`{}`), http.Header{})
@@ -291,7 +266,6 @@ func TestHandleWebhook_NonPaymentEvent(t *testing.T) {
 func TestHandleWebhook_PaymentSucceeded(t *testing.T) {
 	svc, store, dodoMock, emailMock := newTestSvc(t)
 
-	// Give the order an email so the customer email path is exercised.
 	if err := store.UpdateEmail(context.Background(), "order-1", "user@example.com"); err != nil {
 		t.Fatalf("UpdateEmail: %v", err)
 	}
@@ -299,7 +273,7 @@ func TestHandleWebhook_PaymentSucceeded(t *testing.T) {
 	emailMock.sent = make(chan struct{}, 4)
 
 	dodoMock.verifyEvent = &WebhookEvent{
-		Type: "payment.succeeded",
+		Type: EventPaymentSucceeded,
 		Data: WebhookEventData{OrderID: "order-1", PaymentID: "pay-1", Amount: 990},
 	}
 	err := svc.HandleWebhook(context.Background(), []byte(`{}`), http.Header{})
@@ -326,8 +300,6 @@ func TestHandleWebhook_PaymentSucceeded(t *testing.T) {
 }
 
 func TestHandleWebhook_SecondPaymentIgnored(t *testing.T) {
-	// Second payment with a different PaymentID must be silently ignored
-	// because MarkPaidIdempotent only updates when status='pending'.
 	svc, store, dodoMock, emailMock := newTestSvc(t)
 	emailMock.sent = make(chan struct{}, 4)
 
@@ -336,7 +308,7 @@ func TestHandleWebhook_SecondPaymentIgnored(t *testing.T) {
 	}
 
 	dodoMock.verifyEvent = &WebhookEvent{
-		Type: "payment.succeeded",
+		Type: EventPaymentSucceeded,
 		Data: WebhookEventData{OrderID: "order-1", PaymentID: "pay-1", Amount: 990},
 	}
 	if err := svc.HandleWebhook(context.Background(), []byte(`{}`), http.Header{}); err != nil {
@@ -346,19 +318,16 @@ func TestHandleWebhook_SecondPaymentIgnored(t *testing.T) {
 	<-emailMock.sent // admin
 	emailCount := emailMock.sentToCount()
 
-	// Second different payment for the same order — silently ignored.
 	dodoMock.verifyEvent.Data.PaymentID = "pay-2"
 	if err := svc.HandleWebhook(context.Background(), []byte(`{}`), http.Header{}); err != nil {
 		t.Fatalf("second HandleWebhook: %v", err)
 	}
 
-	// Must not re-send emails.
 	if emailMock.sentToCount() != emailCount {
 		t.Errorf("second payment sent extra emails: %d before, %d after",
 			emailCount, emailMock.sentToCount())
 	}
 
-	// PaymentID must still be the first one (first payment wins).
 	order, err := store.GetOrder(context.Background(), "order-1")
 	if err != nil {
 		t.Fatalf("GetOrder: %v", err)
@@ -369,7 +338,6 @@ func TestHandleWebhook_SecondPaymentIgnored(t *testing.T) {
 }
 
 func TestHandleWebhook_DuplicatePaymentIdempotent(t *testing.T) {
-	// Same PaymentID sent twice must be idempotent — no double-processing.
 	svc, store, dodoMock, emailMock := newTestSvc(t)
 	emailMock.sent = make(chan struct{}, 4)
 
@@ -378,11 +346,10 @@ func TestHandleWebhook_DuplicatePaymentIdempotent(t *testing.T) {
 	}
 
 	dodoMock.verifyEvent = &WebhookEvent{
-		Type: "payment.succeeded",
+		Type: EventPaymentSucceeded,
 		Data: WebhookEventData{OrderID: "order-1", PaymentID: "pay-1", Amount: 990},
 	}
 
-	// First webhook: should trigger emails and report generation.
 	if err := svc.HandleWebhook(context.Background(), []byte(`{}`), http.Header{}); err != nil {
 		t.Fatalf("first HandleWebhook: %v", err)
 	}
@@ -393,7 +360,6 @@ func TestHandleWebhook_DuplicatePaymentIdempotent(t *testing.T) {
 		t.Errorf("first webhook: expected >=2 emails, got %d", emailCount)
 	}
 
-	// Second webhook with SAME PaymentID: must not re-send emails.
 	if err := svc.HandleWebhook(context.Background(), []byte(`{}`), http.Header{}); err != nil {
 		t.Fatalf("second HandleWebhook with same PaymentID: %v", err)
 	}
@@ -402,7 +368,6 @@ func TestHandleWebhook_DuplicatePaymentIdempotent(t *testing.T) {
 			emailCount, emailMock.sentToCount())
 	}
 
-	// Verify payment ID is preserved (first one wins).
 	order, err := store.GetOrder(context.Background(), "order-1")
 	if err != nil {
 		t.Fatalf("GetOrder: %v", err)
@@ -431,9 +396,8 @@ func TestGetReport_Pending(t *testing.T) {
 func TestGetReport_Paid(t *testing.T) {
 	svc, store, dodoMock, _ := newTestSvc(t)
 
-	// Mark order as paid with llm_json.
 	dodoMock.verifyEvent = &WebhookEvent{
-		Type: "payment.succeeded",
+		Type: EventPaymentSucceeded,
 		Data: WebhookEventData{OrderID: "order-1", PaymentID: "pay-1", Amount: 990},
 	}
 	if err := svc.HandleWebhook(context.Background(), []byte(`{}`), http.Header{}); err != nil {
@@ -466,389 +430,83 @@ func TestGetReport_NotFound(t *testing.T) {
 	}
 }
 
-// -- OrderStatus --
+// -- GetOrderData (status queries) --
 
-func TestOrderStatus_Found(t *testing.T) {
+func TestGetOrderData_StatusFound(t *testing.T) {
 	svc, _, _, _ := newTestSvc(t)
-	status, product, err := svc.OrderStatus(context.Background(), "order-1")
+	status, prod, _, err := svc.GetOrderData(context.Background(), "order-1")
 	if err != nil {
-		t.Fatalf("OrderStatus: %v", err)
+		t.Fatalf("GetOrderData: %v", err)
 	}
 	if status != OrderPending {
 		t.Errorf("status = %s, want pending", status)
 	}
-	if product != agent.ProductChart {
-		t.Errorf("product = %s, want chart", product)
+	if prod != product.ProductNaming {
+		t.Errorf("product = %s, want naming", prod)
 	}
 }
 
-func TestOrderStatus_NotFound(t *testing.T) {
+func TestGetOrderData_StatusNotFound(t *testing.T) {
 	svc, _, _, _ := newTestSvc(t)
-	_, _, err := svc.OrderStatus(context.Background(), "nonexistent")
+	_, _, _, err := svc.GetOrderData(context.Background(), "nonexistent")
 	if err == nil {
 		t.Fatal("expected error for missing order")
 	}
 }
 
-// -- controllable LLM mock for report generation tests --
-
-type controllableLLM struct {
-	mu               sync.Mutex
-	count            int
-	content          string
-	err              error
-	panic            bool
-	blockCh          chan struct{}
-	calledCh         chan struct{}
-	doneCh           chan struct{}
-	lastSystemPrompt string
-}
-
-func (m *controllableLLM) ChatStreamWithTools(ctx context.Context, messages []llm.Message, tools []llm.ToolDef) (<-chan llm.StreamEvent, error) {
-	m.mu.Lock()
-	m.count++
-	if len(messages) > 0 {
-		m.lastSystemPrompt = messages[0].Content
-	}
-	m.mu.Unlock()
-
-	if m.calledCh != nil {
-		select {
-		case m.calledCh <- struct{}{}:
-		default:
-		}
-	}
-	if m.blockCh != nil {
-		select {
-		case <-m.blockCh:
-		case <-ctx.Done():
-			return nil, ctx.Err()
-		}
-	}
-	defer func() {
-		if m.doneCh != nil {
-			select {
-			case m.doneCh <- struct{}{}:
-			default:
-			}
-		}
-	}()
-	if m.panic {
-		panic("test panic in ChatStreamWithTools")
-	}
-	if m.err != nil {
-		return nil, m.err
-	}
-	ch := make(chan llm.StreamEvent, 1)
-	ch <- llm.StreamEvent{Content: m.content, FinishReason: "stop"}
-	close(ch)
-	return ch, nil
-}
-
-func (m *controllableLLM) ChatStream(ctx context.Context, systemPrompt, userMessage string) (<-chan string, error) {
-	return nil, errors.New("ChatStream not implemented")
-}
-
-func (m *controllableLLM) callCount() int {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	return m.count
-}
-
-func newTestSvcWithReportGen(t *testing.T, cllm *controllableLLM) (*Service, *Store) {
-	t.Helper()
-	db := newTestDB(t)
-	store, err := NewStore(db)
-	if err != nil {
-		t.Fatalf("NewStore: %v", err)
-	}
-	if err := store.CreateOrder(context.Background(), "order-1", agent.ProductChart, 990, "CNY", `{"chart":"data"}`, "", "zh-Hans", ""); err != nil {
-		t.Fatalf("seed order: %v", err)
-	}
-	dodoMock := &mockPaymentProvider{
-		createResult: &CheckoutResult{CheckoutURL: "https://pay.example.com/checkout"},
-	}
-	xunhuMock := &mockPaymentProvider{}
-	emailMock := &mockEmailClient{}
-	tools := &agent.MockToolRegistry{}
-	ra := agent.NewReportAgent(cllm, tools, "", "")
-	reportAgents := map[agent.Product]*agent.ReportAgent{
-		agent.ProductChart: ra,
-	}
-	svc := NewService(dodoMock, xunhuMock, emailMock, store,
-		"https://liki.hk", "admin@liki.hk", reportAgents, context.Background(),
-	)
-	return svc, store
-}
-
-// -- StartReportGeneration --
-
-func TestStartReportGeneration_Dedup(t *testing.T) {
-	// Concurrent calls with the same orderID must only launch ONE goroutine.
-	cllm := &controllableLLM{
-		content:  "<p>report</p>",
-		blockCh:  make(chan struct{}),
-		calledCh: make(chan struct{}, 1),
-	}
-	svc, _ := newTestSvcWithReportGen(t, cllm)
-
-	// First call: should start generation (goroutine blocks on blockCh).
-	svc.StartReportGeneration("order-1", agent.ProductChart, `{"x":1}`)
-
-	// Wait for Generate to be entered.
-	select {
-	case <-cllm.calledCh:
-	case <-time.After(time.Second):
-		t.Fatal("Generate was not called")
-	}
-
-	// Second call: must be no-op (already generating).
-	svc.StartReportGeneration("order-1", agent.ProductChart, `{"x":1}`)
-
-	if cllm.callCount() != 1 {
-		t.Errorf("Generate called %d times, want 1 (dedup failed)", cllm.callCount())
-	}
-
-	// Unblock and let it finish.
-	close(cllm.blockCh)
-}
-
-func TestStartReportGeneration_RetriggersAfterCompletion(t *testing.T) {
-	// After generation completes, a new call should re-trigger generation.
-	cllm := &controllableLLM{
-		content: "<p>report</p>",
-		doneCh:  make(chan struct{}, 2),
-	}
-	svc, _ := newTestSvcWithReportGen(t, cllm)
-
-	svc.StartReportGeneration("order-1", agent.ProductChart, `{"x":1}`)
-	<-cllm.doneCh // wait for first gen LLM call to return
-
-	// Poll generating map until the goroutine finishes cleanup.
-	waitForCleanup(t, svc, "order-1")
-
-	svc.StartReportGeneration("order-1", agent.ProductChart, `{"x":1}`)
-	<-cllm.doneCh // wait for second gen
-
-	if cllm.callCount() != 2 {
-		t.Errorf("Generate called %d times, want 2 (retrigger failed)", cllm.callCount())
+func TestShutdown_CompletesWithoutGoroutines(t *testing.T) {
+	svc, _, _, _ := newTestSvc(t)
+	// Shutdown without any in-flight goroutines should return immediately.
+	if err := svc.Shutdown(context.Background()); err != nil {
+		t.Errorf("Shutdown: %v", err)
 	}
 }
 
-// -- generateFullReport (via StartReportGeneration) --
+func TestShutdown_WaitsForInFlightEmails(t *testing.T) {
+	svc, store, dodoMock, emailMock := newTestSvc(t)
 
-func TestGenerateFullReport_Success(t *testing.T) {
-	cllm := &controllableLLM{
-		content: "<p>generated report content</p>",
-		doneCh:  make(chan struct{}, 1),
-	}
-	svc, store := newTestSvcWithReportGen(t, cllm)
-
-	svc.StartReportGeneration("order-1", agent.ProductChart, `{"chart":"data"}`)
-	<-cllm.doneCh
-	waitForCleanup(t, svc, "order-1")
-
-	order, err := store.GetOrder(context.Background(), "order-1")
-	if err != nil {
-		t.Fatalf("GetOrder: %v", err)
-	}
-	if order.LlmJSON != "<p>generated report content</p>" {
-		t.Errorf("llm_json = %q, want generated report content (not cached)", order.LlmJSON)
-	}
-}
-
-func TestGenerateFullReport_Error(t *testing.T) {
-	cllm := &controllableLLM{
-		err:    errors.New("LLM timeout"),
-		doneCh: make(chan struct{}, 1),
-	}
-	svc, store := newTestSvcWithReportGen(t, cllm)
-
-	svc.StartReportGeneration("order-1", agent.ProductChart, `{"chart":"data"}`)
-	<-cllm.doneCh
-
-	order, err := store.GetOrder(context.Background(), "order-1")
-	if err != nil {
-		t.Fatalf("GetOrder: %v", err)
-	}
-	if order.LlmJSON != "" {
-		t.Errorf("llm_json = %q, want empty (generation failed, should not cache)", order.LlmJSON)
-	}
-}
-
-func TestGenerateFullReport_PanicRecovery(t *testing.T) {
-	// If Generate panics, the goroutine must recover and not crash the process.
-	cllm := &controllableLLM{
-		panic:  true,
-		doneCh: make(chan struct{}, 1),
-	}
-	svc, store := newTestSvcWithReportGen(t, cllm)
-
-	// This must not panic the test.
-	svc.StartReportGeneration("order-1", agent.ProductChart, `{"chart":"data"}`)
-	<-cllm.doneCh
-
-	order, err := store.GetOrder(context.Background(), "order-1")
-	if err != nil {
-		t.Fatalf("GetOrder: %v", err)
-	}
-	if order.LlmJSON != "" {
-		t.Errorf("llm_json = %q, want empty (panicked, should not cache)", order.LlmJSON)
-	}
-}
-
-func TestGenerateFullReport_DefaultLocale(t *testing.T) {
-	// Order with empty locale defaults to zh-Hans.
-	db := newTestDB(t)
-	store, err := NewStore(db)
-	if err != nil {
-		t.Fatalf("NewStore: %v", err)
-	}
-	if err := store.CreateOrder(context.Background(), "order-no-locale", agent.ProductChart, 990, "CNY", `{"x":1}`, "", "", ""); err != nil {
-		t.Fatalf("CreateOrder: %v", err)
+	if err := store.UpdateEmail(context.Background(), "order-1", "user@example.com"); err != nil {
+		t.Fatalf("UpdateEmail: %v", err)
 	}
 
-	cllm := &controllableLLM{
-		content: "<p>ok</p>",
-		doneCh:  make(chan struct{}, 1),
-	}
-	tools := &agent.MockToolRegistry{}
-	ra := agent.NewReportAgent(cllm, tools, "{locale}", "")
-	reportAgents := map[agent.Product]*agent.ReportAgent{
-		agent.ProductChart: ra,
-	}
-	svc := NewService(&mockPaymentProvider{}, &mockPaymentProvider{}, &mockEmailClient{}, store,
-		"https://liki.hk", "admin@liki.hk", reportAgents, context.Background(),
-	)
+	emailMock.sent = make(chan struct{}, 4)
 
-	svc.StartReportGeneration("order-no-locale", agent.ProductChart, `{"x":1}`)
-	<-cllm.doneCh
-
-	if !strings.Contains(cllm.lastSystemPrompt, "zh-Hans") {
-		t.Errorf("lastSystemPrompt = %q, want containing 'zh-Hans' (default locale)", cllm.lastSystemPrompt)
-	}
-}
-
-// -- RetryReportGeneration --
-
-func TestRetryReportGeneration_PaidNoJSON(t *testing.T) {
-	cllm := &controllableLLM{
-		content: "<p>recovered</p>",
-		doneCh:  make(chan struct{}, 1),
-	}
-	svc, store := newTestSvcWithReportGen(t, cllm)
-
-	// Mark the order as paid via webhook, but prevent report generation
-	// so we can test the retry path (paid + empty llm_json).
-	dodoMock := svc.Dodo.(*mockPaymentProvider)
 	dodoMock.verifyEvent = &WebhookEvent{
-		Type: "payment.succeeded",
-		Data: WebhookEventData{OrderID: "order-1", PaymentID: "pay-1", Amount: 990},
-	}
-	origRA := svc.ReportAgents
-	svc.ReportAgents = nil
-	if err := svc.HandleWebhook(context.Background(), []byte(`{}`), http.Header{}); err != nil {
-		t.Fatalf("HandleWebhook: %v", err)
-	}
-	svc.ReportAgents = origRA
-
-	// Verify paid, no llm_json.
-	order, err := store.GetOrder(context.Background(), "order-1")
-	if err != nil {
-		t.Fatalf("setup GetOrder: %v", err)
-	}
-	if order.Status != OrderPaid || order.LlmJSON != "" {
-		t.Fatalf("setup: status=%s llm_json=%q, want paid+empty", order.Status, order.LlmJSON)
-	}
-
-	// Retry should trigger generation.
-	status, product, llmJSON, err := svc.RetryReportGeneration(context.Background(), "order-1")
-	if err != nil {
-		t.Fatalf("RetryReportGeneration: %v", err)
-	}
-	if status != OrderPaid {
-		t.Errorf("status = %s, want paid", status)
-	}
-	if product != agent.ProductChart {
-		t.Errorf("product = %s", product)
-	}
-	if llmJSON != "" {
-		t.Errorf("llmJSON = %q, want empty (bg generation not yet complete)", llmJSON)
-	}
-
-	// Wait for background generation and DB write to complete.
-	<-cllm.doneCh
-	waitForCleanup(t, svc, "order-1")
-
-	order, orderErr := store.GetOrder(context.Background(), "order-1")
-	if orderErr != nil {
-		t.Fatalf("GetOrder: %v", orderErr)
-	}
-	if order.LlmJSON != "<p>recovered</p>" {
-		t.Errorf("llm_json = %q, want recovered (retry should trigger generation)", order.LlmJSON)
-	}
-}
-
-func TestRetryReportGeneration_PaidWithJSON(t *testing.T) {
-	cllm := &controllableLLM{
-		content: "<p>existing</p>",
-		doneCh:  make(chan struct{}, 2),
-	}
-	svc, _ := newTestSvcWithReportGen(t, cllm)
-
-	// Mark as paid with llm_json via webhook.
-	dodoMock := svc.Dodo.(*mockPaymentProvider)
-	dodoMock.verifyEvent = &WebhookEvent{
-		Type: "payment.succeeded",
+		Type: EventPaymentSucceeded,
 		Data: WebhookEventData{OrderID: "order-1", PaymentID: "pay-1", Amount: 990},
 	}
 	if err := svc.HandleWebhook(context.Background(), []byte(`{}`), http.Header{}); err != nil {
 		t.Fatalf("HandleWebhook: %v", err)
 	}
-	<-cllm.doneCh // wait for webhook-triggered generation
-	waitForCleanup(t, svc, "order-1")
+	// Drain both email signals — after goroutines finish, Shutdown returns.
+	<-emailMock.sent
+	<-emailMock.sent
 
-	// Now retry: must NOT trigger new generation since llm_json exists.
-	genCountBefore := cllm.callCount()
-	status, _, llmJSON, err := svc.RetryReportGeneration(context.Background(), "order-1")
-	if err != nil {
-		t.Fatalf("RetryReportGeneration: %v", err)
-	}
-	if status != OrderPaid {
-		t.Errorf("status = %s, want paid", status)
-	}
-	if llmJSON == "" {
-		t.Error("llmJSON should not be empty for paid order with report")
-	}
-	if cllm.callCount() != genCountBefore {
-		t.Errorf("Generate called %d extra times, want 0 (should not regenerate when llm_json exists)", cllm.callCount()-genCountBefore)
+	if err := svc.Shutdown(context.Background()); err != nil {
+		t.Errorf("Shutdown: %v", err)
 	}
 }
 
-func TestRetryReportGeneration_Pending(t *testing.T) {
-	cllm := &controllableLLM{content: "<p>nope</p>"}
-	svc, _ := newTestSvcWithReportGen(t, cllm)
-
-	status, _, llmJSON, err := svc.RetryReportGeneration(context.Background(), "order-1")
+func TestGetOrderData_Found(t *testing.T) {
+	svc, _, _, _ := newTestSvc(t)
+	status, prod, llmJSON, err := svc.GetOrderData(context.Background(), "order-1")
 	if err != nil {
-		t.Fatalf("RetryReportGeneration: %v", err)
+		t.Fatalf("GetOrderData: %v", err)
 	}
 	if status != OrderPending {
 		t.Errorf("status = %s, want pending", status)
 	}
-	if llmJSON != "" {
-		t.Errorf("llmJSON = %q, want empty for pending", llmJSON)
+	if prod != product.ProductNaming {
+		t.Errorf("product = %s, want naming", prod)
 	}
-	if cllm.callCount() > 0 {
-		t.Errorf("Generate called %d times, want 0 (pending order should not trigger)", cllm.callCount())
+	if llmJSON != "" {
+		t.Errorf("llmJSON should be empty for fresh order, got %q", llmJSON)
 	}
 }
 
-func TestRetryReportGeneration_NotFound(t *testing.T) {
-	cllm := &controllableLLM{}
-	svc, _ := newTestSvcWithReportGen(t, cllm)
-
-	_, _, _, err := svc.RetryReportGeneration(context.Background(), "nonexistent")
+func TestGetOrderData_NotFound(t *testing.T) {
+	svc, _, _, _ := newTestSvc(t)
+	_, _, _, err := svc.GetOrderData(context.Background(), "nonexistent")
 	if err == nil {
 		t.Fatal("expected error for missing order")
 	}

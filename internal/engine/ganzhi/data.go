@@ -228,9 +228,9 @@ func loadNayin() error {
 	return nil
 }
 
-// NaYinLabel returns the NaYin name for a stem-branch combination.
-func NaYinLabel(s Gan, b Zhi) string {
-	idx := SixtyCycleName(s, b)
+// NayinLabel returns the NaYin name for a stem-branch combination.
+func NayinLabel(s Gan, b Zhi) string {
+	idx := SixtyCycleIndex(s, b)
 	if idx < 60 && NayinTable != nil {
 		if name, ok := NayinTable[idx]; ok {
 			return name
@@ -239,8 +239,8 @@ func NaYinLabel(s Gan, b Zhi) string {
 	return "未知"
 }
 
-// NaYinWuxing extracts the five-element from a nayin name by its last character.
-func NaYinWuxing(nayin string) Wuxing {
+// NayinWuxing extracts the five-element from a nayin name by its last character.
+func NayinWuxing(nayin string) Wuxing {
 	rs := []rune(nayin)
 	if len(rs) == 0 {
 		return 0

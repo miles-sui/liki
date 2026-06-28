@@ -2,6 +2,11 @@ package bazi
 
 import "liki/internal/engine/ganzhi"
 
+// xunIndex returns the xun index (0-5) for a day pillar.
+func xunIndex(riZhu ganzhi.Zhu) int {
+	return ganzhi.SixtyCycleIndex(riZhu.Gan, riZhu.Zhi) / 10
+}
+
 type zhuPairEntry struct {
 	AZhu     string      `json:"a_zhu"`
 	BZhu     string      `json:"b_zhu"`
@@ -134,9 +139,9 @@ func computeNayinCross(a, b ChartBase) nayinCross {
 	aNy, bNy := a.NaYinArray(), b.NaYinArray()
 	pairs := make([]nayinPairEntry, 0, 16)
 	for i := 0; i < 4; i++ {
-		ae := ganzhi.NaYinWuxing(aNy[i])
+		ae := ganzhi.NayinWuxing(aNy[i])
 		for j := 0; j < 4; j++ {
-			be := ganzhi.NaYinWuxing(bNy[j])
+			be := ganzhi.NayinWuxing(bNy[j])
 			rel := "相同"
 			if ae != be {
 				if ganzhi.Sheng(ae, be) || ganzhi.Sheng(be, ae) {
@@ -253,7 +258,7 @@ func currentDaYunEntry(dr *DaYun) daYunCrossEntry {
 }
 func computeXunGong(a, b ChartBase) XunGong {
 	return XunGong{
-		SameXun:  xunIndex(ganzhi.Zhu{Gan: a.Ri.Gan, Zhi: a.Ri.Zhi}) == xunIndex(ganzhi.Zhu{Gan: b.Ri.Gan, Zhi: b.Ri.Zhi}),
+		SameXun:  xunIndex(a.Ri.Zhu) == xunIndex(b.Ri.Zhu),
 		SameGong: a.Ri.Zhi == b.Ri.Zhi,
 	}
 }

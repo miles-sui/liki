@@ -86,10 +86,10 @@ func wenQuPos(hourZhi Zhi) int      { return (int(hourZhi) + 3) % 12 }
 func diKongPos(hourZhi Zhi) int     { return (12 - int(hourZhi) + 12) % 12 }
 func diJiePos(hourZhi Zhi) int      { return (int(hourZhi) + 10) % 12 }
 
-func huoXingPos(yearZhi, hourZhi Zhi) int { return marsIndex(yearZhi, hourZhi) }
-func lingXingPos(yearZhi, hourZhi Zhi) int { return lingxingIndex(yearZhi, hourZhi) }
+func huoXingPos(yearZhi, hourZhi Zhi) int { return huoXingIndex(yearZhi, hourZhi) }
+func lingXingPos(yearZhi, hourZhi Zhi) int { return lingXingIndex(yearZhi, hourZhi) }
 
-func marsIndex(yearZhi, hourZhi Zhi) int {
+func huoXingIndex(yearZhi, hourZhi Zhi) int {
 	switch {
 	case inGroup(yearZhi, 3, 7, 11):  // 寅午戌: 丑宫起子时
 		return int((hourZhi + 1) % 12)
@@ -103,7 +103,7 @@ func marsIndex(yearZhi, hourZhi Zhi) int {
 	return 0
 }
 
-func lingxingIndex(yearZhi, hourZhi Zhi) int {
+func lingXingIndex(yearZhi, hourZhi Zhi) int {
 	switch {
 	case inGroup(yearZhi, 3, 7, 11):  // 寅午戌: 卯宫起子时
 		return int((hourZhi + 3) % 12)
@@ -145,7 +145,7 @@ func placeMinorStars(yearZhu ganzhi.Zhu, lunarMonth int, hourZhi, mingZhi Zhi) m
 	add(zhiToPalace(wenQuPos(hourZhi), mingZhi), WenQu)
 	add(zhiToPalace(diKongPos(hourZhi), mingZhi), DiKong)
 	add(zhiToPalace(diJiePos(hourZhi), mingZhi), DiJie)
-	add(zhiToPalace(marsIndex(yearZhu.Zhi, hourZhi), mingZhi), HuoXing)
-	add(zhiToPalace(lingxingIndex(yearZhu.Zhi, hourZhi), mingZhi), LingXing)
+	add(zhiToPalace(huoXingIndex(yearZhu.Zhi, hourZhi), mingZhi), HuoXing)
+	add(zhiToPalace(lingXingIndex(yearZhu.Zhi, hourZhi), mingZhi), LingXing)
 	return m
 }

@@ -181,46 +181,10 @@ func TestIsAuspicious(t *testing.T) {
 }
 
 // =============================================================================
-// 音韵验证
-// =============================================================================
-
-func TestIsPhoneticValid_AllCombinations(t *testing.T) {
-	// 全平(1,2)×全平(1,2) = invalid
-	for _, t1 := range []int{1, 2} {
-		for _, t2 := range []int{1, 2} {
-			if isPhoneticValid(t1, t2) {
-				t.Errorf("全平(%d,%d) should be invalid", t1, t2)
-			}
-		}
-	}
-	// 全仄(3,4)×全仄(3,4) = invalid
-	for _, t1 := range []int{3, 4} {
-		for _, t2 := range []int{3, 4} {
-			if isPhoneticValid(t1, t2) {
-				t.Errorf("全仄(%d,%d) should be invalid", t1, t2)
-			}
-		}
-	}
-		// 同声调相邻 = invalid
-		for _, tone := range []int{1, 2, 3, 4} {
-			if isPhoneticValid(tone, tone) {
-				t.Errorf("同声调(%d,%d) should be invalid", tone, tone)
-			}
-		}
-	// 平仄交替 = valid
-	if !isPhoneticValid(1, 4) {
-		t.Error("平仄(1,4) should be valid")
-	}
-	if !isPhoneticValid(3, 2) {
-		t.Error("仄平(3,2) should be valid")
-	}
-}
-
-// =============================================================================
 // 音韵分析 — analyzePhonetic
 // =============================================================================
 
-func TestAnalyzePhonetic_EmptyAndSingle(t *testing.T) {
+func TestAnalyzePhonetic(t *testing.T) {
 	// Empty chars
 	phon := analyzePhonetic(nil)
 	if phon.Tones != "" {
@@ -232,8 +196,14 @@ func TestAnalyzePhonetic_EmptyAndSingle(t *testing.T) {
 	if phon2.Tones != "2" {
 		t.Errorf("single tones = %q, want 2", phon2.Tones)
 	}
-	if !phon2.IsPingZe {
-		t.Error("single char should always be IsPingZe=true")
+
+	// Two chars
+	phon3 := analyzePhonetic([]Character{
+		{Char: "明", Tone: 2},
+		{Char: "亮", Tone: 4},
+	})
+	if phon3.Tones != "2-4" {
+		t.Errorf("two-char tones = %q, want 2-4", phon3.Tones)
 	}
 }
 
@@ -590,25 +560,6 @@ func TestStrokeResult_WrapAbove81(t *testing.T) {
 	}
 	if r.Fortune != "凶" {
 		t.Errorf("stroke 1000 wrap fortune = %s, want 凶", r.Fortune)
-	}
-}
-
-// =============================================================================
-// lookupTone — 声调查询
-// =============================================================================
-
-func TestLookupTone_Known(t *testing.T) {
-	// "王" is in the DB with a known tone.
-	tone := lookupTone("王")
-	if tone == 0 {
-		t.Error("lookupTone(王) should return non-zero tone (in DB)")
-	}
-}
-
-func TestLookupTone_Unknown(t *testing.T) {
-	tone := lookupTone("𠀀xyz")
-	if tone != 0 {
-		t.Errorf("lookupTone(unknown) = %d, want 0", tone)
 	}
 }
 
@@ -1050,55 +1001,90 @@ func TestSanCai(t *testing.T) {
 	}
 }
 
-// TestPhoneticValidation verifies平仄 detection.
-func TestPhoneticValidation(t *testing.T) {
-	tests := []struct {
-		t1, t2 int
-		valid  bool
-	}{
-		{1, 2, false}, // 全平：阴平+阳平 → invalid
-		{1, 1, false}, // 全平：阴平+阴平 → invalid
-		{2, 2, false}, // 全平：阳平+阳平 → invalid
-		{3, 4, false}, // 全仄：上声+去声 → invalid
-		{3, 3, false}, // 全仄 + 相邻三声 → invalid
-		{4, 3, false}, // 全仄：去声+上声 → invalid
-		{1, 3, true},  // 阴平+上声 → valid
-		{2, 4, true},  // 阳平+去声 → valid
-		{4, 1, true},  // 去声+阴平 → valid
-	}
+// =============================================================================
+// Golden: 首页 36 个示例名 — 验证引擎能力覆盖
+// =============================================================================
 
-	for _, tt := range tests {
-		got := isPhoneticValid(tt.t1, tt.t2)
-		if got != tt.valid {
-			t.Errorf("isPhoneticValid(%d,%d) = %v, want %v", tt.t1, tt.t2, got, tt.valid)
+var exampleNames = []string{
+	"林观澜", "赵知微", "徐望舒", "王砚清", "李鹿鸣", "刘予安",
+	"黄文茵", "吴佩弦", "张知行", "陈思诚", "杨明哲", "孙思远",
+	"马归真", "朱修远", "周如玉", "郑含章", "谢清风", "唐致远",
+	"于若水", "邓景行", "钱浩然", "薛养正", "卢思齐", "戴知远",
+	"邵明德", "雷敬之", "方敏行", "袁守拙", "乔清和", "秦云舒",
+	"任心怡", "苏子衿", "罗静言", "夏砚耕", "顾逢春", "汤书白",
+}
+
+func TestExampleNames_CharsInDatabase(t *testing.T) {
+	for _, full := range exampleNames {
+		rs := []rune(full)
+		surname := string(rs[0])
+		g1 := string(rs[1])
+		g2 := string(rs[2])
+
+		// 姓氏必须在字典中
+		if lookupKangxiStroke(surname) == 0 {
+			t.Errorf("%s: surname %q not in database", full, surname)
+			continue
+		}
+		// 两个名字字必须在字典中
+		ce1, ok1 := charByRune[rs[1]]
+		if !ok1 {
+			t.Errorf("%s: char %q not in charByRune", full, g1)
+			continue
+		}
+		ce2, ok2 := charByRune[rs[2]]
+		if !ok2 {
+			t.Errorf("%s: char %q not in charByRune", full, g2)
+			continue
+		}
+		// 五格必须可计算
+		ss := lookupKangxiStroke(surname)
+		wg := computeWuGeFromStrokes(ss, ce1.Stroke, ce2.Stroke)
+		if wg.TianGe.Stroke == 0 || wg.RenGe.Stroke == 0 || wg.DiGe.Stroke == 0 {
+			t.Errorf("%s: wuge calculation failed: %+v", full, wg)
 		}
 	}
 }
 
-// TestPhoneticAnalysis verifies analyzePhonetic with character tones.
-func TestPhoneticAnalysis(t *testing.T) {
-	// 平仄 alternating (1,4) → valid
-	chars := []Character{
-		{Char: "明", Tone: 2}, // 阳平(平)
-		{Char: "亮", Tone: 4}, // 去声(仄)
+func TestExampleNames_DetailNames(t *testing.T) {
+	for _, full := range exampleNames {
+		rs := []rune(full)
+		surname := string(rs[0])
+		candidates, err := DetailNames(surname, []string{full})
+		if err != nil {
+			t.Errorf("%s: DetailNames error: %v", full, err)
+			continue
+		}
+		if len(candidates) != 1 {
+			t.Errorf("%s: expected 1 candidate, got %d", full, len(candidates))
+			continue
+		}
+		c := candidates[0]
+		if c.Name != full {
+			t.Errorf("%s: name mismatch: %s", full, c.Name)
+		}
+		// 五格 fortune 不能为空
+		if c.WuGe.RenGe.Fortune == "" {
+			t.Errorf("%s: renge fortune empty", full)
+		}
+		if c.SanCai.Fortune == "" {
+			t.Errorf("%s: sancai fortune empty", full)
+		}
 	}
-	phon := analyzePhonetic(chars)
+}
 
-	if phon.Tones != "2-4" {
-		t.Errorf("tones = %s, want 2-4", phon.Tones)
-	}
-	if !phon.IsPingZe {
-		t.Error("2-4 (平仄交替) should be valid")
-	}
-
-	// 全平 (1,2) → invalid
-	chars2 := []Character{
-		{Char: "天", Tone: 1}, // 阴平
-		{Char: "明", Tone: 2}, // 阳平
-	}
-	phon2 := analyzePhonetic(chars2)
-	if phon2.IsPingZe {
-		t.Error("1-2 (全平) should be invalid")
+func TestExampleNames_PhoneticInfo(t *testing.T) {
+	for _, full := range exampleNames {
+		rs := []rune(full)
+		surname := string(rs[0])
+		candidates, err := DetailNames(surname, []string{full})
+		if err != nil || len(candidates) != 1 {
+			continue
+		}
+		c := candidates[0]
+		if c.Phonetic.Tones == "" {
+			t.Errorf("%s: tones empty", full)
+		}
 	}
 }
 
@@ -1123,3 +1109,4 @@ func TestWuxingFromChinese(t *testing.T) {
 		}
 	}
 }
+

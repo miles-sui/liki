@@ -133,8 +133,8 @@ func Ke(from, to Wuxing) bool {
 
 // -- sixty-cycle --
 
-// SixtyCycleName returns the 0-based index in [0,59] for a given gan+zhi.
-func SixtyCycleName(gan Gan, zhi Zhi) int {
+// SixtyCycleIndex returns the 0-based index in [0,59] for a given gan+zhi.
+func SixtyCycleIndex(gan Gan, zhi Zhi) int {
 	idx := (int(gan)*6 - int(zhi)*5 - 1) % 60
 	if idx < 0 {
 		idx += 60

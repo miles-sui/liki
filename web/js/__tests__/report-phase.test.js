@@ -1,17 +1,15 @@
 import { describe, it, expect } from 'vitest';
 
 // Simulates the reportApp state machine from report.js.
-// Actual states: loading | payment | generating | timeout_payment | timeout_generating | error | unlocking | ready
+// Actual states: loading | payment | timeout_payment | error | unlocking | ready
 
 function createPhaseMachine() {
   let state = { phase: 'loading', error: '' };
 
   const VALID_TRANSITIONS = {
-    loading:       ['payment', 'generating', 'ready', 'error'],
-    payment:       ['generating', 'ready', 'timeout_payment', 'error'],
-    generating:    ['ready', 'timeout_generating', 'error'],
-    timeout_payment:    ['loading'],
-    timeout_generating: ['loading'],
+    loading:       ['payment', 'ready', 'error'],
+    payment:       ['ready', 'timeout_payment', 'error'],
+    timeout_payment: ['loading'],
     error:         ['loading'],
     unlocking:     ['ready'],
     ready:         [],
@@ -34,77 +32,54 @@ function createPhaseMachine() {
       transition('payment');
     },
 
-    // loadReport: status=paid, no llm_json → startPolling('generating')
-    loadPaidNoJSON() {
-      transition('generating');
-    },
-
-    // loadReport: status=paid, has llm_json → showReport(_, false) → ready
+    // loadReport: status=paid (with or without llm_json) → showReport → ready
     loadReady() {
       transition('ready');
     },
 
-    // loadReport: no orderID or unknown status or catch
+    // loadReport: no orderID, unknown status, non-naming product, or catch
     loadError(msg) {
       state.error = msg;
       transition('error');
     },
 
-    // Poll: status changes from pending to paid (no llm_json yet)
-    pollPaymentToGenerating() {
-      if (state.phase !== 'payment') throw new Error('not in payment');
-      transition('generating');
-    },
-
-    // Poll: status=paid + llm_json → showReport(_, true) → unlocking → ready
-    pollPaymentToUnlocking() {
+    // Poll: status changes to paid with llm_json → showReport → ready
+    pollToReady() {
       if (state.phase !== 'payment') throw new Error('not in payment');
       transition('ready');
     },
 
-    // Poll: tries > MAX_TRIES or errors > MAX_ERRORS for payment
-    pollPaymentTimeout() {
+    // Poll: tries > MAX_TRIES or errors > MAX_ERRORS
+    pollTimeout() {
       if (state.phase !== 'payment') throw new Error('not in payment');
       transition('timeout_payment');
     },
 
-    // Poll: status=paid + llm_json during generating poll
-    pollGenToUnlocking() {
-      if (state.phase !== 'generating') throw new Error('not in generating');
-      transition('ready');
-    },
-
-    // Poll: tries > MAX_TRIES or errors > MAX_ERRORS for generating
-    pollGenTimeout() {
-      if (state.phase !== 'generating') throw new Error('not in generating');
-      transition('timeout_generating');
-    },
-
-    // Poll: unexpected status during generating
-    pollGenError(msg) {
-      if (state.phase !== 'generating') throw new Error('not in generating');
+    // Poll: unexpected status
+    pollError(msg) {
+      if (state.phase !== 'payment') throw new Error('not in payment');
       state.error = msg;
       transition('error');
     },
 
-    // Enter unlocking (showReport with transition sets phase='unlocking' directly)
+    // showReport with transition: sets phase to unlocking
     enterUnlocking() {
       state.phase = 'unlocking';
     },
 
-    // showReport with transition: unlocking → ready
+    // Transition animation complete → ready
     unlockReady() {
       if (state.phase !== 'unlocking') throw new Error('not in unlocking');
       transition('ready');
     },
 
-    // retryPoll → loadReport
-    retryFrom(timeoutPhase) {
-      if (state.phase !== timeoutPhase) throw new Error('not in ' + timeoutPhase);
+    // retryPoll → loadReport from timeout
+    retryFromTimeout() {
+      if (state.phase !== 'timeout_payment') throw new Error('not in timeout_payment');
       transition('loading');
     },
 
-    // error → retry (loadReport)
+    // retryPoll → loadReport from error
     retryFromError() {
       if (state.phase !== 'error') throw new Error('not in error');
       state.error = '';
@@ -113,7 +88,7 @@ function createPhaseMachine() {
   };
 }
 
-describe('reportApp phase state machine (8-state)', () => {
+describe('reportApp phase state machine (6-state)', () => {
   describe('initial state', () => {
     it('starts in loading', () => {
       const m = createPhaseMachine();
@@ -128,19 +103,13 @@ describe('reportApp phase state machine (8-state)', () => {
       expect(m.phase).toBe('payment');
     });
 
-    it('loading → generating when paid but no llm_json', () => {
-      const m = createPhaseMachine();
-      m.loadPaidNoJSON();
-      expect(m.phase).toBe('generating');
-    });
-
-    it('loading → ready when paid and llm_json available', () => {
+    it('loading → ready when status is paid (with or without llm_json)', () => {
       const m = createPhaseMachine();
       m.loadReady();
       expect(m.phase).toBe('ready');
     });
 
-    it('loading → error on failure (no orderID, unknown status, network error)', () => {
+    it('loading → error on failure (no orderID, non-naming product, API error)', () => {
       const m = createPhaseMachine();
       m.loadError('not found');
       expect(m.phase).toBe('error');
@@ -149,86 +118,43 @@ describe('reportApp phase state machine (8-state)', () => {
   });
 
   describe('payment polling transitions', () => {
-    it('payment → generating when status changes to paid (no llm_json yet)', () => {
+    it('payment → ready when llm_json becomes available', () => {
       const m = createPhaseMachine();
       m.loadPending();
-      m.pollPaymentToGenerating();
-      expect(m.phase).toBe('generating');
-    });
-
-    it('payment → ready when llm_json becomes available during poll', () => {
-      const m = createPhaseMachine();
-      m.loadPending();
-      m.pollPaymentToUnlocking();
+      m.pollToReady();
       expect(m.phase).toBe('ready');
     });
 
     it('payment → timeout_payment after max tries or max errors', () => {
       const m = createPhaseMachine();
       m.loadPending();
-      m.pollPaymentTimeout();
+      m.pollTimeout();
       expect(m.phase).toBe('timeout_payment');
     });
 
-    it('payment → timeout_payment after consecutive poll errors', () => {
-      // MAX_ERRORS=6, after 7th error transition to timeout
+    it('payment → error on unexpected status', () => {
       const m = createPhaseMachine();
       m.loadPending();
-      m.pollPaymentTimeout();
-      expect(m.phase).toBe('timeout_payment');
-    });
-  });
-
-  describe('generating polling transitions', () => {
-    it('generating → ready when llm_json appears during poll', () => {
-      const m = createPhaseMachine();
-      m.loadPending();
-      m.pollPaymentToGenerating();
-      m.pollGenToUnlocking();
-      expect(m.phase).toBe('ready');
-    });
-
-    it('generating → timeout_generating after max tries', () => {
-      const m = createPhaseMachine();
-      m.loadPending();
-      m.pollPaymentToGenerating();
-      m.pollGenTimeout();
-      expect(m.phase).toBe('timeout_generating');
-    });
-
-    it('generating → error on unexpected status', () => {
-      const m = createPhaseMachine();
-      m.loadPending();
-      m.pollPaymentToGenerating();
-      m.pollGenError('unexpected status');
+      m.pollError('unexpected status');
       expect(m.phase).toBe('error');
       expect(m.error).toBe('unexpected status');
     });
   });
 
-  describe('timeout states', () => {
+  describe('timeout state', () => {
     it('timeout_payment → loading on retry', () => {
       const m = createPhaseMachine();
       m.loadPending();
-      m.pollPaymentTimeout();
-      m.retryFrom('timeout_payment');
-      expect(m.phase).toBe('loading');
-    });
-
-    it('timeout_generating → loading on retry', () => {
-      const m = createPhaseMachine();
-      m.loadPending();
-      m.pollPaymentToGenerating();
-      m.pollGenTimeout();
-      m.retryFrom('timeout_generating');
+      m.pollTimeout();
+      m.retryFromTimeout();
       expect(m.phase).toBe('loading');
     });
 
     it('retry from timeout re-enters full loadReport flow', () => {
       const m = createPhaseMachine();
       m.loadPending();
-      m.pollPaymentTimeout();
-      m.retryFrom('timeout_payment');
+      m.pollTimeout();
+      m.retryFromTimeout();
       m.loadPending();
       expect(m.phase).toBe('payment');
     });
@@ -259,7 +185,7 @@ describe('reportApp phase state machine (8-state)', () => {
       m.loadReady();
       expect(m.phase).toBe('ready');
       expect(() => m.loadPending()).toThrow('invalid transition');
-      expect(() => m.loadPaidNoJSON()).toThrow('invalid transition');
+      expect(() => m.loadReady()).toThrow('invalid transition');
       expect(() => m.loadError('x')).toThrow('invalid transition');
       expect(m.phase).toBe('ready');
     });
@@ -268,32 +194,26 @@ describe('reportApp phase state machine (8-state)', () => {
   describe('invalid transitions', () => {
     it('loading → timeout_payment is invalid', () => {
       const m = createPhaseMachine();
-      expect(() => m.pollPaymentTimeout()).toThrow();
+      expect(() => m.pollTimeout()).toThrow();
     });
 
-    it('loading → timeout_generating is invalid', () => {
-      const m = createPhaseMachine();
-      expect(() => m.pollGenTimeout()).toThrow();
-    });
-
-    it('payment → timeout_generating is invalid', () => {
+    it('payment → loading is invalid', () => {
       const m = createPhaseMachine();
       m.loadPending();
-      expect(() => m.pollGenTimeout()).toThrow();
-    });
-
-    it('timeout_payment → timeout_payment is invalid', () => {
-      const m = createPhaseMachine();
-      m.loadPending();
-      m.pollPaymentTimeout();
-      expect(() => m.pollPaymentTimeout()).toThrow();
+      expect(() => m.retryFromTimeout()).toThrow();
     });
 
     it('timeout_payment → payment is invalid (must go through loading)', () => {
       const m = createPhaseMachine();
       m.loadPending();
-      m.pollPaymentTimeout();
-      expect(() => m.pollPaymentToGenerating()).toThrow();
+      m.pollTimeout();
+      expect(() => m.pollToReady()).toThrow();
+    });
+
+    it('error → payment is invalid (must go through loading)', () => {
+      const m = createPhaseMachine();
+      m.loadError('x');
+      expect(() => m.loadPending()).toThrow();
     });
 
     it('unlocking → payment is invalid', () => {
@@ -301,40 +221,23 @@ describe('reportApp phase state machine (8-state)', () => {
       m.enterUnlocking();
       expect(() => m.loadPending()).toThrow();
     });
-  });
 
-  describe('phases are mutually exclusive', () => {
-    it('each phase value is only active one at a time', () => {
-      const allPhases = ['loading', 'payment', 'generating', 'timeout_payment', 'timeout_generating', 'error', 'unlocking', 'ready'];
-
-      const pairs = [
-        () => { const m = createPhaseMachine(); m.loadPending(); return m; },
-        () => { const m = createPhaseMachine(); m.loadPaidNoJSON(); return m; },
-        () => { const m = createPhaseMachine(); m.loadReady(); return m; },
-        () => { const m = createPhaseMachine(); m.loadError('x'); return m; },
-        () => { const m = createPhaseMachine(); m.loadPending(); m.pollPaymentTimeout(); return m; },
-        () => { const m = createPhaseMachine(); m.loadPending(); m.pollPaymentToGenerating(); m.pollGenTimeout(); return m; },
-        () => { const m = createPhaseMachine(); m.enterUnlocking(); return m; },
-      ];
-
-      for (const setup of pairs) {
-        const m = setup();
-        const active = allPhases.filter(p => p === m.phase);
-        expect(active).toHaveLength(1);
-      }
+    it('unlocking → error is invalid', () => {
+      const m = createPhaseMachine();
+      m.enterUnlocking();
+      expect(() => m.loadError('x')).toThrow();
     });
   });
 
   describe('full lifecycle paths', () => {
-    it('golden path: loading → payment → generating → ready', () => {
+    it('golden path: loading → payment → ready', () => {
       const m = createPhaseMachine();
       m.loadPending();
-      m.pollPaymentToGenerating();
-      m.pollGenToUnlocking();
+      m.pollToReady();
       expect(m.phase).toBe('ready');
     });
 
-    it('direct ready: loading → ready (already paid + has llm_json)', () => {
+    it('direct ready: loading → ready (already paid)', () => {
       const m = createPhaseMachine();
       m.loadReady();
       expect(m.phase).toBe('ready');
@@ -343,28 +246,10 @@ describe('reportApp phase state machine (8-state)', () => {
     it('payment timeout → retry → success', () => {
       const m = createPhaseMachine();
       m.loadPending();
-      m.pollPaymentTimeout();
-      m.retryFrom('timeout_payment');
+      m.pollTimeout();
+      m.retryFromTimeout();
       m.loadPending();
-      m.pollPaymentToUnlocking();
-      expect(m.phase).toBe('ready');
-    });
-
-    it('generating timeout → retry → success', () => {
-      const m = createPhaseMachine();
-      m.loadPending();
-      m.pollPaymentToGenerating();
-      m.pollGenTimeout();
-      m.retryFrom('timeout_generating');
-      m.loadPaidNoJSON();
-      m.pollGenToUnlocking();
-      expect(m.phase).toBe('ready');
-    });
-
-    it('loading → generating directly (skip payment, already paid)', () => {
-      const m = createPhaseMachine();
-      m.loadPaidNoJSON();
-      m.pollGenToUnlocking();
+      m.pollToReady();
       expect(m.phase).toBe('ready');
     });
 
@@ -373,7 +258,16 @@ describe('reportApp phase state machine (8-state)', () => {
       m.loadError('network error');
       m.retryFromError();
       m.loadPending();
-      m.pollPaymentToUnlocking();
+      m.pollToReady();
+      expect(m.phase).toBe('ready');
+    });
+
+    it('loading → payment → unlocking → ready (transition animation)', () => {
+      const m = createPhaseMachine();
+      m.loadPending();
+      m.pollToReady();
+      m.enterUnlocking();
+      m.unlockReady();
       expect(m.phase).toBe('ready');
     });
   });

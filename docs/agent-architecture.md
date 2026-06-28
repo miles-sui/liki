@@ -36,41 +36,105 @@ tianwen/ → 节气、农历、真太阳时、干支历
 ## Agent 层
 
 ```
-ChatAgent (单一实例)
-├─ Chat(ctx, locale, messages, onEvent, orderCreator, amounts)
-│    └─ LLM 对话 → tool 调用 → engine 计算 → 生成 teaser → purchase
-└─ GenerateFromData(ctx, locale, product, chartJSON, onEvent)
-     └─ LLM 生成完整报告（支付后 webhook 触发）
+NamingChatAgent (单一实例)
+  │
+  ├─ NamingChat(ctx, locale, messages, onEvent)
+  │    └─ SSE 流式对话 → 8 个 tool → engine 计算 → 磋商起名
+  │         │
+  │         └─ 用户要求时，LLM 直接在对话中输出 markdown 报告
+  │              handler 识别（IsNamingReport）→ 存 llm_json → report_ready
+  │
+  └─ prompt 缓存：sync.Map（locale → 编译后 system prompt），避免重复 ReplaceAll
 ```
 
-当前注册了 29 个 tool（八字 8 + 紫微 6 + 起名 4 + 奇门 1 + 八宅 2 + 玄空 2 + 六爻 1 + 黄历 4 + `query_city`），`purchase` 由 ChatAgent 硬编码处理。详见 `NewChatToolRegistry()`。
+### Tool Calling 流程
+
+```
+用户消息
+  │
+  ▼
+NamingChat(ctx, locale, messages, onEvent)
+  │
+  ├─ ensureNamingPrompt() → system prompt 注入（若 messages[0] 不是 system）
+  │
+  ├─ ChatStreamWithTools(messages, tools) → LLM
+  │    │
+  │    ├─ text_delta  → onEvent(EventTextDelta) → SSE 推送
+  │    ├─ thinking    → onEvent(EventThinking)  → SSE 推送
+  │    ├─ tool_call   → Execute(tool, args)
+  │    │    │
+  │    │    ├─ query_city            → 城市→经纬度+时区
+  │    │    ├─ compute_time          → 公历+经纬度→Timeset（真太阳时）
+  │    │    ├─ compute_chart         → 八字排盘
+  │    │    ├─ compute_ziwei         → 紫微斗数
+  │    │    ├─ compute_naming_wuge   → 三才五格
+  │    │    ├─ compute_naming_compose → 候选名组合
+  │    │    ├─ compute_naming_detail → 单名详析
+  │    │    └─ compute_naming_evaluate → 候选名评估
+  │    │
+  │    └─ tool_result → LLM 继续推理
+  │
+  └─ 返回 messages（含所有轮次），handler 持久化 + 检测报告
+```
+
+### 消息持久化
+
+```
+namingHandler 每次 POST：
+
+  LoadChatHistory(order_id)  ──→  DB 读取
+  [system] + history + [user]  ──→  LLM
+  CreateChatMessage(user)     ──→  DB 写入（立即）
+  SSE streaming...
+  BatchCreateChatMessages(new) ──→  DB 写入（流结束后）
+
+  检测到报告 → UpdateLlmJSON → report_ready 事件 → 前端跳转
+```
+
+## 工具注册
+
+### NamingChatAgent（8 tools）
+
+`NewNamingToolRegistry()` 注册：
+
+| 工具 | 用途 |
+|------|------|
+| query_city | 城市名→经纬度+时区 |
+| compute_time | 公历+经纬度→Timeset（真太阳时、农历） |
+| compute_chart | Timeset+性别→八字排盘 |
+| compute_ziwei | Timeset+性别→紫微斗数命盘 |
+| compute_naming_wuge | 姓氏→三才五格分析 |
+| compute_naming_compose | 八字+姓氏→候选名列表 |
+| compute_naming_detail | 单个名字→字形音韵详析 |
+| compute_naming_evaluate | 候选名列表→综合评分排序 |
+
+### RPCRegistry（29 tools，外部 API）
+
+`NewRPCRegistry()` 注册全部引擎能力，供 JSON-RPC API（`POST /jsonrpc`，29 个 method）使用。包含八字、紫微、奇门、六爻、风水、黄历等全部计算工具。与 NamingChatAgent 的工具完全独立。
 
 ## 提示词组织
 
-Agent 使用两种 prompt，来源和用途不同：
-
 | Prompt | 来源 | 注入点 | 用途 |
 |---|---|---|---|
-| 系统 prompt | `doc.ChatPrompt`（`data/prompts/chat.txt`） | `ChatAgent.ensureSystemPrompt()` | 定义产品检测、参数收集规则、对话行为 |
-| 报告模板 | `doc.ChartReportPrompt` 等（`web/skills/report-*.md`） | `GenerateFromData()` | 完整报告格式：数据结构、领域知识、章节规范 |
+| 系统 prompt | `agent.NamingPrompt`（`internal/agent/naming.txt`） | `ensureNamingPrompt()` | 角色定义、工具使用规则、报告格式约定 |
+| 工具 schema | `agent.ToolsJSON`（`internal/agent/tools.json`） | `NewNamingToolRegistry()` | LLM tool calling 的 `parameters` 字段 |
 
-**系统 prompt** 在每次 Chat 调用时作为 messages[0] 注入，与对话历史一起发给 LLM。它只定义对话行为，不包含报告格式——teaser 报告由 LLM 自由生成简短摘要。
+**系统 prompt** 在每次 NamingChat 调用时作为 messages[0] 注入。启动时预编译（`{locale}` 占位符替换），按 locale 缓存在 `sync.Map`。
 
-**报告模板** 仅在支付完成后使用。`GenerateFromData()` 将 engine 计算结果的 JSON 与对应产品的报告模板拼接，一次性发给 LLM 生成完整报告。模板中的数据结构必须严格对齐 engine 输出字段。
+**无需报告模板**。报告由 LLM 在对话中直接输出 markdown，handler 识别 `# 起名报告` 标题后存入 `llm_json`。起名报告模板（`web/skills/report-naming.md`）保留为对外公开参考文档。
 
-两种 prompt 分离的理由：
-- 系统 prompt 短（~6KB），每次都发，需精炼
-- 报告模板长（~10-20KB），只在最后用一次，可详尽
-- 报告模板同时对外公开（`/skills/report-*.md`），系统 prompt 不对外
+## 启动验证
 
-## 注入策略
+```
+main() → ValidateTools()
+           │
+           └─ sync.Once 触发 tools.json 解析
+              格式错误 → 启动失败 fast fail
+              解析成功 → 缓存结果
+```
 
-当前（Phase 1）：统一注入，单次 `ChatStreamWithTools`，所有 prompt + tool 一次性发给 LLM。
-未来（Phase 2）：多框架时考虑分阶段注入，按意图分段注入 prompt。
+## 加新 Tool 路径
 
-## 加新 Framework 路径
-
-1. `internal/engine/{name}/` — 实现 engine 计算
-2. `internal/agent/tools.go` — 注册 tool handler
-3. `openapi.json` `x-agent-tools` — 加 tool schema JSON（`openapiParams()` 解析后注册到 `NewChatToolRegistry()`）
-4. `web/skills/` — 加报告模板 prompt（如需要），同时嵌入 + 对外公开
+1. `internal/agent/tools_qiming.go`（或相应文件）— 注册 tool handler
+2. `internal/agent/tools.json` `x-agent-tools` — 加 tool 的 JSON Schema 定义
+3. `internal/agent/tools.go` `NewNamingToolRegistry()` — 调 `registerTool()`

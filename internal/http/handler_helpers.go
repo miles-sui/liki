@@ -1,46 +1,24 @@
-package handler
+package http
 
 import (
 	"encoding/json"
 	"errors"
 	"log/slog"
 	"net/http"
-	"time"
 
-	validation "github.com/go-ozzo/ozzo-validation/v4"
-
-	"liki/internal/agent"
-	"liki/internal/engine/ganzhi"
-	"liki/internal/engine/tianwen"
+	"liki/internal/product"
 )
 
-// timePoint is an alias for agent.TimePoint, used by HTTP handler validation.
-// The actual type and conversion logic live in the agent package.
-type timePoint = agent.TimePoint
-
-// BirthRequest is the common HTTP body for chart endpoints that accept
-// birth time + gender. The handler converts timePoint to tianwen.Timeset,
-// then passes SolarTime + Gender to the engine.
-type BirthRequest struct {
-	Birth  timePoint     `json:"birth"`
-	Gender ganzhi.Gender `json:"gender"`
-}
-
-func (r BirthRequest) Validate() error {
-	return validation.ValidateStruct(&r,
-		validation.Field(&r.Birth, validation.By(validateTimePoint)),
-		validation.Field(&r.Gender, validation.Required, validation.In(validGenders...)),
-	)
-}
-
-var validGenders = []any{ganzhi.Male, ganzhi.Female}
-
 // detectCurrency infers currency from Cloudflare IP country header.
-func detectCurrency(r *http.Request) string {
-	if r.Header.Get("CF-IPCountry") == "CN" {
-		return "CNY"
+// Defaults to CNY when neither CF header nor geo API identifies the country.
+func detectCurrency(r *http.Request, geoCountry string) product.Currency {
+	if r.Header.Get("CF-IPCountry") == "CN" || geoCountry == "CN" {
+		return product.CNY
 	}
-	return "USD"
+	if r.Header.Get("CF-IPCountry") != "" || geoCountry != "" {
+		return product.USD
+	}
+	return product.CNY
 }
 
 // decodeJSON decodes the JSON request body into T.
@@ -82,30 +60,7 @@ func respondInvalidRequest(w http.ResponseWriter, msg string) {
 
 func respondValidationError(w http.ResponseWriter, err error) {
 	slog.Warn("validation failed", "err", err)
-	respondError(w, http.StatusUnprocessableEntity, "validation_error", err.Error())
-}
-
-func validateTimePoint(value any) error {
-	tp, ok := value.(timePoint)
-	if !ok {
-		return errors.New("required")
-	}
-	if tp.Time == "" {
-		return errors.New("time is required")
-	}
-	if _, err := time.Parse(time.RFC3339, tp.Time); err != nil {
-		return errors.New("time must be RFC3339 format")
-	}
-	return nil
-}
-
-// parseTimeset converts timePoint to tianwen.Timeset, returning an error on failure.
-func parseTimeset(tp timePoint) (tianwen.Timeset, error) {
-	ts, err := tp.Timeset()
-	if err != nil {
-		return tianwen.Timeset{}, err
-	}
-	return ts, nil
+	respondError(w, http.StatusUnprocessableEntity, "validation_error", "Invalid request parameters")
 }
 
 

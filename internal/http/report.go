@@ -1,4 +1,4 @@
-package handler
+package http
 
 import (
 	"net/http"
@@ -6,8 +6,7 @@ import (
 	"liki/internal/payment"
 )
 
-// Detects paid+llm_json="" and triggers generation in background as fallback.
-func handleReport(svc *payment.Service) http.HandlerFunc {
+func handleReport(svc *payment.Service, a *Analytics) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		orderID := r.PathValue("id")
 		if orderID == "" {
@@ -21,12 +20,7 @@ func handleReport(svc *payment.Service) http.HandlerFunc {
 			return
 		}
 
-		// Fallback: paid but llm_json not yet generated (webhook race / failure).
-		// StartReportGeneration is idempotent via in-memory mutex map.
-		if report.Status == payment.OrderPaid && report.LlmJSON == "" {
-			svc.StartReportGeneration(orderID, report.Product, report.ChartJSON)
-		}
-
+		a.RecordReportView()
 		respondJSON(w, http.StatusOK, report)
 	}
 }

@@ -10,38 +10,24 @@ const PAGES = [
   { path: '/zh-Hans/',              marker: '[data-i18n]',      name: 'index (vanilla)',
     checks: [
       { selector: 'h1.font-brand', text: '灵机 Liki' },
-      { selector: 'main h2:first-of-type', text: 'AI命理助手' },
-      { selector: 'section.text-center p', text: '八字分析' },
+      { selector: 'main h2:first-of-type', text: '找到你的名字' },
     ] },
   { path: '/zh-Hans/chat.html',     marker: '.chat-shell',     name: 'chat (Vue)',
     checks: [
       { selector: '.brand', text: '灵机对话' },
     ] },
-  { path: '/zh-Hans/chart.html',    marker: '[data-i18n]',      name: 'chart (vanilla)',
-    checks: [
-      { selector: 'h1', text: '八字报告' },
-    ] },
-  { path: '/zh-Hans/naming.html',   marker: '[data-i18n]',      name: 'naming (vanilla)',
-    checks: [
-      { selector: 'h1', text: '起名报告' },
-    ] },
   { path: '/zh-Hans/disclaimer.html', marker: '[data-i18n]',    name: 'disclaimer (vanilla)',
     checks: [
       { selector: 'h1', text: '免责声明' },
     ] },
-  { path: '/zh-Hans/compatibility.html', marker: '[data-i18n]', name: 'compatibility (vanilla)',
-    checks: [
-      { selector: 'h1', text: '合盘报告' },
-    ] },
   { path: '/zh-Hans/report/test-id', marker: '#report-header-title', name: 'report (vanilla)',
     checks: [
-      { selector: 'h1', text: '命理报告' },
+      { selector: 'h1', text: '起名报告' },
     ] },
   { path: '/en/',              marker: '[data-i18n]',      name: 'index EN',
     checks: [
       { selector: 'h1.font-brand', text: 'Liki' },
-      { selector: 'main h2:first-of-type', text: 'AI Chinese Metaphysics Assistant' },
-      { selector: 'section.text-center p', text: 'BaZi analysis' },
+      { selector: 'main h2:first-of-type', text: 'Find Your Name' },
     ] },
   { path: '/en/chat.html',     marker: '.chat-shell',     name: 'chat EN',
     checks: [
@@ -54,8 +40,7 @@ const PAGES = [
   { path: '/zh-Hant/',              marker: '[data-i18n]',      name: 'index ZH-Hant',
     checks: [
       { selector: 'h1.font-brand', text: '靈機 Liki' },
-      { selector: 'main h2:first-of-type', text: 'AI命理助手' },
-      { selector: 'section.text-center p', text: '八字分析' },
+      { selector: 'main h2:first-of-type', text: '找到你的名字' },
     ] },
   { path: '/zh-Hant/chat.html',     marker: '.chat-shell',     name: 'chat ZH-Hant',
     checks: [
@@ -69,7 +54,6 @@ const PAGES = [
   // Static resources
   { path: '/skills/liki.md',   marker: null,             name: 'skills',   resource: true },
   { path: '/llms.txt',         marker: null,             name: 'llms.txt', resource: true },
-  { path: '/api/openapi.json',     marker: null,             name: 'openapi',  resource: true },
 ];
 
 // i18n key pattern: if a raw key like "site.name" or "index.hero.subtitle" appears
@@ -82,7 +66,13 @@ test.describe('Smoke — all pages render without errors or warnings', () => {
       const consoleProblems = [];
       page.on('console', msg => {
         if ((msg.type() === 'error' || msg.type() === 'warning') && !(msg.location().url || '').includes('favicon')) {
-          consoleProblems.push(`[${msg.type()}] ${msg.text()}`);
+          consoleProblems.push(`[${msg.type()}] ${msg.text()} (${msg.location().url || 'no-url'})`);
+        }
+      });
+      page.on('requestfailed', req => {
+        // Ignore aborted requests (page close during navigation)
+        if (req.failure()?.errorText !== 'net::ERR_ABORTED') {
+          consoleProblems.push(`[requestfailed] ${req.url()} — ${req.failure()?.errorText || 'unknown'}`);
         }
       });
       page.on('pageerror', err => {
@@ -115,6 +105,15 @@ test.describe('Smoke — all pages render without errors or warnings', () => {
         if (leakedKeys.length > 0) {
           throw new Error(`Unresolved i18n keys on ${path}:\n  ${leakedKeys.join('\n  ')}`);
         }
+        // Raw template syntax must not leak.
+        if (/\{\{/.test(bodyText)) {
+          throw new Error(`Raw template syntax '{{ }}' found on ${path}`);
+        }
+      }
+
+      // Vue pages: v-cloak must be removed after mount.
+      if (marker === '.chat-shell') {
+        await expect(page.locator('#app:not([v-cloak])')).toBeAttached({ timeout: 10000 });
       }
 
       if (consoleProblems.length > 0) {
@@ -122,4 +121,41 @@ test.describe('Smoke — all pages render without errors or warnings', () => {
       }
     });
   }
+});
+
+// ── Images: critical images must load ──
+
+test.describe('Images load without error', () => {
+  test('index page images are valid', async ({ page }) => {
+    await page.goto('/zh-Hans/');
+    await expect(page.locator('[data-i18n]').first()).toBeVisible({ timeout: 10000 });
+
+    const imgs = page.locator('img');
+    const count = await imgs.count();
+    for (let i = 0; i < count; i++) {
+      const img = imgs.nth(i);
+      const src = await img.getAttribute('src');
+      if (!src || src.startsWith('data:')) continue;
+      const w = await img.evaluate(el => el.naturalWidth);
+      if (w === 0) throw new Error(`Broken image on /zh-Hans/: src="${src}"`);
+    }
+  });
+});
+
+// ── Mobile viewport: critical pages render on mobile ──
+
+test.describe('Mobile viewport', () => {
+  test('index renders at 375x812', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.goto('/zh-Hans/');
+    await expect(page.locator('[data-i18n]').first()).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('#purchase-form')).toBeVisible();
+  });
+
+  test('report renders at 375x812', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.goto('/zh-Hans/report/test-id');
+    await expect(page.locator('#report-header-title')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('html')).not.toHaveCSS('visibility', 'hidden', { timeout: 10000 });
+  });
 });

@@ -4,8 +4,8 @@
 
 ## 数据来源
 
-- chart（`POST /api/bazi/chart`）：`ri_yuan` 日主、`fu_yi`（`qiangruo` 身强身弱、`geju` 格局、`yong` 用神、`xi` 喜神、`ji` 忌神）、`tiao_hou`（`yong` 调候用神、`xi` 调候喜神）
-- detail（`POST /api/qiming/detail`）：`surname` 姓氏、`candidates[]` 候选列表，每项含 `name`、`characters[]`（`char`/`wuxing`/`stroke`/`radical`/`pinyin`/`tone`）、`wu_ge`（五格：`tian_ge`/`ren_ge`/`di_ge`/`wai_ge`/`zong_ge`，每格 `stroke`/`wuxing`/`fortune`/`description`）、`san_cai`（`configuration`/`fortune`/`description`）、`phonetic`（`tones`/`is_ping_ze`）
+- chart（`bazi.chart`）：`ri_yuan` 日主、`fu_yi`（`qiangruo` 身强身弱、`geju` 格局、`yong` 用神、`xi` 喜神、`ji` 忌神）、`tiao_hou`（`yong` 调候用神、`xi` 调候喜神）
+- detail（`qiming.detail`）：`surname` 姓氏、`candidates[]` 候选列表，每项含 `name`、`characters[]`（`char`/`wuxing`/`stroke`/`radical`/`pinyin`/`tone`）、`wu_ge`（五格：`tian_ge`/`ren_ge`/`di_ge`/`wai_ge`/`zong_ge`，每格 `stroke`/`wuxing`/`fortune`/`description`）、`san_cai`（`configuration`/`fortune`/`description`）、`phonetic`（`tones`）
 
 只引用数据中实际存在的字段，不编造。
 
@@ -28,7 +28,7 @@
 - 五行：各字五行与用神方向的匹配。
 - 三才：`san_cai.configuration` + `san_cai.fortune` + `san_cai.description`。
 - 五格：逐格引述 `stroke`/`fortune`/`description`，重点人格。
-- 音韵：`phonetic.tones` + `phonetic.is_ping_ze`，加谐音检查。
+- 音韵：`phonetic.tones`，加谐音检查。
 - 实用性：生僻字/多音字/笔画/性别适配/不良联想。
 
 ### 四、横向对比与推荐

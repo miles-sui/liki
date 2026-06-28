@@ -90,7 +90,7 @@ palaceGan[i] = ((mingGan − 1 − i + 10) % 10) + 1    i=0..11
 | 土 | 5 | 土五局 |
 | 火 | 6 | 火六局 |
 
-纳音五行可直接复用 `ganzhi.NayinTable[SixtyCycleName(mingGan, mingZhi)]` 查得纳音名，再从纳音名提取五行元素得局数。
+纳音五行可直接复用 `ganzhi.NayinTable[SixtyCycleIndex(mingGan, mingZhi)]` 查得纳音名，再从纳音名提取五行元素得局数。
 
 **输出**：`juShu int`（2/3/4/5/6）
 
@@ -464,13 +464,13 @@ Chart {
 }
 ```
 
-### HTTP Routes
+### JSON-RPC Methods
 
 | 路由 | Handler |
 |------|---------|
-| `POST /api/ziwei/chart` | 排盘 |
-| `POST /api/ziwei/daxian` | 大限 |
-| `POST /api/ziwei/liunian` | 流年 |
-| `POST /api/ziwei/liuyue` | 流月 |
-| `POST /api/ziwei/liuri` | 流日 |
-| `POST /api/ziwei/bond` | 合盘 |
+| `ziwei.chart` | 排盘 |
+| `ziwei.daxian` | 大限 |
+| `ziwei.liunian` | 流年 |
+| `ziwei.liuyue` | 流月 |
+| `ziwei.liuri` | 流日 |
+| `ziwei.bond` | 合盘 |

@@ -6,9 +6,9 @@
 //   Bond, XunGong,
 //   LiuNian, LiuYue, LiuRi, LiuShi,
 //   XiaoYunZhu, XiaoXian,
-//   FuYi, TiaoHou, TaiYuanMingGong
+//   FuYi, TiaoHou, SanYuan
 //   GanRelation, ZhiRelation,
-//   TripleHeFull, GongJia, FuYinFanYin, TaiYuanMingGong
+//   HeHuiCombination, GongJia, FuYinFanYin, SanYuan
 //
 // Functions
 //   ComputeChart(st, gender) → Chart

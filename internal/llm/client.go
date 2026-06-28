@@ -55,7 +55,7 @@ func New(apiKey string) *Client {
 		baseURL:      defaultBaseURL,
 		model:        defaultModel,
 		streamClient: &http.Client{
-		Timeout: 0, // no request timeout; stream is unbounded
+		Timeout: 180 * time.Second, // safety net above chatRoundTimeout (120s)
 		Transport: &http.Transport{
 			DialContext: (&net.Dialer{Timeout: 10 * time.Second}).DialContext,
 		},
@@ -132,6 +132,7 @@ func (c *Client) doStreamReq(ctx context.Context, payload any) (*http.Response, 
 func sseScanner(ctx context.Context, body io.ReadCloser, fn func([]byte) bool) error {
 	defer body.Close()
 	scanner := bufio.NewScanner(body)
+	scanner.Buffer(make([]byte, 0, 256*1024), 1<<20)
 	for scanner.Scan() {
 		select {
 		case <-ctx.Done():

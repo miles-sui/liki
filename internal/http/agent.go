@@ -1,31 +1,50 @@
-package handler
+package http
 
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"log/slog"
 	"net/http"
+	"time"
 
 	"liki/internal/agent"
-	
-	"liki/internal/llm"
-
-	"liki/internal/session"
+	"liki/internal/payment"
 )
 
-// chatHandler returns an SSE handler for POST /api/agent/chat.
-func chatHandler(chat *agent.ChatAgent, orders agent.OrderCreator, store *session.Store) http.HandlerFunc {
-	type chatRequest struct {
-		SessionID string `json:"session_id"`
-		Message   string `json:"message"`
-		Country   string `json:"country,omitempty"`
-		City      string `json:"city,omitempty"`
-		Lang      string `json:"lang,omitempty"` // frontend language: zh/hk/en
+// namingHandler returns an SSE handler for POST /api/agent/naming.
+// Requires JWT auth cookie. Loads chat history from DB,
+// persists new messages, and detects report output.
+func namingHandler(chat *agent.ChatAgent, store *payment.Store) http.HandlerFunc {
+	type namingRequest struct {
+		Message string `json:"message"`
+		Lang    string `json:"lang,omitempty"`
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		var req chatRequest
+		_, orderID, ok := jwtAuth(r)
+		if !ok {
+			respondError(w, http.StatusUnauthorized, "unauthorized", "请先登录或购买")
+			return
+		}
+
+		o, err := store.GetOrder(r.Context(), orderID)
+		if err != nil {
+			respondError(w, http.StatusNotFound, "not_found", "订单不存在")
+			return
+		}
+
+		if o.Status != payment.OrderPaid {
+			respondError(w, http.StatusForbidden, "forbidden", "订单未支付")
+			return
+		}
+
+		expiresAt, err := time.Parse(time.DateTime, o.ChatExpiresAt)
+		if err != nil || time.Now().After(expiresAt) {
+			respondError(w, http.StatusForbidden, "expired", "聊天已过期")
+			return
+		}
+
+		var req namingRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			respondError(w, http.StatusBadRequest, "invalid_request", "invalid request body")
 			return
@@ -35,45 +54,25 @@ func chatHandler(chat *agent.ChatAgent, orders agent.OrderCreator, store *sessio
 			return
 		}
 
-		// Load or create session.
-		var sess *session.Session
-		if req.SessionID != "" {
-			var ok bool
-			sess, ok = store.Get(req.SessionID)
-			if !ok {
-				respondError(w, http.StatusNotFound, "not_found", "session not found or expired")
-				return
-			}
-			if sess.IsClosed() {
-				respondError(w, http.StatusBadRequest, "invalid_request", "session is closed")
-				return
-			}
-			store.Touch(sess.ID)
-		} else {
-			sess = store.NewSession()
-			if sess == nil {
-				respondError(w, http.StatusServiceUnavailable, "internal_error", "service is busy, please try again")
-				return
-			}
-			if req.Country != "" {
-				loc := req.City
-				if loc == "" {
-					loc = req.Country
-				}
-				loc = sanitizeLocation(loc)
-				if loc != "" {
-					sess.AppendMessage(llm.Message{Role: llm.RoleSystem, Content: "[" + loc + "] 用户IP位于此地区。收集出生信息时可据此建议默认城市和时区，但必须经用户明确确认。"})
-				}
-			}
+		// Load chat history and build messages.
+		messages, err := buildChatMessages(r.Context(), store, orderID, req.Message)
+		if err != nil {
+			slog.Error("naming: load history", "err", err)
+			respondError(w, http.StatusInternalServerError, "internal_error", "加载历史记录失败")
+			return
 		}
 
-		sess.AppendMessage(llm.Message{Role: llm.RoleUser, Content: req.Message})
+		// Save user message — must succeed, or the LLM will lack context.
+		if err := store.CreateChatMessage(r.Context(), orderID, payment.RoleUser, req.Message); err != nil {
+			slog.Error("naming: save user message", "err", err)
+			respondError(w, http.StatusInternalServerError, "internal_error", "保存消息失败")
+			return
+		}
 
-		// Set SSE headers.
+		// SSE headers.
 		w.Header().Set("Content-Type", "text/event-stream")
 		w.Header().Set("Cache-Control", "no-cache")
 		w.Header().Set("Connection", "keep-alive")
-		w.Header().Set("X-Session-ID", sess.ID)
 		w.Header().Set("X-Accel-Buffering", "no")
 
 		flusher, ok := w.(http.Flusher)
@@ -87,122 +86,38 @@ func chatHandler(chat *agent.ChatAgent, orders agent.OrderCreator, store *sessio
 
 		chatCtx, chatCancel := context.WithCancel(ctx)
 		defer chatCancel()
-		result, err := chat.Chat(chatCtx, locale, sess.SnapshotMessages(), func(ev agent.ChatEvent) {
+
+		prevCount := len(messages) - 1 // messages already has the user message appended
+		result, err := chat.NamingChat(chatCtx, locale, messages, func(ev agent.ChatEvent) {
 			if err := writeSSE(w, flusher, ev); err != nil {
 				chatCancel()
 			}
-		}, orders, chat.Amounts)
+		})
 		if err != nil {
 			if ctx.Err() != nil {
-				slog.Info("chat: client disconnected", "err", err)
+				slog.Info("naming: client disconnected", "err", err)
 			} else {
-				slog.Error("chat: pipeline error", "err", err)
+				slog.Error("naming: pipeline error", "err", err)
 				if err := writeSSE(w, flusher, agent.ChatEvent{Type: agent.EventError, Content: "服务暂时不可用，请稍后重试"}); err != nil {
-					slog.Warn("chat: write error event failed", "err", err)
+					slog.Warn("naming: write error event failed", "err", err)
 				}
 			}
 			return
 		}
 
-		sess.SetMessages(result.Messages)
-
-		if result.Purchase == nil {
-			flushSSE(w, flusher)
-			return
-		}
-
-		if err := writeSSE(w, flusher, agent.ChatEvent{
-			Type: agent.EventDone,
-			Data: map[string]any{
-				"order_id": result.Purchase.OrderID,
-				"amount":   result.Purchase.Amount,
-				"product":  result.Purchase.Product,
-				"currency": detectCurrency(r),
-			},
-		}); err != nil {
-			slog.Error("write SSE done event", "err", err)
-		}
-
-		sess.SetPhase(session.PhaseClosed)
-	}
-}
-
-// greetingHandler serves the cached LLM-generated greeting (GET /api/agent/greeting).
-func greetingHandler(chat *agent.ChatAgent) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		respondJSON(w, http.StatusOK, map[string]any{"greeting": chat.Greeting})
-	}
-}
-
-// sessionRestoreHandler returns session history (GET /api/agent/session).
-func sessionRestoreHandler(store *session.Store) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		sid := r.URL.Query().Get("session_id")
-		if sid == "" {
-			respondError(w, http.StatusBadRequest, "invalid_request", "session_id is required")
-			return
-		}
-		sess, ok := store.Get(sid)
-		if !ok {
-			respondError(w, http.StatusNotFound, "not_found", "session not found or expired")
-			return
-		}
-		store.Touch(sid)
-		_, phase, msgs := sess.Snapshot()
-		respondJSON(w, http.StatusOK, map[string]any{
-			"messages": msgs,
-			"phase":    phase,
+		// Detect and save report from the last assistant message.
+		detectAndSaveReport(r.Context(), store, orderID, result, func(url string) {
+			if err := writeSSE(w, flusher, agent.ChatEvent{
+				Type:    agent.EventReportReady,
+				Content: url,
+			}); err != nil {
+				slog.Warn("naming: write report-ready event", "err", err)
+			}
 		})
-	}
-}
 
-// sanitizeLocation strips characters that could be used for prompt injection.
-func sanitizeLocation(s string) string {
-	for _, r := range s {
-		if r > 127 {
-			continue // allow CJK
-		}
-		if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || r == ' ' || r == '-' {
-			continue
-		}
-		return ""
-	}
-	if len(s) > 64 {
-		return ""
-	}
-	return s
-}
+		// Persist new messages (skip system prompt + history + user message).
+		persistChatResult(r.Context(), store, orderID, result, prevCount)
 
-// langToLocale maps frontend language code to BCP 47 locale.
-func langToLocale(lang string) string {
-	switch lang {
-	case "zh", "zh-Hans":
-		return "zh-Hans"
-	case "hk", "zh-Hant":
-		return "zh-Hant"
-	case "en":
-		return "en"
-	default:
-		return "zh-Hans"
+		flushSSE(w, flusher)
 	}
-}
-
-func writeSSE(w http.ResponseWriter, flusher http.Flusher, event agent.ChatEvent) error {
-	data, err := json.Marshal(event)
-	if err != nil {
-		return err
-	}
-	_, err = fmt.Fprintf(w, "data: %s\n\n", data)
-	if err != nil {
-		return err
-	}
-	flusher.Flush()
-	return nil
-}
-
-// flushSSE sends an SSE comment to ensure framing is complete before handler returns.
-// Prevents data loss when the handler returns immediately after streaming.
-func flushSSE(w http.ResponseWriter, flusher http.Flusher) {
-	fmt.Fprint(w, ": ok\n\n")
-	flusher.Flush()
 }

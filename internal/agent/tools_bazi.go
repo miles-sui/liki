@@ -10,18 +10,11 @@ import (
 )
 
 func computeChartHandler(ctx context.Context, raw json.RawMessage) (json.RawMessage, error) {
-	var p Person
-	if err := json.Unmarshal(raw, &p); err != nil {
-		return nil, fmt.Errorf("compute_chart: %w", err)
-	}
-	if err := validateGender(p.Gender); err != nil {
-		return nil, fmt.Errorf("compute_chart: %w", err)
-	}
-	ts, err := p.Birth.Timeset()
+	solar, gender, err := resolvePerson(raw, "compute_chart")
 	if err != nil {
-		return nil, fmt.Errorf("compute_chart: %w", err)
+		return nil, err
 	}
-	result := bazi.ComputeChart(ts.Solar, p.Gender)
+	result := bazi.ComputeChart(solar, gender)
 	return wrapResult("chart", result)
 }
 

@@ -4,31 +4,31 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 const MSG = {
   'zh-Hans': {
     'site.name': '灵机 Liki',
-    'site.tagline': 'AI命理助手',
+    'site.tagline': 'AI 起名顾问',
     'form.year': '出生年',
     'gender.male': '男',
-    'chart.submit': '开始排盘分析',
-    'lang.switch': 'English',
+    'report.polling': '等待支付确认…',
+    'a11y.skipLink': 'English',
     'error.requestFailed': '请求失败',
     'naming.wuge': '五格: 天{0} 人{1} 地{2} 外{3} 总{4}',
   },
   'zh-Hant': {
     'site.name': '靈機 Liki',
-    'site.tagline': 'AI命理助手',
+    'site.tagline': 'AI 起名顧問',
     'form.year': '出生年',
     'gender.male': '男',
-    'chart.submit': '開始排盤分析',
-    'lang.switch': 'English',
+    'report.polling': '等待支付確認…',
+    'a11y.skipLink': 'English',
     'error.requestFailed': '請求失敗',
     'naming.wuge': '五格: 天{0} 人{1} 地{2} 外{3} 總{4}',
   },
   en: {
     'site.name': 'Liki',
-    'site.tagline': 'AI Chinese Metaphysics Assistant',
+    'site.tagline': 'AI Chinese Naming Advisor',
     'form.year': 'Year',
     'gender.male': 'Male',
-    'chart.submit': 'Analyze Chart',
-    'lang.switch': '中文',
+    'report.polling': 'Waiting for payment…',
+    'a11y.skipLink': '中文',
     'error.requestFailed': 'Request failed',
     'naming.wuge': 'Wu Ge: Heaven{0} Person{1} Earth{2} Outer{3} Total{4}',
   },
@@ -56,7 +56,7 @@ function t(lang, key, params) {
 }
 
 function setLang(l, pathname, localStorage) {
-  localStorage.setItem('lingji-lang', l);
+  localStorage.setItem('liki-lang', l);
   const path = pathname.replace(/^\/(zh-Hans|zh-Hant|en)\/?/, '/');
   return '/' + l + (path === '/' ? '/' : path);
 }
@@ -151,7 +151,7 @@ describe('setLang', () => {
 
   it('stores the language preference in localStorage', () => {
     setLang('en', '/zh-Hans/chat.html', storage);
-    expect(storage._data['lingji-lang']).toBe('en');
+    expect(storage._data['liki-lang']).toBe('en');
   });
 
   it('returns redirect URL for switching to en from zh', () => {

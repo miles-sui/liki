@@ -4,261 +4,137 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strings"
+	"sync"
 	"time"
 
+	"liki/internal/agent/city"
 	"liki/internal/engine/ganzhi"
 	"liki/internal/engine/tianwen"
-	doc "liki"
 	"liki/internal/llm"
 )
 
-// openapiParams extracts the JSON Schema parameters for the given tool name.
-func openapiParams(tool string) json.RawMessage {
-	var api struct {
-		Paths map[string]map[string]struct {
-			XAgentTool string `json:"x-agent-tool"`
-			Parameters []struct {
-				Name     string          `json:"name"`
-				Required bool            `json:"required"`
-				Schema   json.RawMessage `json:"schema"`
-			} `json:"parameters"`
-			RequestBody struct {
-				Content map[string]struct {
-					Schema json.RawMessage `json:"schema"`
-				} `json:"content"`
-			} `json:"requestBody"`
-		} `json:"paths"`
-		XAgentTools map[string]struct {
-			Parameters json.RawMessage `json:"parameters"`
-		} `json:"x-agent-tools"`
-	}
-	if err := json.Unmarshal(doc.OpenAPIJSON, &api); err != nil {
-		return nil
-	}
-	if t, ok := api.XAgentTools[tool]; ok {
-		return resolveRefs(t.Parameters)
-	}
-	for _, methods := range api.Paths {
-		for _, op := range methods {
-			if op.XAgentTool != tool {
-				continue
-			}
-			if s, ok := op.RequestBody.Content["application/json"]; ok {
-				return resolveRefs(s.Schema)
-			}
-			if len(op.Parameters) > 0 {
-				props := map[string]any{}
-				required := []string{}
-				for _, p := range op.Parameters {
-					var ps map[string]any
-					if err := json.Unmarshal(p.Schema, &ps); err != nil {
-						panic("openapiParams: invalid param schema for " + p.Name + ": " + err.Error())
-					}
-					props[p.Name] = ps
-					if p.Required {
-						required = append(required, p.Name)
-					}
-				}
-				schema := map[string]any{
-					"type":       "object",
-					"properties": props,
-					"required":   required,
-				}
-				b, err := json.Marshal(schema)
-				if err != nil {
-					panic("openapiParams: marshal schema: " + err.Error())
-				}
-				return resolveRefs(json.RawMessage(b))
-			}
-			return nil
-		}
-	}
-	return nil
+var (
+	toolsOnce sync.Once
+	toolsMap  map[string]toolEntry
+)
+
+type toolEntry struct {
+	Description string          `json:"description"`
+	Parameters  json.RawMessage `json:"parameters"`
 }
 
-// schemaCache holds the schemas from openapi.json's components/schemas,
-// used to resolve $ref references in tool parameter schemas.
-var schemaCache map[string]json.RawMessage
-
-func getSchemaCache() map[string]json.RawMessage {
-	if schemaCache != nil {
-		return schemaCache
+func initTools() {
+	var f struct {
+		Tools []struct {
+			Name        string          `json:"name"`
+			Description string          `json:"description"`
+			Parameters  json.RawMessage `json:"parameters"`
+		} `json:"tools"`
 	}
-	var raw struct {
-		Components struct {
-			Schemas map[string]json.RawMessage `json:"schemas"`
-		} `json:"components"`
+	if err := json.Unmarshal(ToolsJSON, &f); err != nil {
+		panic("initTools: " + err.Error())
 	}
-	if err := json.Unmarshal(doc.OpenAPIJSON, &raw); err != nil {
-		schemaCache = map[string]json.RawMessage{}
-		return schemaCache
+	toolsMap = make(map[string]toolEntry, len(f.Tools))
+	for _, t := range f.Tools {
+		toolsMap[t.Name] = toolEntry{Description: t.Description, Parameters: t.Parameters}
 	}
-	schemaCache = raw.Components.Schemas
-	return schemaCache
 }
 
-// resolveRefs resolves all $ref and allOf in a JSON Schema, returning an
-// inline schema that LLMs can understand.
-func resolveRefs(raw json.RawMessage) json.RawMessage {
-	var node any
-	if err := json.Unmarshal(raw, &node); err != nil {
-		return raw
+// ValidateTools parses tools.json eagerly so configuration errors fail at startup
+// instead of at first request time.
+func ValidateTools() error {
+	var err error
+	toolsOnce.Do(func() {
+		defer func() {
+			if r := recover(); r != nil {
+				err = fmt.Errorf("tools: %v", r)
+			}
+		}()
+		initTools()
+	})
+	return err
+}
+
+func toolParams(name string) (string, json.RawMessage, error) {
+	toolsOnce.Do(initTools)
+	e, ok := toolsMap[name]
+	if !ok {
+		return "", nil, fmt.Errorf("tool not found in tools.json: %s", name)
 	}
-	resolved := resolveNode(node, 0)
-	b, err := json.Marshal(resolved)
+	return e.Description, e.Parameters, nil
+}
+
+func computeTimeHandler(ctx context.Context, raw json.RawMessage) (json.RawMessage, error) {
+	var tp TimePoint
+	if err := json.Unmarshal(raw, &tp); err != nil {
+		return nil, fmt.Errorf("compute_time: %w", err)
+	}
+	ts, err := tp.Timeset()
 	if err != nil {
-		return raw
+		return nil, fmt.Errorf("compute_time: %w", err)
 	}
-	return b
+	return json.Marshal(ts)
 }
 
-func resolveNode(node any, depth int) any {
-	if depth > 10 {
-		return node
-	}
-	switch n := node.(type) {
-	case map[string]any:
-		if ref, ok := n["$ref"].(string); ok && len(n) == 1 {
-			const prefix = "#/components/schemas/"
-			if strings.HasPrefix(ref, prefix) {
-				name := ref[len(prefix):]
-				if schema, ok := getSchemaCache()[name]; ok {
-					var resolved any
-					if err := json.Unmarshal(schema, &resolved); err == nil {
-						return resolveNode(resolved, depth+1)
-					}
-				}
-			}
-			return node
-		}
-		if allOf, ok := n["allOf"].([]any); ok {
-			return resolveAllOf(allOf, depth+1)
-		}
-		for k, v := range n {
-			n[k] = resolveNode(v, depth+1)
-		}
-		return n
-	case []any:
-		for i, v := range n {
-			n[i] = resolveNode(v, depth+1)
-		}
-		return n
-	}
-	return node
-}
-
-func resolveAllOf(allOf []any, depth int) map[string]any {
-	result := map[string]any{
-		"type":       "object",
-		"properties": map[string]any{},
-	}
-	var required []string
-	for _, item := range allOf {
-		obj := resolveNode(item, depth)
-		m, ok := obj.(map[string]any)
-		if !ok {
-			continue
-		}
-		if props, ok := m["properties"].(map[string]any); ok {
-			for k, v := range props {
-				result["properties"].(map[string]any)[k] = v
-			}
-		}
-		if req, ok := m["required"].([]any); ok {
-			for _, r := range req {
-				if s, ok := r.(string); ok {
-					required = append(required, s)
-				}
-			}
-		}
-		// Carry over description if the merged schema has one.
-		if desc, ok := m["description"].(string); ok {
-			if _, exists := result["description"]; !exists {
-				result["description"] = desc
-			}
-		}
-	}
-	if len(required) > 0 {
-		result["required"] = required
-	}
-	return result
-}
+const (
+	ToolQueryCity          = "query_city"
+	ToolComputeTime        = "compute_time"
+	ToolComputeChart       = "compute_chart"
+	ToolComputeZiwei       = "compute_ziwei"
+	ToolComputeNamingWuge  = "compute_naming_wuge"
+	ToolComputeNamingCompose = "compute_naming_compose"
+	ToolComputeNamingDetail  = "compute_naming_detail"
+	ToolComputeNamingEvaluate = "compute_naming_evaluate"
+)
 
 type ChatToolRegistry struct {
 	handlers map[string]func(context.Context, json.RawMessage) (json.RawMessage, error)
 	defs     []json.RawMessage
 }
 
-func NewChatToolRegistry() *ChatToolRegistry {
+// NewNamingToolRegistry creates a tool registry for the naming chat flow with 8 tools.
+func NewNamingToolRegistry() *ChatToolRegistry {
 	r := &ChatToolRegistry{
 		handlers: map[string]func(context.Context, json.RawMessage) (json.RawMessage, error){},
 	}
 
-	// --- bazi ---
-	r.register("compute_chart", computeChartHandler, "排八字命盘")
-	r.register("compute_bond", computeBondHandler, "八字合盘配对")
-	r.register("compute_liunian", computeLiunianHandler, "八字流年运势")
-	r.register("compute_liuyue", computeLiuyueHandler, "八字流月运势")
-	r.register("compute_liuri", computeLiuriHandler, "八字流日运势")
-	r.register("compute_liushi", computeLiushiHandler, "八字流时运势")
-	r.register("compute_xiaoyun", computeXiaoYunHandler, "八字小运")
-	r.register("compute_xiaoxian", computeXiaoXianHandler, "八字小限")
+	// --- collection ---
+	r.registerTool(ToolQueryCity, city.SearchCity)
+	r.registerTool(ToolComputeTime, computeTimeHandler)
 
-	// --- ziwei ---
-	r.register("compute_ziwei", computeZiweiHandler, "紫微斗数命盘")
-	r.register("compute_ziwei_daxian", computeZiweiDaXianHandler, "紫微斗数大限")
-	r.register("compute_ziwei_liunian", computeZiweiLiuNianHandler, "紫微斗数流年")
-	r.register("compute_ziwei_liuyue", computeZiweiLiuYueHandler, "紫微斗数流月")
-	r.register("compute_ziwei_liuri", computeZiweiLiuRiHandler, "紫微斗数流日")
-	r.register("compute_ziwei_bond", computeZiweiBondHandler, "紫微斗数合盘")
-
-	// --- qiming ---
-	r.register("compute_naming_wuge", computeNamingWuGeHandler, "起名五格计算")
-	r.register("compute_naming_compose", computeNamingComposeHandler, "起名候选名字组合")
-	r.register("compute_naming_detail", computeNamingDetailHandler, "起名候选名字详析")
-	r.register("compute_naming_evaluate", computeNamingEvaluateHandler, "起名单名评分")
-
-	// --- qimen ---
-	r.register("compute_qimen", computeQimenHandler, "奇门遁甲排盘")
-
-	// --- bazhai ---
-	r.register("compute_bazhai", computeBazhaiHandler, "八宅风水命盘")
-	r.register("compute_minggua", computeMingGuaHandler, "命卦计算")
-
-	// --- xuankong ---
-	r.register("compute_xuankong", computeXuankongHandler, "玄空飞星排盘")
-	r.register("compute_sanyuan_yun", computeSanYuanYunHandler, "三元九运查询")
-
-	// --- liuyao ---
-	r.register("compute_liuyao", computeLiuyaoHandler, "六爻起卦排盘")
-
-	// --- huangli ---
-	r.register("query_huangli_date", queryHuangliDateHandler, "黄历按日查询宜忌")
-	r.register("query_huangli_month", queryHuangliMonthHandler, "黄历按月查询宜忌")
-	r.register("query_huangli_bond_date", queryHuangliBondDateHandler, "八字合参按日择日")
-	r.register("query_huangli_bond_month", queryHuangliBondMonthHandler, "八字合参按月择日")
-
-	// --- infra ---
-	r.register("query_city", queryCity, "根据城市名查询经纬度")
+	// --- naming ---
+	r.registerTool(ToolComputeChart, computeChartHandler)
+	r.registerTool(ToolComputeZiwei, computeZiweiHandler)
+	r.registerTool(ToolComputeNamingWuge, computeNamingWuGeHandler)
+	r.registerTool(ToolComputeNamingCompose, computeNamingComposeHandler)
+	r.registerTool(ToolComputeNamingDetail, computeNamingDetailHandler)
+	r.registerTool(ToolComputeNamingEvaluate, computeNamingEvaluateHandler)
 
 	return r
 }
 
-func (r *ChatToolRegistry) register(name string, h func(context.Context, json.RawMessage) (json.RawMessage, error), desc string) {
+func (r *ChatToolRegistry) registerTool(name string, h func(context.Context, json.RawMessage) (json.RawMessage, error)) {
+	desc, params, err := toolParams(name)
+	if err != nil {
+		panic("registerTool: " + err.Error())
+	}
 	r.handlers[name] = h
+	r.defs = append(r.defs, toolDef(name, desc, params))
+}
+
+func toolDef(name, desc string, params json.RawMessage) json.RawMessage {
 	fn := map[string]any{
 		"name":        name,
 		"description": desc,
 	}
-	if params := openapiParams(name); params != nil {
+	if params != nil {
 		fn["parameters"] = params
 	}
 	b, err := json.Marshal(fn)
 	if err != nil {
 		panic("marshal tool def: " + err.Error())
 	}
-	r.defs = append(r.defs, b)
+	return b
 }
 
 func (r *ChatToolRegistry) Execute(ctx context.Context, name string, args json.RawMessage) (json.RawMessage, error) {
@@ -301,12 +177,30 @@ type Person struct {
 	Gender ganzhi.Gender `json:"gender"`
 }
 
+// resolvePerson unmarshals raw JSON as a Person, validates gender, and computes
+// the solar time. Used by handlers that accept bare Person input (compute_chart,
+// compute_ziwei, etc.).
+func resolvePerson(raw json.RawMessage, name string) (tianwen.SolarTime, ganzhi.Gender, error) {
+	var p Person
+	if err := json.Unmarshal(raw, &p); err != nil {
+		return tianwen.SolarTime{}, "", fmt.Errorf("%s: %w", name, err)
+	}
+	if err := validateGender(p.Gender); err != nil {
+		return tianwen.SolarTime{}, "", fmt.Errorf("%s: %w", name, err)
+	}
+	ts, err := p.Birth.Timeset()
+	if err != nil {
+		return tianwen.SolarTime{}, "", fmt.Errorf("%s: %w", name, err)
+	}
+	return ts.Solar, p.Gender, nil
+}
+
 // --- helpers ---
 
-func wrapResult(product string, data any) (json.RawMessage, error) {
+func wrapResult[T any](product string, data T) (json.RawMessage, error) {
 	return json.Marshal(struct {
 		Product string `json:"_product"`
-		Data    any    `json:"data"`
+		Data    T      `json:"data"`
 	}{Product: product, Data: data})
 }
 

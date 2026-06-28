@@ -24,11 +24,11 @@
 
 编排层 `api.go` 收 `tianwen.SolarTime` → `ComputeBazi` → 引擎 `computeBondDay(bz ganzhi.Bazi, …)` / `computeBondMonth(bz ganzhi.Bazi, …)` 收精确实体。
 
-### HTTP Routes
+### JSON-RPC Methods
 
 | 路由 | Handler |
 |------|---------|
-| `GET /api/huangli/date` | 单日查询 |
-| `GET /api/huangli/month` | 整月查询 |
-| `POST /api/huangli/bond/date` | 合日查询 |
-| `POST /api/huangli/bond/month` | 合月查询 |
+| `huangli.date` | 单日查询 |
+| `huangli.month` | 整月查询 |
+| `huangli.bond.date` | 合日查询 |
+| `huangli.bond.month` | 合月查询 |

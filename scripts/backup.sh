@@ -14,7 +14,7 @@ set -euo pipefail
 
 BACKUP_DIR="${1:-data/backups}"
 RETENTION_DAYS="${2:-30}"
-DB_PATH="${DB_PATH:-data/lingji.db}"
+DB_PATH="${DB_PATH:-data/liki.db}"
 DB_NAME="$(basename "$DB_PATH" .db)"
 
 mkdir -p "$BACKUP_DIR"

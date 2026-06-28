@@ -27,8 +27,8 @@ func liuNianMinors(yearZhu ganzhi.Zhu, hourZhi Zhi) map[starIndex]int {
 	return map[starIndex]int{
 		QingYang: qingYangPos(yearZhu.Gan),
 		TuoLuo:   tuoLuoPos(yearZhu.Gan),
-		HuoXing:  marsIndex(yearZhu.Zhi, hourZhi),
-		LingXing: lingxingIndex(yearZhu.Zhi, hourZhi),
+		HuoXing:  huoXingIndex(yearZhu.Zhi, hourZhi),
+		LingXing: lingXingIndex(yearZhu.Zhi, hourZhi),
 	}
 }
 

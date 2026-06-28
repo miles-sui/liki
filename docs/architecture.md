@@ -2,7 +2,9 @@
 
 ## 概述
 
-灵机（Liki）是一个中国命理 AI 服务，提供命理排盘、合盘分析、起名建议、问事卜卦、风水分析。前端为静态 HTML + Vue 3，后端为 Go JSON API，LLM 对话通过 SSE 流式返回，数据库为 SQLite。
+灵机（Liki）是 AI 起名顾问。先付费，后进入 chat，7 天内反复磋商名字。前端为静态 HTML + Vue 3，后端为 Go JSON API，LLM 对话通过 SSE 流式返回，数据库为 SQLite。
+
+同时对外提供 AI 命理引擎计算 API（八字、紫微、奇门、六爻、风水、黄历等），供 AI agent 与开发者使用。API 平台保持不变，起名 API 不对外开放。
 
 ## 组件图
 
@@ -11,27 +13,27 @@
                           │
                    ┌──────┴──────┐
                    │   Caddy     │  TLS 终止 · 静态文件 · 反向代理
-                   │  :8080      │  /zh/* /en/* → web/
-                   │             │  /api/* → Go :8081
+                   │  :8080      │  /zh-Hans/* /zh-Hant/* /en/* → web/
+                   │             │  /api/* → Go :8080
                    └──────┬──────┘
                           │
                    ┌──────┴──────┐
-                   │  Go Server  │  cmd/lingji
-                   │  :8081      │
+                   │  Go Server  │  cmd/liki
+                   │  :8080      │
                    └──────┬──────┘
                           │
       ┌───────────────────┼───────────────────┐
       │                   │                   │
       │  ┌────────────────┴────────────────┐  │
-      │  │        HTTP Handlers            │  │  Free API + Agent Chat
-      │  │  (package handler)              │  │
+      │  │        HTTP Handlers            │  │  Free API + Naming Agent
+      │  │  (package http)                 │  │
       │  └────────────────┬───────────────┘  │
       │                   │                  │
       └──────────┬────────┴────────┬─────────┘
                  │                 │
       ┌──────────┴──────────┐  ┌──┴──────────┐
       │  Agent              │  │ Engine      │  引擎层
-      │   Chat + Purchase   │  │ Layer       │  纯 Go 计算
+      │  Naming (8 tools)   │  │ Layer       │  纯 Go 计算
       └──────────┬──────────┘  └──┬──────────┘
                  │                 │
       ┌──────────┼─────────────────┼──────┐
@@ -40,19 +42,16 @@
  │ Engine  │ │  LLM    │  │  Payment    ││
  │ bazi    │ │ DeepSeek│  │  Service    ││
  │ ziwei   │ └─────────┘  │  + Store    ││
- │ qimen   │              └──────┬──────┘│
- │ liuyao  │                     │       │
- │ fengshui│                ┌────┴────┐  │
- │ bazhai  │                │ SQLite  │  │
- │ xuankong│                │ orders  │  │
- │ qiming  │                └─────────┘  │
- │ huangli │                            │
- │ tianwen │                            │
- │ ganzhi  │                            │
- └─────────┘                            │
+ │ qiming  │              └──────┬──────┘│
+ │ tianwen │                     │       │
+ │ ganzhi  │                ┌────┴────┐  │
+ │ (其他   │                │ SQLite  │  │
+ │  API用) │                │ orders  │  │
+ └─────────┘                │ chat_ms │  │
+                            └─────────┘  │
                                         │
  ┌───────────────────────────────────────┘
- │ SessionStore (内存)  Email (Resend)
+ │ Email (Resend)
  └───────────────────────────────────────
 ```
 
@@ -64,220 +63,206 @@
 internal/engine/
 ├── ganzhi/     # 基础: 天干地支、五行、十神（无外部依赖）
 ├── tianwen/    # 基础: 天文历算（真太阳时、节气、干支历）
-├── bazi/       # 命理: 八字排盘+大运+用神+合盘
-├── ziwei/      # 命理: 紫微斗数（12宫+14主星+四化+格局+大限流年）
-├── qimen/      # 命理/问事: 奇门遁甲（时/日/月/年盘+克应+格局+应期）
-├── liuyao/     # 问事: 六爻卜卦（64卦+装卦+用神+月建日建+应期）
-├── fengshui/   # 环境: 风水基础（24山+飞星+旺衰+双星加会）
-├── bazhai/     # 环境: 八宅风水（命卦+八宅方位+四柱八卦）
-├── xuankong/   # 环境: 玄空风水（三元九运+飞星+挨星+旺山旺向+城门诀）
-├── huangli/    # 择日: 黄历（宜忌+二十八宿+时辰吉凶）
+├── bazi/       # 命理: 八字排盘+大运+用神
+├── ziwei/      # 命理: 紫微斗数（12宫+14主星+四化+格局）
+├── qimen/      # 命理: 奇门遁甲
+├── liuyao/     # 问事: 六爻卜卦
+├── fengshui/   # 环境: 风水基础
+├── bazhai/     # 环境: 八宅风水
+├── xuankong/   # 环境: 玄空风水
+├── huangli/    # 择日: 黄历
 └── qiming/     # 命名: 起名（三才五格+五行补益+字形分析）
 ```
 
 所有 Engine 包遵循同一原则：**纯 Go 计算，无 I/O 依赖**。每个函数原子化（单一输入→单一输出），SQL/HTTP/LLM 全部在上层。
 
-### api.go 编排层
-
-每个业务 Engine 包（bazi、ziwei、qimen、liuyao、bazhai、xuankong、huangli、tianwen）暴露 `api.go`：
-
-- **公开入口**：接收 `ChartBase` 或 `SolarTime`，编排小写引擎函数。
-- **流运函数**：`ComputeLiuNian(cb ChartBase, year)` / `ComputeLiuYue(cb ChartBase, year, month)` / `ComputeLiuRi(cb ChartBase, year, month, day)` / `ComputeLiuShi(cb ChartBase, year, month, day, hour)` — 统一签名，ChartBase 内部分离 DaYun 等值。
-- **HTTP 和 Tool 共用**：同一套函数签名，tool handler 和 HTTP handler 无差异化。
-
-```
-api.go (public)                                engine file (private)
-────────────────────────────────────           ──────────────────────
-ComputeChart(st tianwen.SolarTime, gender)     → computeChart(bz ganzhi.Bazi, g) Chart
-ComputeBond(a, b ChartBase) Bond              → computeBond(bzA, bzB ganzhi.Bazi) Bond
-ComputeLiuNian(cb ChartBase, year)            → computeLiuNian(bz ganzhi.Bazi, year)
-ComputeLiuYue(cb ChartBase, year, month)      → computeLiuYue(bz ganzhi.Bazi, year, month)
-ComputeLiuRi(cb ChartBase, year, month, day)  → computeLiuRi(bz ganzhi.Bazi, year, month, day)
-ComputeLiuShi(cb ChartBase, y, m, d, hour)    → computeLiuShi(bz ganzhi.Bazi, y, m, d, hour)
-```
+起名 Agent 仅使用 `bazi`、`ziwei`、`qiming`、`tianwen`、`ganzhi`。其余 engine 包仅对 API 平台暴露。
 
 ### 命名约定
 
-- `Compute` 前缀：多步编排（如 `ComputeChart`、`ComputeLiuNian`）
+- `Compute` 前缀：多步编排（如 `ComputeChart`）
 - 无前缀：单公式推导（如 `RiZhu`、`NianZhu`）
 - 所有领域概念使用类型化实体，不用裸 `int`
 - JSON 字段用拼音 snake_case：`nian`/`yue`/`ri`/`shi`（四柱）、`yongshen`/`dayun`/`riyuan`
-- ChartBase 仅 5 字段：`Nian`/`Yue`/`Ri`/`Shi`/`DaYun`，展示类字段（FuYi/TiaoHou/WuxingCount）在 Chart
 
-### ChartBase 与 Chart
+### Agent Tool Schema
 
-```go
-type ChartBase struct {
-    Nian, Yue, Ri, Shi  zhuInfo    // 四柱
-    DaYun                *DaYun     // 大运
-}
-type Chart struct {
-    ChartBase
-    SolarTime, ChangSheng, FuYi, TiaoHou, WuxingCount, ...
-}
-```
+**内部 Naming Agent**：8 个 tool 的 JSON Schema 定义在 `internal/agent/tools.json`。编译时嵌入 `agent.ToolsJSON`，`NewNamingToolRegistry()` 在启动时解析并注册 handler 函数。运行时 tool schema 直接传给 LLM 的 tool calling `parameters` 字段。
 
-ChartBase 被 Bond、流运函数共用。流运不依赖扶抑/调候（非经典用法），故放在 Chart 而非 ChartBase。
+**外部 API**：29 个 JSON-RPC method 通过 `RPCRegistry` 注册。`POST /jsonrpc` 的 `rpc.discover` 方法返回 OpenRPC 1.4.1 文档（动态生成），供外部 Agent 和开发者发现全部引擎计算能力。
 
-### OpenAPI / Agent Schema
-
-工具和 HTTP 的参数定义统一在 `openapi.json`（OpenAPI 3.0，v1.1.0）。Agent 的 29 个 tool 的 JSON Schema 从 OpenAPI 的 `x-agent-tools` 和 path schema 提取（`openapiParams()`），编译时嵌入 `doc.OpenAPIJSON`，运行时传给 LLM 的 tool calling `parameters` 字段。`openapi.json` 同时包含全部 32 个端点的完整响应 schema（105 个 component schema），供外部 AI agent 服务发现使用。
-
-外部 Agent 通过 `GET /api/openapi.json` 获取完整 API 定义，`/skills/liki.md` 获取产品行为描述。报告模板位于 `/skills/report-chart.md`、`/skills/report-bond.md`、`/skills/report-naming.md`。
+外部 Agent 通过 `/skills/liki.md` 获取产品行为描述（含 API 调用说明），`/llms.txt` 获取服务索引。报告模板位于 `/skills/report-naming.md`。起名 API 不对外暴露。
 
 ## 核心数据流
 
-### Chat 流（Agent 对话）
+### 购买 → 起名（Naming Agent）
 
 ```
-POST /api/agent/chat  {session_id, message, lang}
+首页输入邮箱 → POST /api/orders（创建 pending 订单）
+  → POST /api/payments/checkout → 跳支付
+  → 支付成功 → webhook: chat_expires_at = now+7d
+  → 重定向 /chat → JWT cookie → POST /api/agent/naming（SSE）
+
+Agent 单阶段（单 endpoint，工具收集+磋商一体）:
+
+    → query_city（城市→经纬度）
+    → compute_time（raw + geo → Timeset）
+    → compute_chart → compute_ziwei
+    → compute_naming_wuge → compose → detail → evaluate
+    → 磋商讨论
+    → 用户要求时，LLM 直接在对话里输出 markdown 报告
+    → handler 识别报告 → 存 llm_json → 发 report_ready 事件 → 前端跳转 /report/{id}
+```
+
+### 消息持久化（per-request）
+
+```
+POST /api/agent/naming
   │
-  └─ ChatAgent.Chat(messages, tools, onEvent, orderCreator, amounts)
-       │  单 loop，tools (max 20 rounds, SSE 流式)
-       │  工具: query_city, compute_chart, compute_bond, compute_naming, purchase
-       │
-       ├─ 收集: LLM 追问出生信息
-       ├─ 计算: compute_* → engine → LLM 生成 teaser
-       ├─ Q&A: 用户追问 (~8 轮)，LLM 引导购买
-       └─ purchase: 触发订单创建 → SQLite INSERT (status=pending)
-            → SSE done {order_id, amount, product}
+  ├─ 1. jwtAuth(r) → email + order_id
+  ├─ 2. GetOrder(order_id) → 校验已支付、未过期
+  ├─ 3. LoadChatHistory(order_id) → []ChatMessage（按 created_at ASC）
+  ├─ 4. 拼 messages: [system prompt] + history + [user msg]
+  │
+  ├─ 5. CreateChatMessage(order_id, "user", msg)  ← 用户消息立即入库
+  │
+  ├─ 6. SSE 流式返回（http.Flusher）
+  │       │
+  │       ├─ text_delta  → 逐 token 推送
+  │       ├─ thinking    → 推理过程（可选）
+  │       ├─ phase       → 阶段提示
+  │       ├─ tool_call   → 调用引擎计算
+  │       └─ ...
+  │
+  └─ 7. 流结束后
+         ├─ 检测最后一条 assistant 消息是否为报告
+         │   └─ IsNamingReport(content) → UpdateLlmJSON(order_id, content)
+         │                                → emit report_ready 事件
+         └─ BatchCreateChatMessages(order_id, 新消息)  ← AI 回复批量入库
+```
+
+即使中途关闭网页：
+- 用户消息已在步骤 5 入库
+- 流结束后 AI 回复在步骤 7 入库
+- 唯一丢的是正在流式输出的那轮 AI 回复（用户消息不丢）
+
+### 老用户回来（断点续聊）
+
+```
+输入邮箱 → POST /api/auth/login
+  │
+  ├─ FindActiveOrdersByEmail(email)
+  │   → SELECT * FROM orders
+  │     WHERE email = ? AND status = 'paid'
+  │       AND chat_expires_at > datetime('now')
+  │
+  ├─ 单订单 → 直接签发 JWT cookie
+  └─ 多订单 → 返回订单列表，用户选择 → POST /api/auth/select-order → JWT cookie
+
+重定向 /chat → POST /api/agent/naming
+  │
+  ├─ jwtAuth(r) → order_id
+  ├─ LoadChatHistory(order_id) → 全部历史消息
+  ├─ 拼入 system prompt 前
+  └─ LLM 看到完整历史，无缝续聊
+```
+
+### 认证与会话
+
+```
+无服务端 session。纯 JWT cookie 方案：
+
+  登录 → setJWTCookie(w, email, orderID)
+         │
+         └─ JWT payload: { email, order_id, exp: now+24h }
+            Cookie: liki_token
+              HttpOnly: true
+              Secure: true
+              SameSite: Lax
+              MaxAge: 86400
+
+  每个请求 → jwtAuth(r)
+              │
+              └─ 解析 liki_token cookie
+                 → 验签（HS256, JWT_SECRET）
+                 → 返回 email + order_id
+                 → handler 用 order_id 查 DB 获取完整状态
+
+JWT 有效期 24h，过期后重新登录（输邮箱即可，无需重新支付）。
+```
+
+### 数据切面
+
+```
+raw（用户输入）→ geo（query_city）→ timeset（compute_time）
+                                          ↓
+                               chat_messages 持久化 → 磋商 + 报告生成
 ```
 
 ### Free API 流
 
 ```
-POST /api/bazi/chart  (或 /api/bazi/bond, /api/qiming/wuge, /api/ziwei/chart 等)
-  │
-  ├─ 解析请求 → Engine 计算
-  └─ 返回 JSON (命理数据，不经过 LLM/支付)
+POST /jsonrpc（bazi.chart / ziwei.chart / qimen.pan 等 29 个 method）
+  → 解析请求 → Engine 计算
+  → 返回 JSON（命理数据，不经过 LLM/支付）
 ```
 
-## 提示词体系
+全部引擎能力通过 JSON-RPC 统一入口 `POST /jsonrpc` 暴露，供外部 AI agent 和开发者使用。
 
-提示词分两层：内部系统 prompt（不可见）和对外 skill/模板（嵌入 + 公开 serve）。
+## 提示词体系
 
 ### 文件组织
 
 ```
-doc.go                  ← go:embed 所有 5 个文件
-data/prompts/
-  chat.txt              ← ChatAgent 系统 prompt（内部，不对外）
+internal/agent/data/
+  naming.txt               ← Naming Agent 系统 prompt（内部）
+  tools.json               ← Agent tool schema（内部，编译时嵌入）
 web/skills/
-  liki.md               ← 产品 skill 文件（公开，Caddy serve）
-  report-chart.md       ← 八字报告模板（公开 + 嵌入 GenerateFromData）
-  report-bond.md        ← 合盘报告模板（公开 + 嵌入 GenerateFromData）
-  report-naming.md      ← 起名报告模板（公开 + 嵌入 GenerateFromData）
-openapi.json            ← API schema + tool params + 响应 schema（公开 + 嵌入）
+  liki.md                   ← 产品 skill 文件（公开）
+  report-naming.md          ← 起名报告模板（公开，LLM 对话内直接生成）
 ```
 
 ### Embed 清单
 
 | 变量 | 来源 | 可见性 | 用途 |
 |---|---|---|---|
-| `doc.OpenAPIJSON` | `openapi.json` | 公开 | `openapiParams()` 提取 tool schema → LLM tool calling；`GET /api/openapi.json` |
-| `doc.ChatPrompt` | `data/prompts/chat.txt` | 内部 | `ChatAgent.ensureSystemPrompt()` 注入 system message |
-| `doc.ChartReportPrompt` | `web/skills/report-chart.md` | 公开 | `GenerateFromData("chart")` 完整报告；`/skills/report-chart.md` |
-| `doc.BondReportPrompt` | `web/skills/report-bond.md` | 公开 | `GenerateFromData("bond")` 完整报告；`/skills/report-bond.md` |
-| `doc.NamingReportPrompt` | `web/skills/report-naming.md` | 公开 | `GenerateFromData("naming")` 完整报告；`/skills/report-naming.md` |
-
-### 双入口、共用后端
-
-两个入口覆盖两类使用场景，入口不同，后端完全复用：
-
-```
-web 服务                                  外部 AI agent
-─────────                                 ─────────────
-chat.txt（内部）                            liki.md（公开）
-  │                                          │
-  └─ ChatAgent.Chat()                        └─ 按流程调 API
-       │                                          │
-       ├─ teaser（LLM 自由生成）                  ├─ 调 API 拿到数据
-       │                                          │
-       └─ purchase ──→ GenerateFromData()          └─ 读 report-*.md ──→ 生成报告
-                              │
-                              ▼
-                    ┌─────────────────┐
-                    │   共用后端       │
-                    │  · openapi.json │  API schema
-                    │  · report-*.md  │  领域知识 + 报告格式
-                    │  · Engine 层    │  纯 Go 计算
-                    └─────────────────┘
-```
-
-差异仅在入口：
-
-| | web 服务 | skill |
-|---|---|---|
-| 入口文件 | chat.txt（内部，go:embed） | liki.md（公开，Caddy serve） |
-| 读取方式 | Go 代码注入 system prompt | Agent 自行 fetch |
-| 报告生成 | GenerateFromData 代码注入模板 | Agent 读 report-*.md 后生成 |
-| 收费 | 有（teaser → purchase → 报告） | 无 |
-
-### 报告模板（report-*.md）
-
-报告格式和领域知识的唯一真源。包含数据来源、领域知识（五行推导、三才判断等）、报告章节结构、输出规则。两个入口共用：
-- web 服务：`GenerateFromData()` 代码注入
-- skill：liki.md 通过 URL 指向，agent 调完 API 后读取
-
-skill 文件和报告模板均对外公开 serve，同时 go:embed 嵌入供内部使用。
+| `agent.ToolsJSON` | `internal/agent/data/tools.json` | 内部 | `NewNamingToolRegistry()` 解析 tool schema → LLM tool calling |
+| `agent.NamingPrompt` | `internal/agent/data/naming.txt` | 内部 | `NamingAgent` 注入 system message |
 
 ### 外部 Agent 发现路径
 
 ```
-GET /llms.txt           → 简要索引，引导安装 skill
-GET /skills/liki.md     → 完整产品描述（角色、工作流、API、错误处理）
-GET /api/openapi.json   → API schema（tool params + 响应结构）
-GET /skills/report-*.md → 报告模板（数据结构 + 领域知识 + 格式规范）
+GET /llms.txt               → 简要索引，引导安装 skill
+GET /skills/liki.md         → 完整产品描述（角色、工作流、API、错误处理）
+GET /skills/report-naming.md → 起名报告模板
+POST /jsonrpc rpc.discover → OpenRPC 1.4.1 文档（29 个 engine method）
 ```
-
-### Tool Schema 提取
-
-Agent 的 29 个 tool 的 JSON Schema 不存为独立文件。`openapiParams()` 从 `doc.OpenAPIJSON` 中提取：
-- 优先查 `x-agent-tools`（专用 tool 定义）
-- 回退到 path schema（`requestBody` 或 query `parameters`）
-
-这使得 `openapi.json` 成为唯一的 schema 真源：HTTP handler 用它做参数校验，LLM tool calling 用它生成 `parameters` 字段，外部 agent 用它做服务发现。
 
 ## 关键设计决策
 
-### Skill 与报告模板分离
+### 先付费后收集
 
-- **liki.md** 只管流程：角色、工作流、参数收集、API 调用规则、行为边界。不重复领域知识。
-- **report-*.md** 是领域知识和报告格式的唯一真源。liki.md 通过 URL 指向它们，agent 和 GenerateFromData 共用同一份。
-- 起名流程中，五行和音韵由算法处理，LLM 只做算法做不了的事：字义筛选、性别适配、典故查找、风格多样性。
+无免费体验。支付在前，用户承诺付费后才进入 Agent 收集出生信息。避免用户在收集完信息后被突然要求付费的心理落差。
 
-### 原子化引擎
+### 7 天 Chat
 
-所有 Engine 函数遵循正交原则：
-- 单一输入 → 单一输出，无副作用
-- 每个文件一个领域概念
-- 类型安全（无 `map[string]any`）
-- 公开函数 = API 契约，私有函数 = 内部实现
+一次付费，7 天内可反复磋商。以 email 为主键，不建 users 表。JWT cookie 管理会话。聊天历史全量持久化到 `chat_messages`，每次 resume 重放。
+
+### birth_info 数据切面
+
+三层结构 `raw → geo → timeset`。`query_city` 和 `compute_time` 由 Agent 在对话中按需调用。出生信息随聊天消息自然收集，持久化到 `chat_messages`。无需单独的 confirm_birth 机制。
+
+### 工具精简
+
+Naming Agent 8 个 tool：`query_city`、`compute_time`、`compute_chart`、`compute_ziwei` + 起名域 4 个（`compute_naming_wuge`、`compute_naming_compose`、`compute_naming_detail`、`compute_naming_evaluate`）。API 平台的 29 个 JSON-RPC method 不变（含全部 Engine 包的计算能力）。
 
 ### 类型归属
 
-打字系统按领域拆分：
 - `llm.Message/Role/ToolCall` — LLM 线格式
-- `agent.Product` — 报告产品类型
 - `agent.TimePoint` — 出生时间点（RFC3339 公历 + 经度）
-- `handler.BirthRequest` — HTTP 契约（统一出生+性别，八字/紫微/八宅复用）
+- `handler.BirthRequest` — HTTP 契约（统一出生+性别）
 - `ganzhi.Gan/Zhi/Wuxing/ShiShen/Zhu/Bazi` — 干支基础类型
 - `tianwen.SolarTime/GregorianTime/LunarTime/Timeset` — 时间类型
-
-所有领域概念用类型化实体传递，禁用裸 `int`。Map key 用 `ganzhi.Zhi` 而非 `int`，函数参数收 `ganzhi.Gan` 而非 `int`。
-
-### JSON 契约
-
-Engine 输出统一 snake_case，所有公开结构体显式声明 `json:"..."` tag。无 CamelCase 裸字段。
-
-Error envelope 标准化：
-- 400 `invalid_request` — JSON 解析失败 / 业务参数非法 / 引擎计算失败
-- 422 `validation_error` — 结构化校验失败
-- 404 `not_found` — 资源不存在
-- 413 `too_large` — 请求体过大
-- 500 `internal_error` — 服务内部错误
-
-Handler 层提取了 `timesetOrRespond` helper，消除 14 处重复的 `Timeset()` 转换 + 错误响应模式。`decodeAndValidate[T]` 统一 JSON 解码 + 校验流程。
 
 ### 单连接 SQLite
 
@@ -286,25 +271,9 @@ Handler 层提取了 `timesetOrRespond` helper，消除 14 处重复的 `Timeset
 ### LLM 集成
 
 - 模型：DeepSeek V4 Pro
-- ChatAgent：流式 `ChatStreamWithTools`，120s 超时
-- 单一 Agent 实例，`ReportPrompts` map 存产品报告 prompt
+- Agent：流式 `ChatStreamWithTools`，120s 超时
+- 单一 Agent 实例，单阶段流式对话，自然过渡到报告生成
 
-### 会话管理
+### 认证
 
-服务端 Session（内存，30min TTL），`session_id` 存前端 sessionStorage。Phase: `collecting` → `closed`。
-
-## 包依赖关系
-
-```
-cmd/lingji
-  └─ internal/http         → handler 注册 + 中间件 + SessionStore
-       ├─ internal/agent      → ChatAgent
-       │    └─ internal/llm   → DeepSeek 客户端
-       ├─ internal/engine     → Engine 层 (11 包)
-       └─ internal/payment    → 支付服务 + Store
-            ├─ internal/dodo   → Dodo Payments SDK
-            ├─ internal/xunhu  → 虎皮椒支付 SDK
-            └─ internal/email  → Resend 邮件客户端
-
-无 orchestrator 包（已并入 agent），无 domain 包（类型归属到各自域）。
-```
+JWT cookie（含 email + order_id）。`POST /api/auth/login` 查询有效订单后签发。多订单时用户选择后签发。无用户表，无注册流程。

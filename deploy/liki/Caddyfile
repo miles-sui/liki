@@ -14,8 +14,7 @@
 	# Cache static assets
 	header /js/* Cache-Control "public, max-age=31536000, immutable"
 	header /css/* Cache-Control "public, max-age=31536000, immutable"
-	header /fonts/* Cache-Control "public, max-age=31536000, immutable"
-	header /i18n/* Cache-Control "public, max-age=3600"
+	header /i18n/* Cache-Control "public, max-age=60"
 
 	log {
 		output stdout
@@ -29,7 +28,7 @@
 			not header Origin https://{$DOMAIN:localhost}
 		}
 		respond @external 403
-		reverse_proxy lingji:8080 {
+		reverse_proxy liki:8080 {
 			flush_interval -1
 		}
 	}
@@ -39,12 +38,17 @@
 			not header Origin https://{$DOMAIN:localhost}
 		}
 		respond @external 403
-		reverse_proxy lingji:8080
+		reverse_proxy liki:8080
 	}
 
-	# Free API, health, openapi — no Origin check
+	# JSON-RPC for external AI agents — no Origin check
+	handle /jsonrpc {
+		reverse_proxy liki:8080
+	}
+
+	# Free API, health — no Origin check
 	handle /api/* {
-		reverse_proxy lingji:8080 {
+		reverse_proxy liki:8080 {
 			flush_interval -1
 			health_uri /api/health
 			health_interval 30s

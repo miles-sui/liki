@@ -12,7 +12,7 @@ import (
 
 func TestMansionForDay_ReferencePoints(t *testing.T) {
 	// The standard reference: 甲子日 → 虚宿 (mansion index 10).
-	// Formula: (sbIdx + 10) % 28, where sbIdx = SixtyCycleName (0-59).
+	// Formula: (sbIdx + 10) % 28, where sbIdx = SixtyCycleIndex (0-59).
 	tests := []struct {
 		gan, zhi  int
 		sbIdx     int
@@ -36,9 +36,9 @@ func TestMansionForDay_ReferencePoints(t *testing.T) {
 		z := ganzhi.Zhi(tt.zhi)
 		name := ganzhi.GanName(g) + ganzhi.ZhiName(z)
 		t.Run(name, func(t *testing.T) {
-			sbIdx := ganzhi.SixtyCycleName(g, z)
+			sbIdx := ganzhi.SixtyCycleIndex(g, z)
 			if sbIdx != tt.sbIdx {
-				t.Fatalf("SixtyCycleName = %d, want %d", sbIdx, tt.sbIdx)
+				t.Fatalf("SixtyCycleIndex = %d, want %d", sbIdx, tt.sbIdx)
 			}
 			got := mansionForDay(ganzhi.Zhu{Gan: g, Zhi: z})
 			if got.Name != tt.wantName {

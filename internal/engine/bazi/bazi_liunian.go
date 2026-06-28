@@ -43,7 +43,7 @@ func computeLiuNian(bz ganzhi.Bazi, year int, currentDaYun *DaYunZhu) (*LiuNian,
 
 	gen, rest := countGenRest(yearElem, dmElem)
 
-	naYin := ganzhi.NaYinLabel(yearStem, yearBranch)
+	naYin := ganzhi.NayinLabel(yearStem, yearBranch)
 
 	r := &LiuNian{
 		Year:      year,

@@ -14,9 +14,9 @@
 
 编排层 `api.go` 收 `tianwen.SolarTime` → `ComputeBazi` → 引擎 `computeChart(bz ganzhi.Bazi, gender ganzhi.Gender, year int)` 收精确实体。
 
-### HTTP Routes
+### JSON-RPC Methods
 
 | 路由 | Handler |
 |------|---------|
-| `POST /api/fengshui/minggua` | 命卦 |
-| `POST /api/fengshui/chart` | 八宅合参 |
+| `bazhai.minggua` | 命卦 |
+| `bazhai.chart` | 八宅合参 |

@@ -60,17 +60,6 @@ func ComposeNames(surname string, combos []StrokeCombo, yongChars, xiChars map[i
 		for _, p := range pairs {
 			for _, c1 := range p[0] {
 				for _, c2 := range p[1] {
-					t1 := c1.Tone
-					t2 := c2.Tone
-					if t1 == 0 {
-						t1 = lookupTone(c1.Char)
-					}
-					if t2 == 0 {
-						t2 = lookupTone(c2.Char)
-					}
-					if !isPhoneticValid(t1, t2) {
-						continue
-					}
 					name := surname + c1.Char + c2.Char
 					if seen[name] {
 						continue
@@ -118,7 +107,6 @@ func DetailNames(surname string, names []string) ([]NameCandidate, error) {
 		sc := computeSanCai(wg.TianGe.Element, wg.RenGe.Element, wg.DiGe.Element)
 		phon := Phonetic{
 			Tones:    formatTones(ce1.Tone, ce2.Tone),
-			IsPingZe: isPhoneticValid(ce1.Tone, ce2.Tone),
 		}
 
 		results = append(results, NameCandidate{
@@ -154,32 +142,8 @@ func computeWuGeFromStrokes(surnameStroke, s1, s2 int) WuGe {
 	}
 }
 
-func lookupTone(char string) int {
-	rs := []rune(char)
-	if len(rs) > 0 {
-		if ce, ok := charByRune[rs[0]]; ok {
-			return ce.Tone
-		}
-	}
-	return 0
-}
+
 
 func formatTones(t1, t2 int) string {
 	return fmt.Sprintf("%d-%d", t1, t2)
-}
-
-func isAllPing(t1, t2 int) bool {
-	return (t1 == 1 || t1 == 2) && (t2 == 1 || t2 == 2)
-}
-
-func isAllZe(t1, t2 int) bool {
-	return (t1 == 3 || t1 == 4) && (t2 == 3 || t2 == 4)
-}
-
-func isSameTone(t1, t2 int) bool {
-	return t1 == t2
-}
-
-func isPhoneticValid(t1, t2 int) bool {
-	return !isAllPing(t1, t2) && !isAllZe(t1, t2) && !isSameTone(t1, t2)
 }

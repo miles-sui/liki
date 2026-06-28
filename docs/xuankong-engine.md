@@ -14,9 +14,9 @@
 
 编排层 `api.go` 收 `tianwen.SolarTime` → 提取年份 → 引擎 `computeChart(sitMountain int, faceMountain int, year int)` 收精确实体。
 
-### HTTP Routes
+### JSON-RPC Methods
 
 | 路由 | Handler |
 |------|---------|
-| `GET /api/fengshui/sanyuan` | 三元九运查询 |
-| `POST /api/xuankong/chart` | 玄空飞星排盘 |
+| `xuankong.sanyuan` | 三元九运查询 |
+| `xuankong.chart` | 玄空飞星排盘 |

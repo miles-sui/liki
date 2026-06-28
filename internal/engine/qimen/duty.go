@@ -51,6 +51,6 @@ func findDuty(driveZhu ganzhi.Zhu, dipan [9]ganzhi.Gan) duty {
 
 // findXunShou returns the 六仪 that corresponds to the 六甲旬 of the given pillar.
 func findXunShou(zhu ganzhi.Zhu) ganzhi.Gan {
-	idx := ganzhi.SixtyCycleName(zhu.Gan, zhu.Zhi) // 0-59
+	idx := ganzhi.SixtyCycleIndex(zhu.Gan, zhu.Zhi) // 0-59
 	return liuJiaLiuYi[idx/10]
 }

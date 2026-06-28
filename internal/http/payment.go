@@ -1,7 +1,8 @@
-package handler
+package http
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
@@ -12,12 +13,27 @@ import (
 
 	"liki/internal/i18n"
 	"liki/internal/payment"
+	"liki/internal/product"
 )
+
+type createOrderRequest struct {
+	Email    string `json:"email"`
+	Product  string `json:"product"`
+	Currency string `json:"currency"`
+}
 
 type checkoutRequest struct {
 	OrderID  string `json:"order_id"`
 	Email    string `json:"email"`
 	Provider string `json:"provider"`
+}
+
+func (r createOrderRequest) Validate() error {
+	return validation.ValidateStruct(&r,
+		validation.Field(&r.Email, validation.Required, validation.By(validateEmail)),
+		validation.Field(&r.Product, validation.Required, validation.In(string(product.ProductNaming))),
+		validation.Field(&r.Currency, validation.Required),
+	)
 }
 
 func (r checkoutRequest) Validate() error {
@@ -33,7 +49,7 @@ func validateEmail(value any) error {
 		return nil
 	}
 	if s == "" {
-		return nil // email is optional
+		return nil
 	}
 	if _, err := mail.ParseAddress(s); err != nil {
 		return errors.New("invalid email")
@@ -41,20 +57,44 @@ func validateEmail(value any) error {
 	return nil
 }
 
-func handleCheckout(svc *payment.Service) http.HandlerFunc {
+// handleCreateOrder creates a pending naming order (POST /api/orders).
+func handleCreateOrder(store *payment.Store) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		req, ok := decodeAndValidate[createOrderRequest](w, r)
+		if !ok {
+			return
+		}
+		amount := product.NamingAmountCents(product.Currency(req.Currency))
+		if amount == 0 {
+			respondError(w, http.StatusBadRequest, "invalid_request", fmt.Sprintf("unsupported currency: %s", req.Currency))
+			return
+		}
+
+		orderID := product.NewOrderID()
+		if err := store.CreateOrder(r.Context(), orderID, product.Product(req.Product), amount, req.Currency, req.Email, "", "", ""); err != nil {
+			slog.Error("payment: create order", "err", err)
+			respondError(w, http.StatusInternalServerError, "internal_error", "创建订单失败，请稍后重试")
+			return
+		}
+
+		respondJSON(w, http.StatusOK, map[string]string{"order_id": orderID})
+	}
+}
+
+func handleCheckout(svc *payment.Service, a *Analytics) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		req, ok := decodeAndValidate[checkoutRequest](w, r)
 		if !ok {
 			return
 		}
 
-	provider := req.Provider
+		provider := req.Provider
 		if provider == "" {
 			country := strings.ToUpper(r.Header.Get("CF-IPCountry"))
 			if country == "" || country == "CN" {
-				provider = "xunhu"
+				provider = payment.ProviderXunhu
 			} else {
-				provider = "dodo"
+				provider = payment.ProviderDodo
 			}
 		}
 
@@ -69,25 +109,32 @@ func handleCheckout(svc *payment.Service) http.HandlerFunc {
 			return
 		}
 
+		a.RecordCheckout()
 		respondJSON(w, http.StatusOK, result)
 	}
 }
 
 // handleOrderStatus returns the current status of an order (GET /api/orders/{id}/status).
-// Used by the frontend to validate sessionStorage orderID before showing resume banner.
-func handleOrderStatus(svc *payment.Service) http.HandlerFunc {
+// Used by the frontend to load chat state (expiry, birth_info) and validate orderID.
+func handleOrderStatus(store *payment.Store) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		orderID := r.PathValue("id")
 		if orderID == "" {
 			respondError(w, http.StatusBadRequest, "invalid_path", "missing order id")
 			return
 		}
-		status, product, err := svc.OrderStatus(r.Context(), orderID)
+		o, err := store.GetOrder(r.Context(), orderID)
 		if err != nil {
 			respondError(w, http.StatusNotFound, "not_found", "订单不存在")
 			return
 		}
-		respondJSON(w, http.StatusOK, map[string]string{"status": string(status), "product": string(product)})
+		respondJSON(w, http.StatusOK, map[string]string{
+			"status":          string(o.Status),
+			"product":         string(o.Product),
+			"birth_info":      o.BirthInfo,
+			"chat_expires_at": o.ChatExpiresAt,
+			"email":           o.Email,
+		})
 	}
 }
 
@@ -101,7 +148,7 @@ func handleRetryOrder(svc *payment.Service) http.HandlerFunc {
 			respondError(w, http.StatusBadRequest, "invalid_path", "missing order id")
 			return
 		}
-		status, product, llmJSON, err := svc.RetryReportGeneration(r.Context(), orderID)
+		status, product, llmJSON, err := svc.GetOrderData(r.Context(), orderID)
 		if err != nil {
 			respondError(w, http.StatusNotFound, "not_found", i18n.T(i18n.DetectLang(r), "err.order_not_found"))
 			return
@@ -115,15 +162,30 @@ func handleRetryOrder(svc *payment.Service) http.HandlerFunc {
 }
 
 // handlePaymentReturn handles post-payment redirect (GET /api/payments/return/{id}).
-// Email is collected by AI in conversation and stored at order creation time.
-func handlePaymentReturn() http.HandlerFunc {
+func handlePaymentReturn(store *payment.Store) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		orderID := r.PathValue("id")
 		if orderID == "" || r.URL.Query().Get("status") != "succeeded" {
 			http.Redirect(w, r, "/", http.StatusFound)
 			return
 		}
-		http.Redirect(w, r, "/report/"+orderID, http.StatusFound)
+
+		o, err := store.GetOrder(r.Context(), orderID)
+		if err != nil {
+			slog.Error("payment: return get order", "orderID", orderID, "err", err)
+			http.Redirect(w, r, "/", http.StatusFound)
+			return
+		}
+
+		if o.ChatExpiresAt == "" {
+			expiresAt := payment.DefaultChatExpiry()
+			if err := store.SetChatExpiresAtIfEmpty(r.Context(), orderID, expiresAt); err != nil {
+				slog.Warn("payment: return set chat_expires_at", "orderID", orderID, "err", err)
+			}
+		}
+
+		setJWTCookie(w, o.Email, orderID)
+		http.Redirect(w, r, "/chat?order_id="+orderID, http.StatusFound)
 	}
 }
 

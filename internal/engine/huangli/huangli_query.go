@@ -66,7 +66,7 @@ func QueryDate(dateStr string, eventType string) (Day, error) {
 		FuShen:      fuShenDirection(dpi.Gan),
 		StemTaboo:   pengZuStemTaboo(dpi.Gan),
 		BranchTaboo: pengZuBranchTaboo(dpi.Zhi),
-		NaYin:    ganzhi.NaYinLabel(dpi.Gan, dpi.Zhi),
+		NaYin:    ganzhi.NayinLabel(dpi.Gan, dpi.Zhi),
 		Wuxing:   ganzhi.ZhiWuxing(dpi.Zhi).String(),
 		Mansion:    mansionForDay(ganzhi.Zhu{Gan: dpi.Gan, Zhi: dpi.Zhi}),
 		JieQi:     jq.TermName,

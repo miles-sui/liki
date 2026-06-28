@@ -1,23 +1,10 @@
 const { createApp, ref, reactive, computed, watch, nextTick, onMounted, onUnmounted } = Vue;
 
-// ── composables ──
-
-function useSessionStorage(key, fallback) {
-  const stored = sessionStorage.getItem(key);
-  let initial = fallback;
-  if (stored != null) {
-    try { initial = JSON.parse(stored); } catch (_) { initial = stored; }
-  }
-  const v = ref(initial);
-  watch(v, (val) => {
-    if (val == null || val === '') sessionStorage.removeItem(key);
-    else sessionStorage.setItem(key, JSON.stringify(val));
-  });
-  return v;
-}
+// ── SSE helper ──
 
 function useSSE(t) {
   let ctrl = null;
+  const MAX_RETRIES = 3;
 
   function parseEvents(buf, onEvent) {
     for (const event of buf.split('\n\n')) {
@@ -46,21 +33,34 @@ function useSSE(t) {
   }
 
   async function send(url, body, onEvent) {
-    ctrl = new AbortController();
-    const resp = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-      signal: ctrl.signal,
-    });
-    if (!resp.ok) {
-      const err = await resp.json().catch(() => ({}));
-      const e = new Error(err.error?.message || t('error.requestFailed'));
-      e.code = err.error?.code || '';
-      throw e;
+    let lastErr;
+    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+      ctrl = new AbortController();
+      try {
+        const resp = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+          signal: ctrl.signal,
+        });
+        if (!resp.ok) {
+          const err = await resp.json().catch(() => ({}));
+          const e = new Error(err.error?.message || t('error.requestFailed'));
+          e.code = err.error?.code || '';
+          e.status = resp.status;
+          throw e;
+        }
+        await readStream(resp.body.getReader(), onEvent);
+        return resp;
+      } catch (e) {
+        lastErr = e;
+        if (e.name === 'AbortError' || e.status) break; // user abort or HTTP error
+        if (attempt < MAX_RETRIES) {
+          await new Promise(r => setTimeout(r, Math.pow(2, attempt) * 1000));
+        }
+      }
     }
-    await readStream(resp.body.getReader(), onEvent);
-    return resp;
+    throw lastErr;
   }
 
   function abort() {
@@ -77,58 +77,46 @@ function useSSE(t) {
 function mountApp() {
   createApp({
     setup() {
-    const sessionID = useSessionStorage('chatSessionID', '');
-
-    // ── i18n ──
     const t = window.Liki.t;
-
     const sse = useSSE(t);
+
+    // ── state ──
+    const state = ref('login');     // login | select | chat
+    const orderID = ref('');
+    const email = ref('');
+    const loginLoading = ref(false);
+    const loginError = ref('');
+    const orderList = ref([]);
+    const currency = ref('CNY');
+    const currencies = ref(['CNY', 'USD']);
+    const buyLoading = ref(false);
 
     const messages = ref([]);
     const ui = reactive({
-      phase: 'welcome',     // welcome | chatting | streaming | closed
-      substate: 'idle',     // idle | loading
+      phase: 'welcome',
+      substate: 'idle',
       error: '',
     });
     const input = ref('');
-    const orderID = ref('');
-    const amount = ref(0);
     const phaseStatus = ref('');
     const greeting = ref('');
-    let locationInfo = null; // {country, city} from /api/location
+    const countdown = ref('');
+    let chatExpiresAt = null;
+    const expired = ref(false);
     const chatMessagesEl = ref(null);
     const chatInputEl = ref(null);
 
     let pending = false;
     let isComposing = false;
-    let renderer = null;  // active StreamRenderer, for stopStream/cancel
+    let renderer = null;
+    let countdownTimer = null;
 
-    // ── derived ──
     const lang = i18next.language;
-
-    const welcomeChips = computed(() => [
-      { label: t('chat.chipChartLabel'), msg: t('chat.chipChartMsg') },
-      { label: t('chat.chipBondLabel'), msg: t('chat.chipBondMsg') },
-      { label: t('chat.chipNamingLabel'), msg: t('chat.chipNamingMsg') },
-    ]);
-
-    const showInput = computed(() => ui.phase !== 'closed');
-
-    const inputPlaceholder = computed(() => {
-      const hasUserMsg = messages.value.some(m => m.role === 'user');
-      return hasUserMsg ? t('chat.placeholderReply') : t('chat.placeholderWelcome');
-    });
-
-    const chipsDisabled = ref(false);
-
-    const showChips = computed(() => {
-      const userMsgs = messages.value.filter(m => m.role === 'user');
-      return !chipsDisabled.value && userMsgs.length === 0 && ui.phase !== 'closed';
-    });
 
     // ── cleanup ──
     onUnmounted(() => {
       if (renderer) { renderer.cancel(); renderer = null; }
+      if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; }
     });
 
     // ── utilities ──
@@ -140,6 +128,54 @@ function mountApp() {
       const hm = pad(d.getHours()) + ':' + pad(d.getMinutes());
       if (d.toDateString() === now.toDateString()) return hm;
       return pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + ' ' + hm;
+    };
+
+    const formatExpiry = (expiresAt) => {
+      if (!expiresAt) return '';
+      try {
+        const d = new Date(expiresAt.replace(' ', 'T') + 'Z');
+        const now = new Date();
+        const diff = d - now;
+        if (diff <= 0) return t('chat.expired');
+        const days = Math.floor(diff / 86400000);
+        const hours = Math.floor((diff % 86400000) / 3600000);
+        if (days > 0) return t('chat.remainingDays').replace('{n}', days);
+        return t('chat.remainingHours').replace('{n}', hours);
+      } catch (_) { return ''; }
+    };
+
+    const finishStream = () => {
+      renderer.flush();
+      phaseStatus.value = '';
+      ui.phase = 'chatting';
+      ui.substate = 'idle';
+    };
+
+    const tickCountdown = () => {
+      if (!chatExpiresAt) return;
+      countdown.value = formatExpiry(chatExpiresAt);
+      if (countdown.value === t('chat.expired')) {
+        expired.value = true;
+        countdownTimer = null;
+        return;
+      }
+      countdownTimer = setTimeout(tickCountdown, 60000);
+    };
+
+    const startCountdown = () => {
+      tickCountdown();
+    };
+
+    const DRAFT_KEY = 'likiChatDraft';
+
+    const saveDraft = () => {
+      try { sessionStorage.setItem(DRAFT_KEY, input.value); } catch (_) {}
+    };
+
+    watch(input, saveDraft);
+
+    const clearDraft = () => {
+      try { sessionStorage.removeItem(DRAFT_KEY); } catch (_) {}
     };
 
     const focusInput = () => {
@@ -155,15 +191,13 @@ function mountApp() {
     const scrollDown = () => {
       nextTick(() => {
         const el = chatMessagesEl.value;
-        if (el) el.scrollTop = el.scrollHeight;
+        if (!el) return;
+        const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 40;
+        if (atBottom) el.scrollTop = el.scrollHeight;
       });
     };
 
-    // ── throttled rendering ──
-    // StreamRenderer encapsulates the throttled streaming render pipeline.
-    //
-    // Model: content (append-only) → html (derived, idempotent).
-    // Throttle defers rendering; flush guarantees content ≡ html.
+    // ── Stream renderer ──
     function createStreamRenderer(asst) {
       let timer = null;
       let lastRender = 0;
@@ -182,21 +216,16 @@ function mountApp() {
       };
 
       return {
-        // Called on each new token — throttles to ≤80ms intervals.
         accept() {
           if (timer) return;
           const elapsed = Date.now() - lastRender;
           if (elapsed >= 80) doRender();
           else timer = setTimeout(doRender, 80 - elapsed);
         },
-
-        // Called on stream end / error — guarantees content → html.
         flush() {
           if (timer) { clearTimeout(timer); timer = null; }
           doRender();
         },
-
-        // Called on user abort — clears timer, keeps rendered content as-is.
         cancel() {
           if (timer) { clearTimeout(timer); timer = null; }
         },
@@ -237,17 +266,9 @@ function mountApp() {
           renderer.accept();
           break;
 
-        case 'done':
-          renderer.flush();
-          phaseStatus.value = '';
-          ui.phase = 'closed';
-          ui.substate = 'idle';
-          const data = evt.data || {};
-          orderID.value = data.order_id || '';
-          amount.value = data.amount || 0;
-          var currency = (data.currency === 'CNY') ? '¥' : '$';
-          messages.value.push({ role: 'buy', amount: amount.value, displayAmount: amount.value, currency: currency, time: new Date().toISOString() });
-          scrollDown();
+        case 'report-ready':
+          finishStream();
+          setTimeout(() => { location.href = evt.content; }, 1500);
           break;
 
         case 'error':
@@ -258,16 +279,17 @@ function mountApp() {
       }
     };
 
-    // ── send ──
+    // ── send message ──
     const sendMessage = async (msg) => {
       if (pending) return;
-      if (isComposing) return;      // IME input in progress
+      if (isComposing) return;
+      if (expired.value) return;
       const text = (msg || input.value).trim();
-      if (!text || ui.phase === 'closed') return;
+      if (!text) return;
 
       pending = true;
-      chipsDisabled.value = true;
       input.value = '';
+      clearDraft();
       ui.error = '';
       ui.phase = 'chatting';
       ui.substate = 'loading';
@@ -280,26 +302,15 @@ function mountApp() {
       scrollDown();
 
       try {
-        const body = { session_id: sessionID.value, message: text, lang: lang };
-        if (!sessionID.value && locationInfo) {
-          body.country = locationInfo.country;
-          body.city = locationInfo.city;
-        }
-        const resp = await sse.send('/api/agent/chat', body,
+        await sse.send('/api/agent/naming', { message: text, lang: lang },
           (evt) => handleEvent(evt, asst, renderer),
         );
-        if (resp) {
-          const sid = resp.headers.get('X-Session-ID');
-          if (sid) sessionID.value = sid;
-        }
       } catch (e) {
         if (e.name !== 'AbortError') {
-          // Server restart clears sessions — retry once without stale ID.
-          if (sessionID.value && e.code === 'not_found') {
-            sessionID.value = '';
-            messages.value.pop(); // remove empty assistant bubble
-            messages.value.pop(); // remove user message (will re-add)
-            setTimeout(() => sendMessage(text), 0);
+          if (e.status === 401) {
+            // JWT expired — back to login
+            state.value = 'login';
+            loginError.value = t('chat.sessionExpired');
             return;
           }
           handleError(e.message);
@@ -311,6 +322,7 @@ function mountApp() {
         if (ui.phase === 'streaming') {
           ui.phase = 'chatting';
           ui.substate = 'idle';
+          phaseStatus.value = '';
           focusInput();
         }
         renderer = null;
@@ -328,89 +340,193 @@ function mountApp() {
 
     const newChat = () => {
       if (renderer) { renderer.cancel(); renderer = null; }
-      sessionID.value = '';
-      messages.value = greeting.value
-        ? [{ role: 'assistant', content: greeting.value, html: renderMD(greeting.value) }]
-        : [];
+      messages.value = [];
       ui.phase = 'welcome';
       ui.substate = 'idle';
       ui.error = '';
       phaseStatus.value = '';
-      orderID.value = '';
-      amount.value = 0;
       pending = false;
-      chipsDisabled.value = false;
       focusInput();
     };
 
-    onMounted(async () => {
-      const appEl = document.getElementById('app');
-      if (appEl) appEl.removeAttribute('v-cloak');
-      // Fetch greeting and location in parallel.
-      const [greetResp] = await Promise.allSettled([
-        fetch('/api/agent/greeting', { signal: AbortSignal.timeout(10000) }),
-        fetch('/api/location', { signal: AbortSignal.timeout(5000) }).then(r => r.ok ? r.json() : null).then(d => { locationInfo = d && d.data ? { country: d.data.country, city: d.data.city } : null; }).catch(() => {}),
-      ]);
+    // ── login ──
+    const doLogin = async () => {
+      if (!email.value || loginLoading.value) return;
+      loginLoading.value = true;
+      loginError.value = '';
+
       try {
-        const resp = greetResp.status === 'fulfilled' ? greetResp.value : null;
-        if (resp && resp.ok) {
-          const data = await resp.json();
-          greeting.value = data.data?.greeting || data.greeting || '';
+        const resp = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: email.value }),
+        });
+        const data = await resp.json();
+        if (!resp.ok) throw new Error(data.error?.message || t('error.requestFailed'));
+
+        const result = data.data;
+        if (result.orders) {
+          orderList.value = result.orders;
+          state.value = 'select';
+        } else if (result.order_id) {
+          orderID.value = result.order_id;
+          sessionStorage.setItem('likiOrderID', result.order_id);
+          await enterChat();
         }
-      } catch (_) {}
-      if (greeting.value) {
+      } catch (e) {
+        loginError.value = e.message;
+      } finally {
+        loginLoading.value = false;
+      }
+    };
+
+    const selectOrder = async (oid) => {
+      try {
+        const resp = await fetch('/api/orders/select', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ order_id: oid, email: email.value }),
+        });
+        const data = await resp.json();
+        if (!resp.ok) throw new Error(data.error?.message || t('error.requestFailed'));
+
+        orderID.value = oid;
+        sessionStorage.setItem('likiOrderID', oid);
+        await enterChat();
+      } catch (e) {
+        loginError.value = e.message;
+        state.value = 'login';
+      }
+    };
+
+    // ── buy ──
+    const doBuy = async () => {
+      if (!email.value || buyLoading.value) return;
+      buyLoading.value = true;
+      loginError.value = '';
+      try {
+        // 1. Create order
+        let resp = await fetch('/api/orders', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: email.value, product: 'naming', currency: currency.value }),
+        });
+        let data = await resp.json();
+        if (!resp.ok) throw new Error(data.error?.message || t('error.requestFailed'));
+        const oid = data.data?.order_id;
+        if (!oid) throw new Error('Missing order_id');
+
+        // 2. Checkout
+        resp = await fetch('/api/payments/checkout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ order_id: oid, email: email.value }),
+        });
+        data = await resp.json();
+        if (!resp.ok) throw new Error(data.error?.message || t('error.requestFailed'));
+        const url = data.data?.checkout_url;
+        if (!url) throw new Error('Missing checkout_url');
+
+        sessionStorage.setItem('likiOrderID', oid);
+        location.href = url;
+      } catch (e) {
+        loginError.value = e.message;
+      } finally {
+        buyLoading.value = false;
+      }
+    };
+
+    // ── enter chat ──
+    const enterChat = async (prefetched) => {
+      try {
+        let o;
+        if (prefetched) {
+          o = prefetched;
+        } else {
+          const resp = await fetch('/api/orders/' + orderID.value + '/status');
+          const data = await resp.json();
+          if (!resp.ok) throw new Error('order not found');
+          o = data.data;
+        }
+
+        if (o.status !== 'paid') {
+          loginError.value = t('chat.orderNotPaid');
+          state.value = 'login';
+          return;
+        }
+
+        chatExpiresAt = o.chat_expires_at || null;
+        countdown.value = formatExpiry(o.chat_expires_at);
+        if (countdown.value === t('chat.expired')) expired.value = true;
+
+        state.value = 'chat';
+        startCountdown();
+        try { const d = sessionStorage.getItem(DRAFT_KEY); if (d) input.value = d; } catch (_) {}
+        focusInput();
+
+        greeting.value = t('chat.greeting');
         messages.value.push({
           role: 'assistant',
           content: greeting.value,
           html: renderMD(greeting.value),
           time: new Date().toISOString(),
         });
-      }
-      // Auto-select product from query param (e.g. ?product=chart)
-      const qp = new URLSearchParams(location.search);
-      const prod = qp.get('product');
-      if (prod && (prod === 'chart' || prod === 'bond' || prod === 'naming')) {
-        const msgMap = {
-          chart: t('chat.chipChartMsg'),
-          bond: t('chat.chipBondMsg'),
-          naming: t('chat.chipNamingMsg'),
-        };
-        await nextTick();
-        sendMessage(msgMap[prod]);
-      } else {
-        focusInput();
-      }
-    });
-
-    const buyLoading = ref(false);
-
-    const goPayment = async () => {
-      if (!orderID.value || buyLoading.value) return;
-      buyLoading.value = true;
-      try {
-        await goPay(orderID.value);
       } catch (e) {
-        ui.error = e.message;
-        buyLoading.value = false;
+        loginError.value = e.message;
+        state.value = 'login';
       }
     };
 
-    const dismissBuy = (buyMsg) => {
-      buyMsg._dismissed = true;
-      ui.phase = 'chatting';
-      ui.substate = 'idle';
-      focusInput();
-    };
+    // ── init ──
+    onMounted(async () => {
+      const appEl = document.getElementById('app');
+      if (appEl) appEl.removeAttribute('v-cloak');
+
+      // Check for order_id from URL (payment callback) or sessionStorage.
+      const qp = new URLSearchParams(location.search);
+      let oid = qp.get('order_id');
+      if (oid) {
+        sessionStorage.setItem('likiOrderID', oid);
+        // Clean URL
+        history.replaceState(null, '', '/chat');
+      } else {
+        oid = sessionStorage.getItem('likiOrderID');
+      }
+
+      if (oid) {
+        orderID.value = oid;
+        try {
+          const resp = await fetch('/api/orders/' + oid + '/status');
+          if (resp.status === 401) {
+            // JWT expired
+            state.value = 'login';
+            return;
+          }
+          if (resp.ok) {
+            const data = await resp.json();
+            if (data.data?.status === 'paid') {
+              await enterChat(data.data);
+              return;
+            }
+          }
+        } catch (_) {}
+        // If we get here, the order is invalid — fall through to login
+        sessionStorage.removeItem('likiOrderID');
+      }
+
+      state.value = 'login';
+    });
 
     // ── expose ──
     return {
-      sessionID, messages, ui, input, orderID,
-      amount,
-      lang, welcomeChips, showChips, chipsDisabled, showInput, chatMessagesEl, chatInputEl,
-      phaseStatus,
-      sendMessage, stopStream, newChat, goPayment, dismissBuy, buyLoading, formatTime,
-      onCompositionStart, onCompositionEnd,
-      t, inputPlaceholder,
+      state, orderID, email, loginLoading, loginError, orderList,
+      currency, currencies, buyLoading,
+      messages, ui, input, phaseStatus, greeting, countdown, expired,
+      chatMessagesEl, chatInputEl, lang,
+      formatTime, formatExpiry, onCompositionStart, onCompositionEnd,
+      sendMessage, stopStream, newChat,
+      doLogin, selectOrder, doBuy,
+      t,
     };
   },
   render: window.__chatAppRender,

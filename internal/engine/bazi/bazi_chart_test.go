@@ -194,7 +194,7 @@ func TestGoldenChart_NaYin(t *testing.T) {
 				cr.Nian.NaYin, cr.Yue.NaYin,
 				cr.Ri.NaYin, cr.Shi.NaYin,
 			} {
-				if elem := ganzhi.NaYinWuxing(n); elem == 0 {
+				if elem := ganzhi.NayinWuxing(n); elem == 0 {
 					t.Errorf("nayin %q has unknown element", n)
 				}
 			}
@@ -326,12 +326,12 @@ func TestGoldenChart_ChangSheng(t *testing.T) {
 
 // ── TaiYuan / MingGong / ShenGong ──
 
-func TestGoldenChart_TaiYuanMingGong(t *testing.T) {
+func TestGoldenChart_SanYuan(t *testing.T) {
 	for _, g := range goldenCharts {
 		t.Run(g.Name, func(t *testing.T) {
 			cr := computeFullChart(g)
 
-			tm := cr.TaiYuanMingGong
+			tm := cr.SanYuan
 
 			pillars := []struct {
 				name string
@@ -352,7 +352,7 @@ func TestGoldenChart_TaiYuanMingGong(t *testing.T) {
 
 			// Not all three pillars have the same Gan.
 			if tm.TaiYuan.Gan == tm.MingGong.Gan && tm.MingGong.Gan == tm.ShenGong.Gan {
-				t.Error("all three TaiYuanMingGong pillars have identical Gan")
+				t.Error("all three SanYuan pillars have identical Gan")
 			}
 		})
 	}

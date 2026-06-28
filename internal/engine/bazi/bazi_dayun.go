@@ -1,6 +1,8 @@
 package bazi
 
 import (
+	"time"
+
 	"liki/internal/engine/ganzhi"
 	"liki/internal/engine/tianwen"
 )
@@ -22,6 +24,69 @@ type DaYun struct {
 	Direction          string        `json:"direction"`
 	Zhu            []DaYunZhu `json:"zhu"`
 	CurrentZhuIndex int           `json:"current_zhu_index"` // set by caller if needed
+}
+
+type daYunZhus struct {
+	startAge  int
+	direction string
+	zhus      []ganzhi.Zhu
+}
+
+func computeDaYunZhus(st tianwen.SolarTime, month ganzhi.Zhu, nianGan ganzhi.Gan, gender ganzhi.Gender) daYunZhus {
+	isYang := int(nianGan)%2 == 1
+	isMale := gender == ganzhi.Male
+	forward := (isMale && isYang) || (!isMale && !isYang)
+
+	birthTime := st.Time()
+	birthYear := birthTime.Year()
+	jz := tianwen.JianYue(tianwen.GregorianTime(birthTime))
+	mi := (int(jz) + 9) % 12 // 0=寅月..11=丑月
+
+	// The jie index in JieQiLongitudes for month mi is mi*2.
+	jieIdx := mi * 2
+	var targetJie time.Time
+	var dir string
+	if forward {
+		nextIdx := ((mi + 1) % 12) * 2
+		targetJie = tianwen.SolarTermTime(birthYear, tianwen.JieQiLongitudes[nextIdx])
+		if !targetJie.After(birthTime) {
+			targetJie = tianwen.SolarTermTime(birthYear+1, tianwen.JieQiLongitudes[nextIdx])
+		}
+		dir = "顺排"
+	} else {
+		targetJie = tianwen.SolarTermTime(birthYear, tianwen.JieQiLongitudes[jieIdx])
+		if targetJie.After(birthTime) {
+			targetJie = tianwen.SolarTermTime(birthYear-1, tianwen.JieQiLongitudes[jieIdx])
+		}
+		dir = "逆排"
+	}
+
+	days := targetJie.Sub(birthTime).Hours() / 24
+	if days < 0 {
+		days = -days
+	}
+	startAge := int(days/3 + 0.5) // 3 days = 1 year, round to nearest
+
+	// Generate 8 zhus from month pillar.
+	monthIdx := ganzhi.SixtyCycleIndex(month.Gan, month.Zhi)
+	zhus := make([]ganzhi.Zhu, 0, 8)
+	for i := 1; i <= 8; i++ {
+		var idx int
+		if forward {
+			idx = (monthIdx + i) % 60
+		} else {
+			idx = (monthIdx - i + 60) % 60
+		}
+		g := ganzhi.Gan((idx % 10) + 1)
+		z := ganzhi.Zhi((idx % 12) + 1)
+		zhus = append(zhus, ganzhi.Zhu{Gan: g, Zhi: z})
+	}
+
+	return daYunZhus{
+		startAge:  startAge,
+		direction: dir,
+		zhus:      zhus,
+	}
 }
 
 // computeDaYun computes the labeled big fortune (大运) zhus.

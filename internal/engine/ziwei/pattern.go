@@ -15,10 +15,10 @@ func findPatterns(palaces [12]palace) []pattern {
 	if starWith(ming, ZiWei) {
 		p.add("紫微朝垣", "紫微坐命，帝王气象", 2)
 	}
-	if starAt(palaces[6], TaiYang) { // 午宫
+	if starAtZhi(palaces, TaiYang, 7) { // 太阳居午宫（绝对支位午=7）
 		p.add("日丽中天", "太阳居午，光明磊落", 2)
 	}
-	if starAt(palaces[11], TaiYin) {
+	if starAtZhi(palaces, TaiYin, 12) { // 太阴居亥宫（绝对支位亥=12）
 		p.add("月朗天门", "太阴居亥，清辉遍洒", 2)
 	}
 	if sunMoonBright(palaces) {
@@ -105,6 +105,14 @@ func (p *patterns) add(name, desc string, score int) {
 // ------ helpers ------
 
 func starAt(pa palace, star starIndex) bool { return starWith(pa, star) }
+func starAtZhi(palaces [12]palace, star starIndex, zhi Zhi) bool {
+	for _, p := range palaces {
+		if p.Zhi == zhi && starWith(p, star) {
+			return true
+		}
+	}
+	return false
+}
 func starWith(pa palace, star starIndex) bool {
 	for _, s := range pa.Stars {
 		if s.Star == star {
@@ -126,16 +134,20 @@ func qingYangMiao(z Zhi) bool {
 }
 
 func sunMoonBright(palaces [12]palace) bool {
+	sunBright := false
+	moonBright := false
 	brightPalaces := []palaceIndex{0, 6, 8, 10} // 命迁移官禄福德
 	for _, bp := range brightPalaces {
 		for _, s := range palaces[bp].Stars {
-			if (s.Star == TaiYang && miaoWang(TaiYang, palaces[bp].Zhi) <= Wang) ||
-				(s.Star == TaiYin && miaoWang(TaiYin, palaces[bp].Zhi) <= Wang) {
-				return true
+			if s.Star == TaiYang && miaoWang(TaiYang, palaces[bp].Zhi) <= Wang {
+				sunBright = true
+			}
+			if s.Star == TaiYin && miaoWang(TaiYin, palaces[bp].Zhi) <= Wang {
+				moonBright = true
 			}
 		}
 	}
-	return false
+	return sunBright && moonBright
 }
 
 func sunMoonDark(palaces [12]palace) bool {

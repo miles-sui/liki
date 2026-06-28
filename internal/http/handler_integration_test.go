@@ -1,6 +1,6 @@
 //go:build integration
 
-package handler
+package http
 
 import (
 	"context"
@@ -13,7 +13,7 @@ import (
 	"testing"
 	"time"
 
-	"liki/internal/agent"
+	"liki/internal/product"
 	"liki/internal/payment"
 )
 
@@ -44,14 +44,13 @@ func newHandlerTestService(t *testing.T, db *sql.DB) *payment.Service {
 		store,
 		"https://example.com",
 		"admin@example.com",
-		nil,
 		context.Background(),
 	)
 }
 
 type stubProviderForHandler struct{}
 
-func (d *stubProviderForHandler) CreateCheckout(_ context.Context, _ agent.Product, _ int, _, _, _ string) (*payment.CheckoutResult, error) {
+func (d *stubProviderForHandler) CreateCheckout(_ context.Context, _ product.Product, _ int, _, _, _ string) (*payment.CheckoutResult, error) {
 	return &payment.CheckoutResult{SessionID: "sess-test", CheckoutURL: "https://pay.example.com/checkout"}, nil
 }
 
@@ -72,7 +71,7 @@ func createHandlerTestOrder(t *testing.T, db *sql.DB, orderID string, status pay
 	t.Helper()
 	_, err := db.Exec(
 		`INSERT INTO orders (order_id, product, amount, currency, provider, email, chart_json, llm_json, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		orderID, "chart", 990, "CNY", "", "buyer@test.com", chartJSON, llmJSON, status,
+		orderID, "naming", 990, "CNY", "", "buyer@test.com", chartJSON, llmJSON, status,
 	)
 	if err != nil {
 		t.Fatalf("create test order: %v", err)
@@ -86,10 +85,10 @@ func TestCheckoutToReportLifecycle(t *testing.T) {
 	svc := newHandlerTestService(t, db)
 
 	// 1. Create an order directly in DB (simulating agent's purchase call).
-	createHandlerTestOrder(t, db, "lifecycle-1", payment.OrderPending, `{"chart":{}}`, "")
+	createHandlerTestOrder(t, db, "lifecycle-1", payment.OrderPending, `{"naming":{}}`, "")
 
 	// 2. Checkout — creates checkout session.
-	checkoutHandler := handleCheckout(svc)
+	checkoutHandler := handleCheckout(svc, &Analytics{})
 	checkoutReq := httptest.NewRequest("POST", "/api/payments/checkout", strings.NewReader(`{"order_id":"lifecycle-1","email":"buyer@test.com","provider":"dodo"}`))
 	checkoutW := httptest.NewRecorder()
 	checkoutHandler(checkoutW, checkoutReq)
@@ -110,8 +109,8 @@ func TestCheckoutToReportLifecycle(t *testing.T) {
 		t.Error("checkout session_id must not be empty")
 	}
 
-	// 3. Payment return (succeeded) — redirects to report page.
-	returnHandler := handlePaymentReturn()
+	// 3. Payment return (succeeded) — sets JWT, redirects to chat.
+	returnHandler := handlePaymentReturn(svc.Store)
 	returnReq := httptest.NewRequest("GET", "/api/payments/return/lifecycle-1?status=succeeded", nil)
 	returnReq.SetPathValue("id", "lifecycle-1")
 	returnW := httptest.NewRecorder()
@@ -120,12 +119,12 @@ func TestCheckoutToReportLifecycle(t *testing.T) {
 	if returnW.Code != http.StatusFound {
 		t.Errorf("return status = %d, want 302", returnW.Code)
 	}
-	if loc := returnW.Header().Get("Location"); loc != "/report/lifecycle-1" {
-		t.Errorf("return redirect = %q, want /report/lifecycle-1", loc)
+	if loc := returnW.Header().Get("Location"); loc != "/chat?order_id=lifecycle-1" {
+		t.Errorf("return redirect = %q, want /chat?order_id=lifecycle-1", loc)
 	}
 
 	// 4. Order status — returns pending (not yet paid via webhook).
-	statusHandler := handleOrderStatus(svc)
+	statusHandler := handleOrderStatus(svc.Store)
 	statusReq := httptest.NewRequest("GET", "/api/orders/lifecycle-1/status", nil)
 	statusReq.SetPathValue("id", "lifecycle-1")
 	statusW := httptest.NewRecorder()
@@ -146,7 +145,7 @@ func TestCheckoutToReportLifecycle(t *testing.T) {
 	}
 
 	// 5. Report with pending status — llm_json is hidden.
-	reportHandler := handleReport(svc)
+	reportHandler := handleReport(svc, &Analytics{})
 	reportReq := httptest.NewRequest("GET", "/api/reports/lifecycle-1", nil)
 	reportReq.SetPathValue("id", "lifecycle-1")
 	reportW := httptest.NewRecorder()
@@ -176,13 +175,13 @@ func TestWebhookThenReport(t *testing.T) {
 	db := openHandlerTestDB(t)
 	svc := newHandlerTestService(t, db)
 
-	createHandlerTestOrder(t, db, "hook-rpt-1", payment.OrderPending, `{"chart":{}}`, "")
+	createHandlerTestOrder(t, db, "hook-rpt-1", payment.OrderPending, `{"naming":{}}`, "")
 	// Pre-fill llm_json as if background generation completed.
 	svc.Store.MarkPaidIdempotent(context.Background(), "hook-rpt-1", "pay-hook-1")
 	svc.Store.UpdateLlmJSON(context.Background(), "hook-rpt-1", "<p>full report</p>")
 
 	// Report after payment: llm_json is exposed.
-	reportHandler := handleReport(svc)
+	reportHandler := handleReport(svc, &Analytics{})
 	reportReq := httptest.NewRequest("GET", "/api/reports/hook-rpt-1", nil)
 	reportReq.SetPathValue("id", "hook-rpt-1")
 	reportW := httptest.NewRecorder()
@@ -213,7 +212,7 @@ func TestCleanStale_Integration(t *testing.T) {
 	svc := newHandlerTestService(t, db)
 
 	ctx := context.Background()
-	svc.Store.CreateOrder(ctx, "stale-1", agent.ProductChart, 990, "CNY", `{}`, "", "zh-Hans", "")
+	svc.Store.CreateOrder(ctx, "stale-1", product.ProductNaming, 990, "CNY", "", `{}`, "", "")
 	// Backdate to 2020.
 	db.ExecContext(ctx, `UPDATE orders SET created_at = '2020-01-01 00:00:00' WHERE order_id = 'stale-1'`)
 

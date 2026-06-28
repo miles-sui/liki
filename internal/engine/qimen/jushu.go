@@ -32,7 +32,7 @@ func determineJuShu(year, month, day int, dayGan ganzhi.Gan, dayZhi ganzhi.Zhi) 
 
 // determineYuan returns 0=上元, 1=中元, 2=下元 based on the day pillar's position in the 60-cycle.
 func determineYuan(dayZhu ganzhi.Zhu) int {
-	dayIdx := ganzhi.SixtyCycleName(dayZhu.Gan, dayZhu.Zhi)
+	dayIdx := ganzhi.SixtyCycleIndex(dayZhu.Gan, dayZhu.Zhi)
 
 	for _, start := range []int{0, 15, 30, 45} {
 		if inCycleRange(dayIdx, start, 5) {

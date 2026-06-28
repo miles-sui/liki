@@ -35,7 +35,7 @@
   - `current_zhu_index`: 当前所在大运索引
 - `chang_sheng`: [{name, index}] — 十二长生全局表（12 项）
 - `wuxing_count`: `{木,火,土,金,水}` — 全局五行计数
-- `tai_yuan_ming_gong`: `{tai_yuan:{gan,zhi}, ming_gong:{gan,zhi}, shen_gong:{gan,zhi}}` — 胎元/命宫/身宫
+- `san_yuan`: `{tai_yuan:{gan,zhi}, ming_gong:{gan,zhi}, shen_gong:{gan,zhi}}` — 胎元/命宫/身宫
 - `he_hui`: [{type, name, element}] — 合会（六合/三合/三会等）
 - `gong_jia`: [{pillar_a, pillar_b, type, branch}] — 拱夹
 - `san_qi_name`: 三奇名（若空则为空串）

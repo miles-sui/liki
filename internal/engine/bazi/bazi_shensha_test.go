@@ -529,7 +529,7 @@ func TestShenSha_KongWang(t *testing.T) {
 				Shi:  ganzhi.Zhu{Gan: ganzhi.GanWu, Zhi: ganzhi.ZhiChen},
 			}
 			// 验证旬
-			idx := ganzhi.SixtyCycleName(tt.dayGan, tt.dayZhi)
+			idx := ganzhi.SixtyCycleIndex(tt.dayGan, tt.dayZhi)
 			xun := idx / 10
 			if xun != tt.inXun {
 				t.Fatalf("test data: six cycle index=%d, xun=%d, expected %d", idx, xun, tt.inXun)

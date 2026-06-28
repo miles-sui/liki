@@ -6,8 +6,8 @@ import (
 	"liki/internal/engine/ganzhi"
 )
 
-// TripleHeFull describes a complete 三合局 formed by the bazi chart's branches.
-type TripleHeFull struct {
+// HeHuiCombination describes a complete 三合局 formed by the bazi chart's branches.
+type HeHuiCombination struct {
 	Type    string `json:"type"`    // "三合" or "三会"
 	Name    string `json:"name"`    // "申子辰水局"
 	Element string `json:"element"` // "水"
@@ -56,13 +56,13 @@ func containsPair(list []ganzhi.Zhi, a, b ganzhi.Zhi) bool {
 }
 
 // computeFullTripleHeHui detects complete 三合局 and 三会方 across the bazi pillars.
-func computeFullTripleHeHui(bz ganzhi.Bazi) []TripleHeFull {
+func computeFullTripleHeHui(bz ganzhi.Bazi) []HeHuiCombination {
 	bs := branchSet(bz)
-	var results []TripleHeFull
+	var results []HeHuiCombination
 
 	for _, tr := range ganzhi.TripleHeList {
 		if countBranches(bs, tr.Branches...) == len(tr.Branches) {
-			results = append(results, TripleHeFull{
+			results = append(results, HeHuiCombination{
 				Type:    relSanHe,
 				Name:    tripleName(tr.Branches, tr.Element, "局"),
 				Element: tr.Element.String(),
@@ -72,7 +72,7 @@ func computeFullTripleHeHui(bz ganzhi.Bazi) []TripleHeFull {
 
 	for _, tr := range ganzhi.TripleHuiList {
 		if countBranches(bs, tr.Branches...) == len(tr.Branches) {
-			results = append(results, TripleHeFull{
+			results = append(results, HeHuiCombination{
 				Type:    relSanHui,
 				Name:    tripleName(tr.Branches, tr.Element, "方"),
 				Element: tr.Element.String(),

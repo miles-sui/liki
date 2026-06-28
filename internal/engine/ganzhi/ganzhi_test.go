@@ -96,10 +96,10 @@ func TestIsPo_SameBranch(t *testing.T) {
 }
 
 // =============================================================================
-// NaYinLabel — 纳音
+// NayinLabel — 纳音
 // =============================================================================
 
-func TestNaYinLabel_Known(t *testing.T) {
+func TestNayinLabel_Known(t *testing.T) {
 	tests := []struct {
 		name string
 		g    Gan
@@ -124,24 +124,24 @@ func TestNaYinLabel_Known(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := NaYinLabel(tt.g, tt.z)
+			got := NayinLabel(tt.g, tt.z)
 			if got != tt.want {
-				t.Errorf("NaYinLabel(%s,%s)=%s, want %s",
+				t.Errorf("NayinLabel(%s,%s)=%s, want %s",
 					GanName(tt.g), ZhiName(tt.z), got, tt.want)
 			}
 		})
 	}
 }
 
-func TestNaYinLabel_All60HaveName(t *testing.T) {
+func TestNayinLabel_All60HaveName(t *testing.T) {
 	for g := GanJia; g <= GanGui; g++ {
 		for z := ZhiZi; z <= ZhiHai; z++ {
 			if int(g)%2 != int(z)%2 {
 				continue
 			}
-			label := NaYinLabel(g, z)
+			label := NayinLabel(g, z)
 			if label == "" || label == "未知" {
-				t.Errorf("NaYinLabel(%s,%s) empty or 未知", GanName(g), ZhiName(z))
+				t.Errorf("NayinLabel(%s,%s) empty or 未知", GanName(g), ZhiName(z))
 			}
 		}
 	}
@@ -452,13 +452,13 @@ func TestSixtyToZhu_Known(t *testing.T) {
 }
 
 func TestSixtyToZhu_Roundtrip(t *testing.T) {
-	// SixtyToZhu → SixtyCycleName should be identity
+	// SixtyToZhu → SixtyCycleIndex should be identity
 	for g := GanJia; g <= GanGui; g++ {
 		for z := ZhiZi; z <= ZhiHai; z++ {
 			if int(g)%2 != int(z)%2 {
 				continue
 			}
-			idx := SixtyCycleName(g, z)
+			idx := SixtyCycleIndex(g, z)
 			zhu := SixtyToZhu(idx)
 			if zhu.Gan != g || zhu.Zhi != z {
 				t.Errorf("roundtrip: %s%s(idx=%d) → SixtyToZhu → %s%s",
@@ -472,7 +472,7 @@ func TestSixtyToZhu_All60(t *testing.T) {
 	seen := make(map[int]bool)
 	for i := 0; i < 60; i++ {
 		z := SixtyToZhu(i)
-		idx := SixtyCycleName(z.Gan, z.Zhi)
+		idx := SixtyCycleIndex(z.Gan, z.Zhi)
 		if seen[idx] {
 			t.Errorf("SixtyToZhu(%d): duplicate index %d", i, idx)
 		}
@@ -1216,7 +1216,7 @@ func TestZhiName_Invalid(t *testing.T) {
 	}
 }
 
-func TestSixtyCycleName_Known(t *testing.T) {
+func TestSixtyCycleIndex_Known(t *testing.T) {
 	tests := []struct {
 		name string
 		gan  Gan
@@ -1231,26 +1231,26 @@ func TestSixtyCycleName_Known(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			got := SixtyCycleName(tc.gan, tc.zhi)
+			got := SixtyCycleIndex(tc.gan, tc.zhi)
 			if got != tc.want {
-				t.Errorf("SixtyCycleName(%s,%s)=%d, want %d", tc.gan, tc.zhi, got, tc.want)
+				t.Errorf("SixtyCycleIndex(%s,%s)=%d, want %d", tc.gan, tc.zhi, got, tc.want)
 			}
 		})
 	}
 }
 
-func TestSixtyCycleName_Range(t *testing.T) {
+func TestSixtyCycleIndex_Range(t *testing.T) {
 	for g := GanJia; g <= GanGui; g++ {
 		for z := ZhiZi; z <= ZhiHai; z++ {
-			idx := SixtyCycleName(g, z)
+			idx := SixtyCycleIndex(g, z)
 			if idx < 0 || idx > 59 {
-				t.Errorf("SixtyCycleName(%s,%s)=%d out of [0,59]", g, z, idx)
+				t.Errorf("SixtyCycleIndex(%s,%s)=%d out of [0,59]", g, z, idx)
 			}
 		}
 	}
 }
 
-func TestSixtyCycleName_Bijection(t *testing.T) {
+func TestSixtyCycleIndex_Bijection(t *testing.T) {
 	// The 60 JiaZi cycle only includes pairs where gan and zhi have the same
 	// yin-yang parity (both odd or both even). All 60 valid pairs must produce
 	// distinct indices with no collisions.
@@ -1263,9 +1263,9 @@ func TestSixtyCycleName_Bijection(t *testing.T) {
 				continue
 			}
 			count++
-			idx := SixtyCycleName(g, z)
+			idx := SixtyCycleIndex(g, z)
 			if seen[idx] {
-				t.Errorf("SixtyCycleName collision at index %d (gan=%s, zhi=%s)", idx, g, z)
+				t.Errorf("SixtyCycleIndex collision at index %d (gan=%s, zhi=%s)", idx, g, z)
 			}
 			seen[idx] = true
 		}
@@ -1278,7 +1278,7 @@ func TestSixtyCycleName_Bijection(t *testing.T) {
 	}
 }
 
-func TestSixtyCycleName_Consecutive(t *testing.T) {
+func TestSixtyCycleIndex_Consecutive(t *testing.T) {
 	// In the 60-cycle, consecutive pairs advance both gan and zhi by 1.
 	// Starting from 甲子(0), next is 乙丑(1), then 丙寅(2), etc.
 	ganVals := []Gan{GanJia, GanYi, GanBing, GanDing, GanWu, GanJi, GanGeng, GanXin, GanRen, GanGui,
@@ -1294,8 +1294,8 @@ func TestSixtyCycleName_Consecutive(t *testing.T) {
 		ZhiZi, ZhiChou, ZhiYin, ZhiMao, ZhiChen, ZhiSi, ZhiWu, ZhiWei, ZhiShen, ZhiYou, ZhiXu, ZhiHai}
 
 	for i := 0; i < 59; i++ {
-		idx1 := SixtyCycleName(ganVals[i], zhiVals[i])
-		idx2 := SixtyCycleName(ganVals[i+1], zhiVals[i+1])
+		idx1 := SixtyCycleIndex(ganVals[i], zhiVals[i])
+		idx2 := SixtyCycleIndex(ganVals[i+1], zhiVals[i+1])
 		if idx2 != (idx1+1)%60 {
 			t.Errorf("%s%s=%d → %s%s=%d, want +1 mod 60",
 				ganVals[i], zhiVals[i], idx1, ganVals[i+1], zhiVals[i+1], idx2)
@@ -1711,4 +1711,149 @@ func TestBazi_Slice(t *testing.T) {
 			t.Errorf("%s pillar is empty", name)
 		}
 	}
+}
+
+// ── WangShuai ──
+
+func TestParseWangShuai(t *testing.T) {
+	tests := []struct {
+		name    string
+		input   string
+		want    WangShuai
+		wantErr bool
+	}{
+		{"旺", "旺", WSWang, false},
+		{"相", "相", WSXiang, false},
+		{"休", "休", WSXiu, false},
+		{"囚", "囚", WSQiu, false},
+		{"死", "死", WSSi, false},
+		{"空字符串", "", 0, true},
+		{"无效值", "invalid", 0, true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := ParseWangShuai(tt.input)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ParseWangShuai(%q) err=%v, wantErr=%v", tt.input, err, tt.wantErr)
+			}
+			if err == nil && got != tt.want {
+				t.Errorf("ParseWangShuai(%q) = %v, want %v", tt.input, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestWangShuai_String(t *testing.T) {
+	tests := []struct {
+		ws   WangShuai
+		want string
+	}{
+		{WSWang, "旺"},
+		{WSXiang, "相"},
+		{WSXiu, "休"},
+		{WSQiu, "囚"},
+		{WSSi, "死"},
+		{WangShuai(-1), ""},
+		{WangShuai(99), ""},
+	}
+	for _, tt := range tests {
+		if got := tt.ws.String(); got != tt.want {
+			t.Errorf("WangShuai(%d).String() = %q, want %q", tt.ws, got, tt.want)
+		}
+	}
+}
+
+func TestWangShuaiOf(t *testing.T) {
+	// 寅月(正月)=木 → 当令者旺(木), 我生者相(木生火), 生我者休(水生木), 克我者囚(金克木), 我克者死(木克土)
+	t.Run("寅月", func(t *testing.T) {
+		if got := WangShuaiOf(WxMu, ZhiYin); got != WSWang {
+			t.Errorf("木在寅月 = %v, want 旺", got)
+		}
+		if got := WangShuaiOf(WxHuo, ZhiYin); got != WSXiang {
+			t.Errorf("火在寅月 = %v, want 相", got)
+		}
+		if got := WangShuaiOf(WxShui, ZhiYin); got != WSXiu {
+			t.Errorf("水在寅月 = %v, want 休", got)
+		}
+		if got := WangShuaiOf(WxJin, ZhiYin); got != WSQiu {
+			t.Errorf("金在寅月 = %v, want 囚", got)
+		}
+		if got := WangShuaiOf(WxTu, ZhiYin); got != WSSi {
+			t.Errorf("土在寅月 = %v, want 死", got)
+		}
+	})
+
+	// 巳月(四月)=火 → 当令者旺(火), 我生者相(火生土), 生我者休(木生火), 克我者囚(水克火), 我克者死(火克金)
+	t.Run("巳月", func(t *testing.T) {
+		if got := WangShuaiOf(WxHuo, ZhiSi); got != WSWang {
+			t.Errorf("火在巳月 = %v, want 旺", got)
+		}
+		if got := WangShuaiOf(WxTu, ZhiSi); got != WSXiang {
+			t.Errorf("土在巳月 = %v, want 相", got)
+		}
+		if got := WangShuaiOf(WxMu, ZhiSi); got != WSXiu {
+			t.Errorf("木在巳月 = %v, want 休", got)
+		}
+		if got := WangShuaiOf(WxShui, ZhiSi); got != WSQiu {
+			t.Errorf("水在巳月 = %v, want 囚", got)
+		}
+		if got := WangShuaiOf(WxJin, ZhiSi); got != WSSi {
+			t.Errorf("金在巳月 = %v, want 死", got)
+		}
+	})
+
+	// 申月(七月)=金
+	t.Run("申月", func(t *testing.T) {
+		if got := WangShuaiOf(WxJin, ZhiShen); got != WSWang {
+			t.Errorf("金在申月 = %v, want 旺", got)
+		}
+		if got := WangShuaiOf(WxShui, ZhiShen); got != WSXiang {
+			t.Errorf("水在申月 = %v, want 相", got)
+		}
+		if got := WangShuaiOf(WxTu, ZhiShen); got != WSXiu {
+			t.Errorf("土在申月 = %v, want 休", got)
+		}
+		if got := WangShuaiOf(WxHuo, ZhiShen); got != WSQiu {
+			t.Errorf("火在申月 = %v, want 囚", got)
+		}
+		if got := WangShuaiOf(WxMu, ZhiShen); got != WSSi {
+			t.Errorf("木在申月 = %v, want 死", got)
+		}
+	})
+
+	// 亥月(十月)=水
+	t.Run("亥月", func(t *testing.T) {
+		if got := WangShuaiOf(WxShui, ZhiHai); got != WSWang {
+			t.Errorf("水在亥月 = %v, want 旺", got)
+		}
+		if got := WangShuaiOf(WxMu, ZhiHai); got != WSXiang {
+			t.Errorf("木在亥月 = %v, want 相", got)
+		}
+		if got := WangShuaiOf(WxJin, ZhiHai); got != WSXiu {
+			t.Errorf("金在亥月 = %v, want 休", got)
+		}
+		if got := WangShuaiOf(WxTu, ZhiHai); got != WSQiu {
+			t.Errorf("土在亥月 = %v, want 囚", got)
+		}
+		if got := WangShuaiOf(WxHuo, ZhiHai); got != WSSi {
+			t.Errorf("火在亥月 = %v, want 死", got)
+		}
+	})
+
+	// 丑月(十二月)=土
+	t.Run("丑月", func(t *testing.T) {
+		if got := WangShuaiOf(WxTu, ZhiChou); got != WSWang {
+			t.Errorf("土在丑月 = %v, want 旺", got)
+		}
+	})
+
+	// Edge: invalid month branch
+	t.Run("无效月支", func(t *testing.T) {
+		if got := WangShuaiOf(WxMu, 0); got != -1 {
+			t.Errorf("WangShuaiOf(木, 0) = %d, want -1", got)
+		}
+		if got := WangShuaiOf(WxMu, 13); got != -1 {
+			t.Errorf("WangShuaiOf(木, 13) = %d, want -1", got)
+		}
+	})
 }

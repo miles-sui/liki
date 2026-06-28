@@ -1,4 +1,4 @@
-package handler
+package http
 
 import (
 	"encoding/json"
@@ -78,8 +78,8 @@ func TestHandleLocation_NoCFHeader_PrivateIP(t *testing.T) {
 	if env.Data.Country != "unknown" {
 		t.Errorf("country = %q, want unknown", env.Data.Country)
 	}
-	if env.Data.Currency != "USD" {
-		t.Errorf("currency = %q, want USD (default)", env.Data.Currency)
+	if env.Data.Currency != "CNY" {
+		t.Errorf("currency = %q, want CNY (default when unknown)", env.Data.Currency)
 	}
 }
 
@@ -106,13 +106,13 @@ func TestHandleLocation_InvalidIP(t *testing.T) {
 // TestHandleLocation_GeoAPI tests the ip-api.com integration path.
 // Must mock the HTTP transport to avoid real external calls.
 func TestHandleLocation_GeoAPI(t *testing.T) {
-	orig := locHTTPClient
-	locHTTPClient = &http.Client{
+	orig := locationClient
+	locationClient = &http.Client{
 		Transport: &mockLocationTransport{
 			body: `{"countryCode":"JP","city":"Tokyo"}`,
 		},
 	}
-	defer func() { locHTTPClient = orig }()
+	defer func() { locationClient = orig }()
 
 	r := httptest.NewRequest("GET", "/api/location", nil)
 	// Use public IP to trigger geo API lookup.
@@ -139,13 +139,13 @@ func TestHandleLocation_GeoAPI(t *testing.T) {
 
 // TestHandleLocation_CFOverridesGeoAPI: CF-IPCountry header takes priority over geo API.
 func TestHandleLocation_CFOverridesGeoAPI(t *testing.T) {
-	orig := locHTTPClient
-	locHTTPClient = &http.Client{
+	orig := locationClient
+	locationClient = &http.Client{
 		Transport: &mockLocationTransport{
 			body: `{"countryCode":"JP","city":"Tokyo"}`,
 		},
 	}
-	defer func() { locHTTPClient = orig }()
+	defer func() { locationClient = orig }()
 
 	r := httptest.NewRequest("GET", "/api/location", nil)
 	r.Header.Set("CF-IPCountry", "CN")
@@ -173,14 +173,14 @@ func TestHandleLocation_CFOverridesGeoAPI(t *testing.T) {
 
 // TestHandleLocation_GeoAPIError: geo API failure should not break the handler.
 func TestHandleLocation_GeoAPIError(t *testing.T) {
-	orig := locHTTPClient
-	locHTTPClient = &http.Client{
+	orig := locationClient
+	locationClient = &http.Client{
 		Transport: &mockLocationTransport{
 			status: http.StatusInternalServerError,
 			body:   "error",
 		},
 	}
-	defer func() { locHTTPClient = orig }()
+	defer func() { locationClient = orig }()
 
 	r := httptest.NewRequest("GET", "/api/location", nil)
 	r.RemoteAddr = "8.8.8.8:12345"

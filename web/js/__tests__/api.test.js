@@ -141,8 +141,69 @@ async function apiPost(path, body, opts = {}) {
   throw lastErr;
 }
 
+function isMobileDevice() {
+  if (/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) return true;
+  if (navigator.maxTouchPoints > 0 && window.innerWidth < 1024) return true;
+  return false;
+}
+
+function showQRModal(qrcodeUrl) {
+  var existing = document.querySelector('.qr-modal-overlay');
+  if (existing) existing.remove();
+
+  var overlay = document.createElement('div');
+  overlay.className = 'qr-modal-overlay';
+  overlay.innerHTML =
+    '<div class="qr-modal" role="dialog" aria-modal="true" aria-label="' + escapeHTML(i18next.t('payment.scanQR')) + '">' +
+      '<button class="qr-modal-close" aria-label="' + escapeHTML(i18next.t('payment.qrClose')) + '">&times;</button>' +
+      '<p class="qr-modal-title">' + escapeHTML(i18next.t('payment.scanQR')) + '</p>' +
+      '<img class="qr-modal-img" src="' + escapeHTML(qrcodeUrl) + '" alt="QR Code">' +
+      '<p class="qr-modal-hint">' + escapeHTML(i18next.t('payment.qrHint')) + '</p>' +
+    '</div>';
+
+  var prevFocus = document.activeElement;
+  var closeBtn = overlay.querySelector('.qr-modal-close');
+
+  var close = function() {
+    overlay.remove();
+    document.removeEventListener('keydown', trapFocus);
+    if (prevFocus && typeof prevFocus.focus === 'function') {
+      try { prevFocus.focus(); } catch (_) {}
+    }
+  };
+
+  var trapFocus = function(e) {
+    if (e.key !== 'Tab') return;
+    var modal = overlay.querySelector('.qr-modal');
+    var focusable = modal.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+    if (focusable.length === 0) return;
+    var first = focusable[0];
+    var last = focusable[focusable.length - 1];
+    if (e.shiftKey) {
+      if (document.activeElement === first) { e.preventDefault(); last.focus(); }
+    } else {
+      if (document.activeElement === last) { e.preventDefault(); first.focus(); }
+    }
+  };
+
+  overlay.addEventListener('click', function(e) { if (e.target === overlay) close(); });
+  closeBtn.addEventListener('click', close);
+  document.addEventListener('keydown', trapFocus);
+
+  document.body.appendChild(overlay);
+  closeBtn.focus();
+}
+
 async function goPay(orderID) {
   const data = await apiPost('/payments/checkout', { order_id: orderID });
+
+  // Desktop + xunhu (qrcode_url present): show QR code for scanning
+  if (data.qrcode_url && !isMobileDevice()) {
+    showQRModal(data.qrcode_url);
+    return;
+  }
+
+  // Mobile or dodo: redirect directly
   const url = data.checkout_url;
   if (!url) throw new Error(i18next.t('error.noCheckoutUrl'));
   window.location.href = url;
@@ -272,9 +333,14 @@ describe('apiPost', () => {
 });
 
 describe('goPay', () => {
+  let qrUrls = [];
   beforeEach(() => {
     vi.stubGlobal('fetch', vi.fn());
     vi.stubGlobal('window', { location: { href: '' } });
+    // Default: desktop (non-mobile) for QR tests
+    vi.stubGlobal('navigator', { userAgent: '', maxTouchPoints: 0 });
+    vi.stubGlobal('innerWidth', 1920);
+    qrUrls = [];
   });
 
   it('throws when checkout_url is missing from response', async () => {
@@ -286,6 +352,34 @@ describe('goPay', () => {
     fetch.mockResolvedValue({
       ok: true,
       json: () => Promise.resolve({ data: { checkout_url: 'https://pay.example.com/checkout/xyz' } }),
+    });
+    await goPay('order-1');
+    expect(window.location.href).toBe('https://pay.example.com/checkout/xyz');
+  });
+
+  it('shows QR modal on desktop when qrcode_url is present', async () => {
+    var calledUrl = null;
+    var orig = showQRModal;
+    showQRModal = function(url) { calledUrl = url; };
+    try {
+      fetch.mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ data: { checkout_url: 'https://pay.example.com/checkout/xyz', qrcode_url: 'https://qr.example.com/qr.png' } }),
+      });
+      await goPay('order-1');
+      expect(window.location.href).toBe('');
+      expect(calledUrl).toBe('https://qr.example.com/qr.png');
+    } finally {
+      showQRModal = orig;
+    }
+  });
+
+  it('redirects on mobile even when qrcode_url is present', async () => {
+    vi.stubGlobal('navigator', { userAgent: 'iPhone', maxTouchPoints: 1 });
+    vi.stubGlobal('innerWidth', 375);
+    fetch.mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ data: { checkout_url: 'https://pay.example.com/checkout/xyz', qrcode_url: 'https://qr.example.com/qr.png' } }),
     });
     await goPay('order-1');
     expect(window.location.href).toBe('https://pay.example.com/checkout/xyz');

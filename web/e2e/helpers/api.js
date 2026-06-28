@@ -1,7 +1,10 @@
 // API helpers for E2E test data setup.
-// Request shapes are derived from the actual JS source and API docs (web/docs/*.md).
+// All engine endpoints use JSON-RPC (POST /api/jsonrpc).
+// Business endpoints use REST paths.
 
 const API = 'http://localhost:8080/api';
+const RPC = `${API}/jsonrpc`;
+let rpcID = 0;
 
 async function req(method, path, body) {
   const url = `${API}${path}`;
@@ -13,21 +16,33 @@ async function req(method, path, body) {
   return data.data;
 }
 
-// ---- Free API (from docs) ----
+async function rpc(method, params = {}) {
+  rpcID++;
+  const resp = await fetch(RPC, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ jsonrpc: '2.0', id: rpcID, method, params }),
+  });
+  const data = await resp.json();
+  if (data.error) throw new Error(data.error.message || `RPC error ${data.error.code}`);
+  return data.result.data;
+}
 
-/** POST /api/bazi/chart — free full BaZi chart (docs/bazi.md) */
+// ---- JSON-RPC engine endpoints ----
+
+/** rpc bazi.chart — free full BaZi chart */
 export async function baziChart(params = {}) {
-  return req('POST', '/bazi/chart', {
-    solar_time: params.solar_time || '2000-06-15T12:00:00+08:00',
+  return rpc('bazi.chart', {
+    birth: { time: params.solar_time || '2000-06-15T12:00:00+08:00', longitude: params.longitude || 116.4 },
     gender: params.gender || 'male',
   });
 }
 
-/** POST /api/bazi/bond — free bond analysis (docs/bazi.md) */
+/** rpc bazi.bond — free bond analysis */
 export async function baziBond(aParams = {}, bParams = {}) {
-  return req('POST', '/bazi/bond', {
-    a: { solar_time: '2000-06-15T12:00:00+08:00', gender: 'male', ...aParams },
-    b: { solar_time: '1999-03-20T08:00:00+08:00', gender: 'female', ...bParams },
+  return rpc('bazi.bond', {
+    a: { birth: { time: '2000-06-15T12:00:00+08:00', longitude: 116.4, ...aParams.birth }, gender: 'male', ...aParams },
+    b: { birth: { time: '1999-03-20T08:00:00+08:00', longitude: 116.4, ...bParams.birth }, gender: 'female', ...bParams },
   });
 }
 

@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"liki/internal/agent"
+	"liki/internal/product"
 )
 
 // openTestDBFile creates a file-based SQLite database for integration tests.
@@ -43,7 +43,7 @@ func TestStore_ReopenPreservesData(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewStore (first): %v", err)
 	}
-	s1.CreateOrder(context.Background(), "reopen-test", agent.ProductChart, 990, "CNY", `{"x":1}`, "", "zh-Hans", "")
+	s1.CreateOrder(context.Background(), "reopen-test", product.ProductNaming, 990, "CNY", "", `{"x":1}`, "", "")
 	db1.Close()
 
 	// Reopen — data must survive.
@@ -61,7 +61,7 @@ func TestStore_ReopenPreservesData(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GetOrder after reopen: %v", err)
 	}
-	if o.Product != agent.ProductChart {
+	if o.Product != product.ProductNaming {
 		t.Errorf("Product = %q, want chart", o.Product)
 	}
 	if o.ChartJSON != `{"x":1}` {
@@ -75,7 +75,7 @@ func TestStore_ReopenWithPaidOrder(t *testing.T) {
 
 	db1, _ := OpenDB(path)
 	s1, _ := NewStore(db1)
-	s1.CreateOrder(context.Background(), "paid-reopen", agent.ProductBond, 1990, "CNY", `{"bond":{}}`, "", "zh-Hans", "")
+	s1.CreateOrder(context.Background(), "paid-reopen", product.ProductNaming, 1990, "CNY", "", `{"bond":{}}`, "", "")
 	s1.MarkPaidIdempotent(context.Background(), "paid-reopen", "pay-456")
 	db1.Close()
 
@@ -101,7 +101,7 @@ func TestStore_MarkPaidIdempotent_Concurrent(t *testing.T) {
 	s := openTestDBFile(t)
 	ctx := context.Background()
 
-	s.CreateOrder(ctx, "concurrent-pay", agent.ProductChart, 990, "CNY", `{}`, "", "zh-Hans", "")
+	s.CreateOrder(ctx, "concurrent-pay", product.ProductNaming, 990, "CNY", "", `{}`, "", "")
 
 	const n = 5
 	results := make(chan bool, n)
@@ -110,7 +110,7 @@ func TestStore_MarkPaidIdempotent_Concurrent(t *testing.T) {
 	for i := 0; i < n; i++ {
 		go func(idx int) {
 			pid := "pay-concurrent-" + string(rune('a'+idx))
-			newPayment, _, _, _, err := s.MarkPaidIdempotent(ctx, "concurrent-pay", pid)
+			newPayment, _, _, err := s.MarkPaidIdempotent(ctx, "concurrent-pay", pid)
 			results <- newPayment
 			errs <- err
 		}(i)
@@ -145,7 +145,7 @@ func TestStore_UpdatedAt_ChangesOnModification(t *testing.T) {
 	s := openTestDBFile(t)
 	ctx := context.Background()
 
-	s.CreateOrder(ctx, "ts-order", agent.ProductChart, 990, "CNY", `{}`, "", "zh-Hans", "")
+	s.CreateOrder(ctx, "ts-order", product.ProductNaming, 990, "CNY", "", `{}`, "", "")
 	o1, _ := s.GetOrder(ctx, "ts-order")
 	createdAt := o1.CreatedAt
 	updatedAt := o1.UpdatedAt
@@ -171,7 +171,7 @@ func TestStore_UpdatedAt_ChangesOnPayment(t *testing.T) {
 	s := openTestDBFile(t)
 	ctx := context.Background()
 
-	s.CreateOrder(ctx, "ts-pay", agent.ProductChart, 990, "CNY", `{}`, "", "zh-Hans", "")
+	s.CreateOrder(ctx, "ts-pay", product.ProductNaming, 990, "CNY", "", `{}`, "", "")
 	o1, _ := s.GetOrder(ctx, "ts-pay")
 	updatedAt := o1.UpdatedAt
 
@@ -192,8 +192,8 @@ func TestStore_UpdateLlmJSON_Overwrites(t *testing.T) {
 	s := openTestDBFile(t)
 	ctx := context.Background()
 
-	s.CreateOrder(ctx, "llm-overwrite", agent.ProductChart, 990, "CNY", `{}`, "", "zh-Hans", "")
-	s.UpdateLlmJSONIfEmpty(ctx, "llm-overwrite", "v1")
+	s.CreateOrder(ctx, "llm-overwrite", product.ProductNaming, 990, "CNY", "", `{}`, "", "")
+	s.UpdateLlmJSON(ctx, "llm-overwrite", "v1")
 
 	err := s.UpdateLlmJSON(ctx, "llm-overwrite", "v2")
 	if err != nil {
@@ -223,56 +223,26 @@ func TestOpenDB_CreatesDirectory(t *testing.T) {
 	}
 }
 
-// ── Locale field ──
-
-func TestStore_Locale_Persists(t *testing.T) {
-	s := openTestDBFile(t)
-	ctx := context.Background()
-
-	tests := []struct {
-		orderID string
-		locale  string
-	}{
-		{"loc-zh", "zh-Hans"},
-		{"loc-hk", "zh-Hant"},
-		{"loc-en", "en"},
-	}
-
-	for _, tt := range tests {
-		if err := s.CreateOrder(ctx, tt.orderID, agent.ProductChart, 990, "CNY", `{}`, "", tt.locale, ""); err != nil {
-			t.Errorf("CreateOrder(%s): %v", tt.orderID, err)
-		}
-	}
-
-	for _, tt := range tests {
-		o, err := s.GetOrder(ctx, tt.orderID)
-		if err != nil {
-			t.Errorf("GetOrder(%s): %v", tt.orderID, err)
-			continue
-		}
-		if o.Locale != tt.locale {
-			t.Errorf("%s: Locale = %q, want %q", tt.orderID, o.Locale, tt.locale)
-		}
-	}
-}
-
 // ── ChartJSON with llm_json initially set ──
 
 func TestStore_CreateOrder_WithInitialLlmJSON(t *testing.T) {
 	s := openTestDBFile(t)
 	ctx := context.Background()
 
-	s.CreateOrder(ctx, "prefilled-llm", agent.ProductChart, 990, "CNY", `{"chart":{}}`, "# Pre-generated\n\nLLM content", "zh-Hans", "")
+	s.CreateOrder(ctx, "prefilled-llm", product.ProductNaming, 990, "CNY", "", `{"chart":{}}`, "# Pre-generated\n\nLLM content", "")
 
 	o, _ := s.GetOrder(ctx, "prefilled-llm")
 	if o.LlmJSON != "# Pre-generated\n\nLLM content" {
 		t.Errorf("LlmJSON = %q, want pre-generated content", o.LlmJSON)
 	}
 
-	// UpdateLlmJSONIfEmpty should NOT overwrite.
-	updated, _ := s.UpdateLlmJSONIfEmpty(ctx, "prefilled-llm", "new")
-	if updated {
-		t.Error("UpdateLlmJSONIfEmpty should not overwrite pre-filled llm_json")
+	// UpdateLlmJSON should overwrite unconditionally.
+	if err := s.UpdateLlmJSON(ctx, "prefilled-llm", "new"); err != nil {
+		t.Fatalf("UpdateLlmJSON: %v", err)
+	}
+	o2, _ := s.GetOrder(ctx, "prefilled-llm")
+	if o2.LlmJSON != "new" {
+		t.Errorf("LlmJSON = %q, want 'new' (should overwrite pre-filled)", o2.LlmJSON)
 	}
 }
 
@@ -293,8 +263,8 @@ func TestStore_CleanStale_AgeBoundary(t *testing.T) {
 	}
 	ctx := context.Background()
 
-	s.CreateOrder(ctx, "very-old", agent.ProductChart, 990, "CNY", `{}`, "", "zh-Hans", "")
-	s.CreateOrder(ctx, "very-new", agent.ProductChart, 990, "CNY", `{}`, "", "zh-Hans", "")
+	s.CreateOrder(ctx, "very-old", product.ProductNaming, 990, "CNY", "", `{}`, "", "")
+	s.CreateOrder(ctx, "very-new", product.ProductNaming, 990, "CNY", "", `{}`, "", "")
 
 	// Backdate the old order.
 	db.ExecContext(ctx, `UPDATE orders SET created_at = '2020-01-01 00:00:00' WHERE order_id = 'very-old'`)
@@ -326,7 +296,7 @@ func TestStore_GetOrder_Timestamps(t *testing.T) {
 	ctx := context.Background()
 
 	before := time.Now()
-	s.CreateOrder(ctx, "ts-valid", agent.ProductChart, 990, "CNY", `{}`, "", "zh-Hans", "")
+	s.CreateOrder(ctx, "ts-valid", product.ProductNaming, 990, "CNY", "", `{}`, "", "")
 	after := time.Now()
 
 	o, _ := s.GetOrder(ctx, "ts-valid")

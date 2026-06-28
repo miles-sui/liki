@@ -2,7 +2,6 @@ package payment
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -10,7 +9,20 @@ import (
 	"sync"
 	"time"
 
-	"liki/internal/agent"
+	"liki/internal/product"
+)
+
+// Webhook event types from payment providers.
+const (
+	EventPaymentSucceeded = "payment.succeeded"
+	EventPaymentRefunded  = "payment.refunded"
+	EventPaymentDisputed  = "payment.disputed"
+)
+
+// Provider names.
+const (
+	ProviderDodo  = "dodo"
+	ProviderXunhu = "xunhu"
 )
 
 var (
@@ -43,7 +55,7 @@ type WebhookEventData struct {
 
 // paymentProvider abstracts a payment gateway (Dodo, Xunhu, etc.).
 type paymentProvider interface {
-	CreateCheckout(ctx context.Context, product agent.Product, amount int, orderID, email, returnURL string) (*CheckoutResult, error)
+	CreateCheckout(ctx context.Context, product product.Product, amount int, orderID, email, returnURL string) (*CheckoutResult, error)
 	VerifyWebhook(rawBody []byte, headers http.Header) (*WebhookEvent, error)
 }
 
@@ -52,33 +64,46 @@ type emailClient interface {
 }
 
 // Service handles the full payment lifecycle: checkout creation, webhook processing,
-// background report generation, and report retrieval.
+// and report retrieval.
 type Service struct {
-	Dodo         paymentProvider
-	Xunhu        paymentProvider
-	Email        emailClient
-	Store        *Store
-	ReturnURL    string
-	AdminEmail   string
-	ReportAgents map[agent.Product]*agent.ReportAgent
+	dodo       paymentProvider
+	xunhu      paymentProvider
+	email      emailClient
+	Store      *Store
+	returnURL  string
+	adminEmail string
 
-	bgCtx        context.Context
-	generatingMu sync.Mutex
-	generating   map[string]struct{}
+	bgCtx context.Context
+	wg    sync.WaitGroup
 }
 
 // NewService creates a payment service with the given dependencies.
-func NewService(dodo, xunhu paymentProvider, email emailClient, store *Store, returnURL, adminEmail string, reportAgents map[agent.Product]*agent.ReportAgent, bgCtx context.Context) *Service {
+func NewService(dodo, xunhu paymentProvider, email emailClient, store *Store, returnURL, adminEmail string, bgCtx context.Context) *Service {
 	return &Service{
-		Dodo:         dodo,
-		Xunhu:        xunhu,
-		Email:        email,
-		Store:        store,
-		ReturnURL:    returnURL,
-		AdminEmail:   adminEmail,
-		ReportAgents: reportAgents,
-		bgCtx:        bgCtx,
-		generating:   make(map[string]struct{}),
+		dodo:       dodo,
+		xunhu:      xunhu,
+		email:      email,
+		Store:      store,
+		returnURL:  returnURL,
+		adminEmail: adminEmail,
+		bgCtx:      bgCtx,
+	}
+}
+
+// Shutdown waits for in-flight background goroutines (e.g. email sends) to finish,
+// or returns when ctx is cancelled. Derive from the shutdown deadline so a stuck
+// SMTP connection doesn't block forever.
+func (s *Service) Shutdown(ctx context.Context) error {
+	done := make(chan struct{})
+	go func() {
+		s.wg.Wait()
+		close(done)
+	}()
+	select {
+	case <-done:
+		return nil
+	case <-ctx.Done():
+		return ctx.Err()
 	}
 }
 
@@ -86,7 +111,7 @@ func NewService(dodo, xunhu paymentProvider, email emailClient, store *Store, re
 func (s *Service) CreateCheckout(ctx context.Context, provider, orderID, userEmail string) (*CheckoutResult, error) {
 	order, err := s.Store.GetOrder(ctx, orderID)
 	if err != nil {
-		return nil, fmt.Errorf("%w: %w", ErrOrderNotFound, err)
+		return nil, fmt.Errorf("payment: checkout: %w", err)
 	}
 
 	p, err := s.provider(provider)
@@ -98,12 +123,14 @@ func (s *Service) CreateCheckout(ctx context.Context, provider, orderID, userEma
 		if err := s.Store.UpdateEmail(ctx, orderID, userEmail); err != nil {
 			return nil, fmt.Errorf("payment: update email: %w", err)
 		}
+	} else {
+		userEmail = order.Email
 	}
 	if err := s.Store.UpdateProvider(ctx, orderID, provider); err != nil {
 		return nil, fmt.Errorf("payment: update provider: %w", err)
 	}
 
-	returnURL := s.ReturnURL + "/api/payments/return/" + orderID
+	returnURL := s.returnURL + "/api/payments/return/" + orderID
 	result, err := p.CreateCheckout(ctx, order.Product, order.Amount, orderID, userEmail, returnURL)
 	if err != nil {
 		return nil, fmt.Errorf("payment: %s checkout: %w", provider, err)
@@ -114,10 +141,10 @@ func (s *Service) CreateCheckout(ctx context.Context, provider, orderID, userEma
 // provider returns the payment provider for the given name.
 func (s *Service) provider(name string) (paymentProvider, error) {
 	switch name {
-	case "dodo":
-		return s.Dodo, nil
-	case "xunhu":
-		return s.Xunhu, nil
+	case ProviderDodo:
+		return s.dodo, nil
+	case ProviderXunhu:
+		return s.xunhu, nil
 	default:
 		return nil, fmt.Errorf("%w: %s", ErrUnknownProvider, name)
 	}
@@ -125,26 +152,26 @@ func (s *Service) provider(name string) (paymentProvider, error) {
 
 // HandleWebhook processes a payment webhook event from any provider.
 func (s *Service) HandleWebhook(ctx context.Context, body []byte, headers http.Header) error {
-	var lastErr error
-	for _, p := range []paymentProvider{s.Dodo, s.Xunhu} {
+	var errs []error
+	for _, p := range []paymentProvider{s.dodo, s.xunhu} {
 		event, err := p.VerifyWebhook(body, headers)
 		if err != nil {
-			lastErr = err
+			errs = append(errs, err)
 			continue
 		}
 		if event == nil {
-			lastErr = fmt.Errorf("nil event from provider")
+			errs = append(errs, fmt.Errorf("nil event from provider"))
 			continue
 		}
 		return s.handleEvent(ctx, event)
 	}
-	return fmt.Errorf("%w: %w", ErrWebhookVerify, lastErr)
+	return fmt.Errorf("payment: webhook verify: %w: %w", ErrWebhookVerify, errors.Join(errs...))
 }
 
 func (s *Service) handleEvent(ctx context.Context, event *WebhookEvent) error {
-	if event.Type != "payment.succeeded" {
+	if event.Type != EventPaymentSucceeded {
 		level := slog.Info
-		if event.Type == "payment.refunded" || event.Type == "payment.disputed" {
+		if event.Type == EventPaymentRefunded || event.Type == EventPaymentDisputed {
 			level = slog.Error
 		}
 		level("payment: non-payment webhook event", "type", event.Type, "order_id", event.Data.OrderID)
@@ -156,33 +183,38 @@ func (s *Service) handleEvent(ctx context.Context, event *WebhookEvent) error {
 		slog.Error("payment: webhook with empty order_id", "payment_id", event.Data.PaymentID)
 		return fmt.Errorf("payment: empty order_id in webhook event")
 	}
-	newPayment, email, product, chartJSON, err := s.Store.MarkPaidIdempotent(ctx, orderID, event.Data.PaymentID)
+	newPayment, email, product, err := s.Store.MarkPaidIdempotent(ctx, orderID, event.Data.PaymentID)
 	if err != nil {
 		return fmt.Errorf("payment: mark paid: %w", err)
 	}
 
 	if newPayment {
-		if _, ok := s.ReportAgents[product]; ok {
-			s.StartReportGeneration(orderID, product, chartJSON)
-		}
-
 		if email != "" {
-			customerHTML := fmt.Sprintf(`<p>感谢购买！<a href="%s/report/%s">点击查看完整报告</a></p>
-					<p>请保存此链接以便日后查阅。如有疑问请回复此邮件。</p>`, s.ReturnURL, orderID)
-			go func() { if err := s.Email.SendReport(s.bgCtx, email, product.EmailSubject(), customerHTML); err != nil { slog.Error("send customer report", "err", err) } }()
+			customerHTML := fmt.Sprintf(`<p>感谢购买！<a href="%s/chat">点击开始起名</a></p>
+				<p>7 天内可随时回来继续磋商，输入此邮箱即可恢复对话。</p>
+				<p>如有疑问请回复此邮件。</p>`, s.returnURL)
+			s.wg.Add(1)
+			go func() {
+				defer s.wg.Done()
+				if err := s.email.SendReport(s.bgCtx, email, product.EmailSubject(), customerHTML); err != nil {
+					slog.Error("send customer report", "err", err)
+				}
+			}()
 		}
 
-		if s.AdminEmail != "" {
+		if s.adminEmail != "" {
 			adminHTML := fmt.Sprintf(
 				`<p>新订单 <strong>%s</strong> | %s</p>
 				<p>产品: %s | 金额: ¥%.2f | 用户: %s</p>
 				<p><a href="%s/report/%s">查看报告</a></p>`,
 				orderID, time.Now().UTC().Format(time.DateTime),
 				product, float64(event.Data.Amount)/100, email,
-				s.ReturnURL, orderID,
+				s.returnURL, orderID,
 			)
+			s.wg.Add(1)
 			go func() {
-				if err := s.Email.SendReport(s.bgCtx, s.AdminEmail,
+				defer s.wg.Done()
+				if err := s.email.SendReport(s.bgCtx, s.adminEmail,
 					fmt.Sprintf("[灵机] %s · %s", product, orderID), adminHTML); err != nil {
 					slog.Error("send admin report", "err", err)
 				}
@@ -193,90 +225,21 @@ func (s *Service) handleEvent(ctx context.Context, event *WebhookEvent) error {
 	return nil
 }
 
-// StartReportGeneration starts background LLM report generation if not already in progress.
-func (s *Service) StartReportGeneration(orderID string, product agent.Product, chartJSON string) {
-	s.generatingMu.Lock()
-	if _, ok := s.generating[orderID]; ok {
-		s.generatingMu.Unlock()
-		return
-	}
-	s.generating[orderID] = struct{}{}
-	s.generatingMu.Unlock()
-
-	go s.generateFullReport(orderID, product, chartJSON)
-}
-
-// generateFullReport runs GenerateFromData in background and caches the result.
-func (s *Service) generateFullReport(orderID string, product agent.Product, chartJSON string) {
-	defer func() {
-		s.generatingMu.Lock()
-		delete(s.generating, orderID)
-		s.generatingMu.Unlock()
-	}()
-	defer func() {
-		if r := recover(); r != nil {
-			slog.Error("payment: panic in generateFullReport", "orderID", orderID, "panic", r)
-		}
-	}()
-	ctx, cancel := context.WithTimeout(s.bgCtx, 120*time.Second)
-	defer cancel()
-
-	order, err := s.Store.GetOrder(ctx, orderID)
-	var locale string
-	if err != nil {
-		slog.Error("payment: get order for report generation", "orderID", orderID, "err", err)
-	} else {
-		locale = order.Locale
-	}
-	if locale == "" {
-		locale = "zh-Hans"
-	}
-
-	ra, ok := s.ReportAgents[product]
-	if !ok {
-		slog.Error("payment: no report agent for product", "product", product)
-		return
-	}
-	content, err := ra.Generate(ctx, locale, json.RawMessage(chartJSON), nil)
-	if err != nil {
-		slog.Error("payment: generate full report", "orderID", orderID, "err", err)
-		return
-	}
-
-	if updated, err := s.Store.UpdateLlmJSONIfEmpty(ctx, orderID, content); err != nil {
-		slog.Error("payment: cache full report", "orderID", orderID, "err", err)
-	} else if updated {
-		slog.Info("payment: cached full report", "orderID", orderID)
-	}
-}
-
 // ReportData holds the full report data for a paid order.
 type ReportData struct {
 	OrderID   string         `json:"order_id"`
-	Product   agent.Product  `json:"product"`
+	Product   product.Product  `json:"product"`
 	Status    OrderStatus    `json:"status"`
 	Email     string         `json:"email,omitempty"`
 	ChartJSON string         `json:"chart_json"`
 	LlmJSON   string         `json:"llm_json"`
 }
 
-// OrderStatus returns the payment status and product type of an order.
-func (s *Service) OrderStatus(ctx context.Context, orderID string) (status OrderStatus, product agent.Product, err error) {
-	order, err := s.Store.GetOrder(ctx, orderID)
-	if err != nil {
-		return "", "", err
-	}
-	return order.Status, order.Product, nil
-}
-
-// RetryReportGeneration triggers report generation for paid orders missing their LLM report.
-func (s *Service) RetryReportGeneration(ctx context.Context, orderID string) (OrderStatus, agent.Product, string, error) {
+// GetOrderData returns order status, product, and llm_json for the retry endpoint.
+func (s *Service) GetOrderData(ctx context.Context, orderID string) (OrderStatus, product.Product, string, error) {
 	order, err := s.Store.GetOrder(ctx, orderID)
 	if err != nil {
 		return "", "", "", err
-	}
-	if order.Status == OrderPaid && order.LlmJSON == "" {
-		s.StartReportGeneration(orderID, order.Product, order.ChartJSON)
 	}
 	return order.Status, order.Product, order.LlmJSON, nil
 }
@@ -285,7 +248,7 @@ func (s *Service) RetryReportGeneration(ctx context.Context, orderID string) (Or
 func (s *Service) GetReport(ctx context.Context, orderID string) (*ReportData, error) {
 	order, err := s.Store.GetOrder(ctx, orderID)
 	if err != nil {
-		return nil, fmt.Errorf("%w: %w", ErrOrderNotFound, err)
+		return nil, fmt.Errorf("payment: get report: %w", err)
 	}
 
 	rd := &ReportData{

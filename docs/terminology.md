@@ -24,7 +24,7 @@
 | GanJia…GanGui | 甲…癸 | Jia…Gui | const | 十天干常量 |
 | ZhiZi…ZhiHai | 子…亥 | Zi…Hai | const | 十二地支常量 |
 
-辅助函数：`GanName`、`ZhiName`、`ParseGan`、`ParseZhi`、`GanWuxing`、`ZhiWuxing`、`GanYinYang`、`SixtyCycleName`、`SixtyToZhu`。
+辅助函数：`GanName`、`ZhiName`、`ParseGan`、`ParseZhi`、`GanWuxing`、`ZhiWuxing`、`GanYinYang`、`SixtyCycleIndex`、`SixtyToZhu`。
 
 ## 五行 · Wu Xing
 
@@ -120,7 +120,7 @@
 |------|------|------|--------|------|
 | nayin | 纳音 | Na Yin | — | 六十甲子配五行音律，共三十种纳音 |
 
-辅助函数：`NaYinLabel`、`NaYinWuxing`。
+辅助函数：`NayinLabel`、`NayinWuxing`。
 
 ## 用神 · Yong Shen
 
@@ -205,9 +205,9 @@
 
 | 符号 | 中文 | 英文 | Go 类型 | 说明 |
 |------|------|------|--------|------|
-| taiyuan | 胎元 | Fetal Origin | `TaiYuanMingGong` | 受胎之月，月柱天干前一位、地支前三位 |
-| minggong | 命宫 | Destiny Palace | `TaiYuanMingGong` | 安命之宫，从月柱气深逆推 |
-| shengong | 身宫 | Self Palace | `TaiYuanMingGong` | 安身之宫，从月柱气深顺推 |
+| taiyuan | 胎元 | Fetal Origin | `SanYuan.TaiYuan` | 受胎之月，月柱天干前一位、地支前三位 |
+| minggong | 命宫 | Destiny Palace | `SanYuan.MingGong` | 安命之宫，从月柱气深逆推 |
+| shengong | 身宫 | Self Palace | `SanYuan.ShenGong` | 安身之宫，从月柱气深顺推 |
 
 ## 合盘 · Bond
 

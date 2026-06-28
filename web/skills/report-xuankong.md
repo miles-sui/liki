@@ -4,8 +4,8 @@
 
 ## 数据来源
 
-- chart（`POST /api/xuankong/chart`）：`yun`（`year`/`yuan`/`yun_number`/`yun_name`/`start_year`/`end_year`）、`sit_mountain`/`face_mountain`（0-23 二十四山索引）、`palaces[]`（九宫各含 `palace_num`/`period_star`/`mountain_star`/`facing_star`，每星 `number`/`color`/`name`/`wuxing`/`auspicious`）、`wang_shan`/`wang_xiang`/`shan_xing`/`xia_shui`/`fan_yin`/`fu_yin`、`xing_jia_hui[]`（`shan_num`/`xiang_num`/`name`/`meaning`/`auspicious`）、`shou_shan_chu_sha`（`zheng_shen`/`ling_shen`/`shou_shan`/`chu_sha`/`assessment`）
-- sanyuan（`GET /api/xuankong/sanyuan`）：返回 `yun` 同上
+- chart（`xuankong.chart`）：`yun`（`year`/`yuan`/`yun_number`/`yun_name`/`start_year`/`end_year`）、`sit_mountain`/`face_mountain`（0-23 二十四山索引）、`palaces[]`（九宫各含 `palace_num`/`period_star`/`mountain_star`/`facing_star`，每星 `number`/`color`/`name`/`wuxing`/`auspicious`）、`wang_shan`/`wang_xiang`/`shan_xing`/`xia_shui`/`fan_yin`/`fu_yin`、`xing_jia_hui[]`（`shan_num`/`xiang_num`/`name`/`meaning`/`auspicious`）、`shou_shan_chu_sha`（`zheng_shen`/`ling_shen`/`shou_shan`/`chu_sha`/`assessment`）
+- sanyuan（`xuankong.sanyuan`）：返回 `yun` 同上
 
 只引用数据中实际存在的字段。若某字段数据中不存在，跳过该分析维度，不编造。
 

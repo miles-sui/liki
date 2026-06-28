@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Start LingJi development environment WITHOUT Docker.
+# Start Liki development environment WITHOUT Docker.
 # Go API on :8081, Caddy static files + reverse proxy on :8080.
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -18,8 +18,7 @@ export XUNHU_APPSECRET="${XUNHU_APPSECRET:-}"
 export RESEND_API_KEY="${RESEND_API_KEY:-}"
 export RESEND_FROM="${RESEND_FROM:-noreply@localhost}"
 export RETURN_URL="${RETURN_URL:-http://localhost:8080}"
-export DB_PATH="${DB_PATH:-$(pwd)/data/lingji.db}"
-export PDF_DIR="${PDF_DIR:-$(pwd)/data/pdfs}"
+export DB_PATH="${DB_PATH:-$(pwd)/data/liki.db}"
 export LISTEN_ADDR="${LISTEN_ADDR:-:8081}"
 
 # Caddy binary
@@ -51,11 +50,11 @@ if [ -z "${CADDY_BIN:-}" ]; then
   fi
 fi
 
-echo "==> Building LingJi server..."
+echo "==> Building Liki server..."
 BUILD_TIME=$(date '+%Y-%m-%d %H:%M:%S')
 node web/scripts/compile-vue-template.cjs
-BIN="/tmp/lingji"
-go build -ldflags="-s -w -X 'main.BuildTime=$BUILD_TIME'" -o "$BIN" ./cmd/lingji/
+BIN="/tmp/liki"
+go build -ldflags="-s -w -X 'main.BuildTime=$BUILD_TIME'" -o "$BIN" ./cmd/liki/
 
 # Replace BUILD_TIME_PLACEHOLDER in web files for dev display
 for f in web/*.html; do
@@ -71,7 +70,6 @@ for port in 8081 8080; do
 done
 sleep 1
 
-mkdir -p "$(dirname "$DB_PATH")" "$PDF_DIR"
 
 echo "==> Starting API server on $LISTEN_ADDR"
 "$BIN" &
@@ -79,7 +77,7 @@ API_PID=$!
 sleep 1
 
 echo "==> Starting Caddy on :8080"
-"$CADDY_BIN" run --config deploy/lingji/Caddyfile.local --adapter caddyfile &
+"$CADDY_BIN" run --config deploy/liki/Caddyfile.local --adapter caddyfile &
 CADDY_PID=$!
 
 trap "for f in web/*.html; do sed -i \"s|build: $BUILD_TIME|build: BUILD_TIME_PLACEHOLDER|g\" \"\$f\" || true; done; kill \$API_PID \$CADDY_PID 2>/dev/null; exit" INT TERM EXIT

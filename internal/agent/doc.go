@@ -4,26 +4,21 @@
 //
 //	LLMClient        — streaming chat client, implemented by *llm.Client
 //	ToolRegistry     — named tool execution + LLM schema, implemented by *ChatToolRegistry
-//	OrderCreator     — payment store operations, implemented by *payment.Store
 //
 // Chat
 //
-//	ChatAgent        — holds LLM client, tools, prompt, report prompts, amounts, greeting
+//	ChatAgent        — holds LLM client, tools, prompt
 //	NewChatAgent     — constructor
-//	Chat             — streaming chat: collection → compute → teaser → Q&A → purchase
-//	GenerateFromData — non-streaming report generation from pre-computed data
-//	ChatResult       — outcome of Chat: updated messages + optional PurchaseInfo
-//	PurchaseInfo     — order details triggered by purchase call
+//	NamingChat       — streaming naming chat: collection → computation → report
 //
 // Products
 //
-//	Product                    — chart / bond / naming
-//	ProductChart, ProductBond, ProductNaming
+//	ProductNaming    — the only active product
 //
 // Events (SSE streaming)
 //
 //	ChatEventType              — classification for client-side routing
-//	EventTextDelta, EventPhase, EventDone, EventError, EventThinking, EventThinkingDelta
+//	EventTextDelta, EventPhase, EventError, EventThinking, EventThinkingDelta, EventReportReady
 //	ChatEvent                  — structured event emitted during streaming
 //
 // Test helpers

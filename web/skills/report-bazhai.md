@@ -4,8 +4,8 @@
 
 ## 数据来源
 
-- chart（`POST /api/bazhai/chart`）：`ming_gua`（`gua` 卦象 — `name`/`wuxing`/`yin_yang`、`gua_number` 卦数、`group` 东西四命）、`ba_zhai_dirs`（`sheng_qi`/`tian_yi`/`yan_nian`/`fu_wei` 四吉方、`huo_hai`/`wu_gui`/`liu_sha`/`jue_ming` 四凶方，每方为方位名数组）、`year_stars`（`year`/`center_star`/`palaces[]`，每星含 `number`/`color`/`name`/`wuxing`/`auspicious`）、`pillar_bagua`（四柱各配八卦，每卦 `name`/`wuxing`/`yin_yang`）
-- minggua（`POST /api/bazhai/minggua`）：`ming_gua` 同上
+- chart（`bazhai.chart`）：`ming_gua`（`gua` 卦象 — `name`/`wuxing`/`yin_yang`、`gua_number` 卦数、`group` 东西四命）、`ba_zhai_dirs`（`sheng_qi`/`tian_yi`/`yan_nian`/`fu_wei` 四吉方、`huo_hai`/`wu_gui`/`liu_sha`/`jue_ming` 四凶方，每方为方位名数组）、`year_stars`（`year`/`center_star`/`palaces[]`，每星含 `number`/`color`/`name`/`wuxing`/`auspicious`）、`pillar_bagua`（四柱各配八卦，每卦 `name`/`wuxing`/`yin_yang`）
+- minggua（`bazhai.minggua`）：`ming_gua` 同上
 
 只引用数据中实际存在的字段。若某字段数据中不存在，跳过该分析维度，不编造。
 

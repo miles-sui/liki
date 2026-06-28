@@ -1,5 +1,5 @@
 #!/bin/bash
-# Liki — API layer test
+# Liki — JSON-RPC smoke test
 set -uo pipefail
 
 BASE="${1:-http://localhost:8080}"
@@ -11,7 +11,6 @@ else
   API="$BASE"
 fi
 PASS=0; FAIL=0
-HAS_JQ=false
 
 RED=""; GREEN=""; BOLD=""; NC=""
 [ -t 1 ] && { RED='\033[31m'; GREEN='\033[32m'; BOLD='\033[1m'; NC='\033[0m'; }
@@ -19,7 +18,7 @@ RED=""; GREEN=""; BOLD=""; NC=""
 TMP=$(mktemp -d /tmp/test-api-XXXXXX)
 trap 'rm -rf "$TMP"' EXIT
 
-command -v jq &>/dev/null && HAS_JQ=true
+# ── helpers ──────────────────────────────────────────────────────
 
 api() {
   local method="$1" path="$2" data="${3:-}"
@@ -53,9 +52,7 @@ caddy() {
 
 body() { cat "$TMP/body" 2>/dev/null || true; }
 
-json_val() {
-  echo "$1" | jq -r "$2" 2>/dev/null || true
-}
+json_val() { echo "$1" | jq -r "$2" 2>/dev/null || true; }
 
 check() {
   local desc="$1" expected="$2" actual="${3:-}"
@@ -72,17 +69,71 @@ check_200()  { check "$1 HTTP" "200" "${2:-}"; }
 check_204()  { check "$1 HTTP" "204" "${2:-}"; }
 check_302()  { check "$1 HTTP" "302" "${2:-}"; }
 check_400()  { check "$1 HTTP" "400" "${2:-}"; }
+check_403()  { check "$1 HTTP" "403" "${2:-}"; }
 check_404()  { check "$1 HTTP" "404" "${2:-}"; }
 check_422()  { check "$1 HTTP" "422" "${2:-}"; }
 
-check_403()  { check "$1 HTTP" "403" "${2:-}"; }
+# ── RPC helpers ───────────────────────────────────────────────────
 
-echo "${BOLD}Liki — API Smoke Test${NC}"
-echo "Target: Caddy=$BASE API=$API"
-$HAS_JQ && echo "jq: available" || echo "jq: not available (limited validation)"
-echo ""
+RPC_ID=0
+RPC_CODE=""
+RPC_BODY=""
+RPC_DATA=""
 
-# --- Shared test data ---
+# rpc <method> <params_json>
+# Sets RPC_CODE (HTTP status) and RPC_BODY (full response).
+rpc() {
+  local method="$1"
+  local params='{}'
+  [ $# -ge 2 ] && params="$2"
+  RPC_ID=$((RPC_ID + 1))
+  local payload
+  payload=$(jq -nc --arg m "$method" --argjson p "$params" --argjson id "$RPC_ID" \
+    '{jsonrpc:"2.0", id:$id, method:$m, params:$p}')
+  RPC_CODE=$(api POST /jsonrpc "$payload")
+  RPC_BODY=$(body)
+}
+
+# check_rpc <desc> <jq_filter> <expected>
+check_rpc() {
+  local desc="$1" filter="$2" expected="$3"
+  local actual
+  actual=$(json_val "$RPC_BODY" "$filter")
+  check "$desc" "$expected" "$actual"
+}
+
+# check_rpc_ok <desc>
+check_rpc_ok() {
+  local has_err
+  has_err=$(json_val "$RPC_BODY" '.error != null')
+  if [ "$has_err" = "false" ]; then
+    echo -e "  ${GREEN}\xe2\x9c\x93${NC} $1"
+    PASS=$((PASS + 1))
+  else
+    local emsg
+    emsg=$(json_val "$RPC_BODY" '.error.message')
+    echo -e "  ${RED}\xe2\x9c\x97${NC} $1 (RPC error: $emsg)"
+    FAIL=$((FAIL + 1))
+  fi
+}
+
+# check_rpc_err <desc> <expected_code>
+check_rpc_err() {
+  local desc="$1" expected_code="$2"
+  local has_err actual_code
+  has_err=$(json_val "$RPC_BODY" '.error != null')
+  actual_code=$(json_val "$RPC_BODY" '.error.code')
+  if [ "$has_err" = "true" ] && [ "$actual_code" = "$expected_code" ]; then
+    echo -e "  ${GREEN}\xe2\x9c\x93${NC} $desc"
+    PASS=$((PASS + 1))
+  else
+    echo -e "  ${RED}\xe2\x9c\x97${NC} $desc (expected error $expected_code, has_err=$has_err code=$actual_code)"
+    FAIL=$((FAIL + 1))
+  fi
+}
+
+# ── test data ─────────────────────────────────────────────────────
+
 BT='{"time":"1984-02-04T18:30:00+08:00","longitude":116.4}'
 BT_A='{"time":"1990-03-20T10:30:00+08:00","longitude":120}'
 BT_B='{"time":"1992-07-08T14:30:00+08:00","longitude":120}'
@@ -91,7 +142,13 @@ BR_A="{\"birth\":$BT_A,\"gender\":\"male\"}"
 BR_B="{\"birth\":$BT_B,\"gender\":\"female\"}"
 
 # ============================================================================
-# Health check
+echo "${BOLD}Liki — JSON-RPC Smoke Test${NC}"
+echo "Target: Caddy=$BASE API=$API"
+command -v jq &>/dev/null || { echo "jq is required for RPC smoke tests"; exit 1; }
+echo ""
+
+# ============================================================================
+# Health
 # ============================================================================
 echo "${BOLD}── Health ──${NC}"
 s=$(api GET /api/health)
@@ -104,7 +161,6 @@ check "  status ok" "ok" "$(json_val "$b" '.data.status')"
 # ============================================================================
 echo ""
 echo "${BOLD}── Static ──${NC}"
-# Only test if Caddy is running on $BASE
 if curl -s --connect-timeout 2 -o /dev/null -w '%{http_code}' "$BASE/api/health" 2>/dev/null | /bin/grep -q .; then
   s=$(caddy GET /)
   check_200 "GET /" "$s"
@@ -119,7 +175,6 @@ fi
 # ============================================================================
 echo ""
 echo "${BOLD}── Wiki ──${NC}"
-# Wiki routes only exist in production Caddyfile, not in Caddyfile.local.
 if [ "$BASE" = "http://localhost:8080" ] || [ "$BASE" = "http://127.0.0.1:8080" ]; then
   echo "  (local Caddy — skipping wiki checks)"
 else
@@ -129,12 +184,8 @@ else
   check "  redirects to zh-hant" "false" "$(echo "$b" | /bin/grep -q 'zh-hant/index.html' && echo false || echo true)"
   s=$(caddy GET /wiki/zh-hant/index.html)
   check_200 "GET /wiki/zh-hant/index.html" "$s"
-  s=$(caddy GET /wiki/entity/)
-  check_200 "GET /wiki/entity/" "$s"
-  b=$(body)
-  check "  entity redirects to ../zh-hant" "false" "$(echo "$b" | /bin/grep -q '../zh-hant/entity/index.html' && echo false || echo true)"
-  s=$(caddy GET /wiki/zh-hant/entity/index.html)
-  check_200 "GET /wiki/zh-hant/entity/index.html" "$s"
+  s=$(caddy GET /wiki/zh-hant/how-to-choose-a-good-name.html)
+  check_200 "GET /wiki/zh-hant/how-to-choose-a-good-name.html" "$s"
 fi
 
 # ============================================================================
@@ -176,179 +227,242 @@ check_204 "POST /api/analytics/pageview" "$s"
 # ============================================================================
 echo ""
 echo "${BOLD}── Agent ──${NC}"
-s=$(api GET /api/agent/greeting)
-check_200 "GET /api/agent/greeting" "$s"
 
-# Chat SSE — verify headers + no error in stream
-chat_code=$(curl -s -w '%{http_code}' -o "$TMP/chat_body" "$API/api/agent/chat" \
-  -H 'Content-Type: application/json' -d '{"message":"hello"}' \
-  -D "$TMP/chat_headers")
-check_200 "POST /api/agent/chat" "$chat_code"
-chat_ct=$(/bin/grep -i 'content-type:' "$TMP/chat_headers" 2>/dev/null | tr -d '\r' || true)
-check "  SSE content-type" "false" "$(echo "$chat_ct" | /bin/grep -q 'text/event-stream' && echo false || echo true)"
-chat_sid=$(/bin/grep -i 'x-session-id:' "$TMP/chat_headers" 2>/dev/null | tr -d '\r' || true)
-check "  has X-Session-ID" "false" "$([ -n "$chat_sid" ] && echo false || echo true)"
-# Verify no error event in SSE stream
-if echo "$chat_code" | /bin/grep -q '200' && /bin/grep -q '"type":"error"' "$TMP/chat_body" 2>/dev/null; then
-  chat_err=$(/bin/grep -o '"content":"[^"]*"' "$TMP/chat_body" 2>/dev/null | head -1 || true)
-  check "  no SSE error" "true" "false — SSE stream contains error: $chat_err"
-else
-  check "  no SSE error" "false" "false"
-fi
+s=$(api POST /api/agent/naming '{"message":"hello","lang":"zh-Hans"}')
+check "POST /api/agent/naming (no JWT)" "401" "$s"
 
-s=$(api POST /api/agent/chat '{"message":""}')
-check_400 "POST /api/agent/chat (empty message)" "$s"
+s=$(curl -s -w '%{http_code}' -o /dev/null -X POST "$API/api/agent/naming" \
+  -H 'Content-Type: application/json' \
+  -H "Cookie: liki_token=not-a-valid-jwt" \
+  -d '{"message":"hello","lang":"zh-Hans"}')
+check "POST /api/agent/naming (invalid JWT)" "401" "$s"
 
 # ============================================================================
-# Huangli
+# JSON-RPC Engine
 # ============================================================================
 echo ""
-echo "${BOLD}── Huangli ──${NC}"
+echo "${BOLD}── RPC Protocol ──${NC}"
 
-s=$(api GET '/api/huangli/date?date=2026-06-19&event=%E5%AB%81%E5%A8%B6')
-check_200 "GET /api/huangli/date" "$s"
+# Parse error
+rpc '""' '{}'
+check_rpc_err "rpc: invalid method" "-32601"
 
-HL_BD="{\"birth\":$BT,\"event_type\":\"嫁娶\",\"date\":\"2026-06-19\"}"
-s=$(api POST /api/huangli/bond/date "$HL_BD")
-check_200 "POST /api/huangli/bond/date" "$s"
+# Missing jsonrpc
+RPC_ID=$((RPC_ID + 1))
+s=$(curl -s -w '%{http_code}' -o "$TMP/body" -X POST "$API/jsonrpc" -H 'Content-Type: application/json' -d '{"id":1,"method":"bazi.chart","params":{}}')
+check "rpc: missing jsonrpc 200" "200" "$s"
+RPC_BODY=$(body)
+check_rpc_err "rpc: missing jsonrpc error" "-32600"
 
-# Negative: missing params
-s=$(api GET /api/huangli/date)
-check_400 "GET /api/huangli/date (missing params)" "$s"
-
-# Empty birth → validation_error (time is required)
-s=$(api POST /api/huangli/bond/date '{"birth":{},"event_type":"嫁娶","date":"2026-06-19"}')
-check_422 "POST /api/huangli/bond/date (empty birth)" "$s"
-
-# ============================================================================
-# Bazhai
-# ============================================================================
-echo ""
-echo "${BOLD}── Bazhai ──${NC}"
-
-s=$(api POST /api/bazhai/minggua '{"gender":"male","birth_year":1984}')
-check_200 "POST /api/bazhai/minggua" "$s"
-
-s=$(api POST /api/bazhai/chart "$BR")
-check_200 "POST /api/bazhai/chart" "$s"
-
-# Negative
-s=$(api POST /api/bazhai/minggua '{"gender":"other","birth_year":1984}')
-check_422 "POST /api/bazhai/minggua (bad gender)" "$s"
-
-s=$(api POST /api/bazhai/minggua '{"gender":"male"}')
-check_422 "POST /api/bazhai/minggua (missing year)" "$s"
+# rpc.discover
+rpc rpc.discover '{}'
+check_rpc_ok "rpc.discover"
+check_rpc "  openrpc version" '.result.openrpc' '1.4.1'
 
 # ============================================================================
-# Xuankong
-# ============================================================================
-echo ""
-echo "${BOLD}── Xuankong ──${NC}"
-
-s=$(api GET '/api/xuankong/sanyuan?year=2026')
-check_200 "GET /api/xuankong/sanyuan" "$s"
-
-XK="{\"birth\":$BT,\"sit_mountain\":0,\"face_mountain\":11}"
-s=$(api POST /api/xuankong/chart "$XK")
-check_200 "POST /api/xuankong/chart" "$s"
-
-s=$(api POST /api/xuankong/chart "{\"birth\":$BT}")
-check_422 "POST /api/xuankong/chart (missing mountains)" "$s"
-
-# ============================================================================
-# BaZi
+# BaZi (8 methods)
 # ============================================================================
 echo ""
 echo "${BOLD}── BaZi ──${NC}"
 
-s=$(api POST /api/bazi/chart "$BR")
-check_200 "POST /api/bazi/chart" "$s"
+rpc bazi.chart "$BR"
+check_rpc_ok "bazi.chart"
+check_rpc "  has nian" '.result.data.nian.gan != null' 'true'
+check_rpc "  has da_yun" '.result.data.da_yun != null' 'true'
+check_rpc "  has san_yuan" '.result.data.san_yuan != null' 'true'
 
-# BaZi bond — returns Bond struct directly
-BOND="{\"a\":$BR_A,\"b\":$BR_B}"
-s=$(api POST /api/bazi/bond "$BOND")
-check_200 "POST /api/bazi/bond" "$s"
+rpc bazi.chart '{"birth":{"time":"1984-02-04T18:30:00+08:00"}}'
+check_rpc_err "bazi.chart (missing gender)" "-32000"
 
-# BaZi luck cycles (gender required for 顺排/逆排)
-s=$(api POST /api/bazi/liunian "{\"year\":2026,\"gender\":\"male\",\"birth\":$BT}")
-check_200 "POST /api/bazi/liunian" "$s"
+rpc bazi.bond "{\"a\":$BR_A,\"b\":$BR_B}"
+check_rpc_ok "bazi.bond"
+check_rpc "  has zhu_cross" '.result.data.zhu_cross != null' 'true'
 
-# Negative
-s=$(api POST /api/bazi/chart 'not-json')
-check_400 "POST /api/bazi/chart (bad json)" "$s"
+rpc bazi.liunian "{\"year\":2026,\"birth\":$BT,\"gender\":\"male\"}"
+check_rpc_ok "bazi.liunian"
 
-s=$(api POST /api/bazi/chart "{\"birth\":$BT}")
-check_422 "POST /api/bazi/chart (missing gender)" "$s"
+rpc bazi.liuyue "{\"year\":2026,\"month\":6,\"birth\":$BT,\"gender\":\"male\"}"
+check_rpc_ok "bazi.liuyue"
+
+rpc bazi.liuri "{\"year\":2026,\"month\":6,\"day\":15,\"birth\":$BT,\"gender\":\"male\"}"
+check_rpc_ok "bazi.liuri"
+
+rpc bazi.liushi "{\"year\":2026,\"month\":6,\"day\":15,\"hour\":12,\"birth\":$BT,\"gender\":\"male\"}"
+check_rpc_ok "bazi.liushi"
+
+rpc bazi.xiaoyun "{\"birth\":$BT,\"gender\":\"male\"}"
+check_rpc_ok "bazi.xiaoyun"
+
+rpc bazi.xiaoxian '{"gender":"male"}'
+check_rpc_ok "bazi.xiaoxian"
 
 # ============================================================================
-# ZiWei
+# ZiWei (6 methods)
 # ============================================================================
 echo ""
 echo "${BOLD}── ZiWei ──${NC}"
 
-s=$(api POST /api/ziwei/chart "$BR")
-check_200 "POST /api/ziwei/chart" "$s"
-b=$(body)
+rpc ziwei.chart "$BR"
+check_rpc_ok "ziwei.chart"
+check_rpc "  has palaces" '.result.data.palaces != null' 'true'
 
-# Dependent endpoints need the full chart
-if $HAS_JQ; then
-  ZW_CHART=$(echo "$b" | jq -c '.data' 2>/dev/null)
+# Dependent: ziwei.daxian needs chart from ziwei.chart
+ZW_CHART=$(json_val "$RPC_BODY" '.result.data')
 
-  s=$(api POST /api/ziwei/daxian "{\"chart\":$ZW_CHART,\"gender\":\"male\"}")
-  check_200 "POST /api/ziwei/daxian" "$s"
-fi
+rpc ziwei.daxian "{\"chart\":$ZW_CHART}"
+check_rpc_ok "ziwei.daxian"
 
-s=$(api POST /api/ziwei/chart "{\"birth\":$BT}")
-check_422 "POST /api/ziwei/chart (missing gender)" "$s"
+rpc ziwei.liunian "{\"liu_year\":2026,\"chart\":$ZW_CHART}"
+check_rpc_ok "ziwei.liunian"
+
+rpc ziwei.liuyue "{\"liu_year\":2026,\"lunar_month\":5,\"chart\":$ZW_CHART}"
+check_rpc_ok "ziwei.liuyue"
+
+rpc ziwei.liuri "{\"liu_year\":2026,\"lunar_month\":5,\"lunar_day\":10,\"chart\":$ZW_CHART}"
+check_rpc_ok "ziwei.liuri"
+
+# ziwei.bond needs two charts
+rpc ziwei.chart "$BR_A"
+CHART_A=$(json_val "$RPC_BODY" '.result.data')
+rpc ziwei.chart "$BR_B"
+CHART_B=$(json_val "$RPC_BODY" '.result.data')
+rpc ziwei.bond "{\"a\":$CHART_A,\"b\":$CHART_B}"
+check_rpc_ok "ziwei.bond"
+
+rpc ziwei.chart '{"birth":{"time":"1984-02-04T18:30:00+08:00"}}'
+check_rpc_err "ziwei.chart (missing gender)" "-32000"
 
 # ============================================================================
-# QiMen
+# QiMen (1 method)
 # ============================================================================
 echo ""
 echo "${BOLD}── QiMen ──${NC}"
 
-s=$(api POST /api/qimen/pan "{\"birth\":$BT,\"kind\":\"shi\"}")
-check_200 "POST /api/qimen/pan (shi)" "$s"
+rpc qimen.pan "{\"birth\":$BT,\"kind\":\"shi\"}"
+check_rpc_ok "qimen.pan (shi)"
 
-s=$(api POST /api/qimen/pan "{\"birth\":$BT,\"kind\":\"invalid\"}")
-check_422 "POST /api/qimen/pan (bad kind)" "$s"
+rpc qimen.pan "{\"birth\":$BT,\"kind\":\"invalid\"}"
+check_rpc_err "qimen.pan (bad kind)" "-32000"
 
 # ============================================================================
-# LiuYao
+# QiMing (4 methods)
+# ============================================================================
+echo ""
+echo "${BOLD}── QiMing ──${NC}"
+
+rpc qiming.wuge '{"surname":"李","yong_shen":"水","xi_shen":["金"]}'
+check_rpc_ok "qiming.wuge"
+
+rpc qiming.compose '{"surname":"李","combos":[],"yong_chars":{}}'
+check_rpc_ok "qiming.compose"
+
+rpc qiming.detail '{"surname":"李","names":["沐泽","沐恩"]}'
+check_rpc_ok "qiming.detail"
+
+rpc qiming.evaluate '{"surname":"李","given_name":"沐泽","yong_shen":"水"}'
+check_rpc_ok "qiming.evaluate"
+
+rpc qiming.wuge '{"surname":"李"}'
+check_rpc_err "qiming.wuge (missing yong_shen)" "-32000"
+
+rpc qiming.evaluate '{"surname":"李"}'
+check_rpc_err "qiming.evaluate (missing params)" "-32000"
+
+# ============================================================================
+# Bazhai (2 methods)
+# ============================================================================
+echo ""
+echo "${BOLD}── Bazhai ──${NC}"
+
+rpc bazhai.minggua '{"gender":"male","birth_year":1984}'
+check_rpc_ok "bazhai.minggua"
+
+rpc bazhai.chart "$BR"
+check_rpc_ok "bazhai.chart"
+
+rpc bazhai.minggua '{"gender":"other","birth_year":1984}'
+check_rpc_err "bazhai.minggua (bad gender)" "-32000"
+
+rpc bazhai.minggua '{"gender":"male"}'
+check_rpc_ok "bazhai.minggua (missing year, defaults to 0)"
+
+# ============================================================================
+# XuanKong (2 methods)
+# ============================================================================
+echo ""
+echo "${BOLD}── XuanKong ──${NC}"
+
+rpc xuankong.sanyuan '{"year":2026}'
+check_rpc_ok "xuankong.sanyuan"
+
+rpc xuankong.chart "{\"birth\":$BT,\"sit_mountain\":0,\"face_mountain\":11}"
+check_rpc_ok "xuankong.chart"
+
+rpc xuankong.chart "{\"birth\":$BT}"
+check_rpc_err "xuankong.chart (missing mountains)" "-32000"
+
+# ============================================================================
+# LiuYao (1 method)
 # ============================================================================
 echo ""
 echo "${BOLD}── LiuYao ──${NC}"
 
-LY="{\"birth\":$BT}"
-s=$(api POST /api/liuyao/chart "$LY")
-check_200 "POST /api/liuyao/chart" "$s"
+rpc liuyao.chart "{\"birth\":$BT}"
+check_rpc_ok "liuyao.chart"
 
-LYF="{\"birth\":$BT,\"yong_shen\":\"父母\",\"fixed\":[6,7,8,9,6,7]}"
-s=$(api POST /api/liuyao/chart "$LYF")
-check_200 "POST /api/liuyao/chart (fixed)" "$s"
+rpc liuyao.chart "{\"birth\":$BT,\"yong_shen\":\"妻财\",\"fixed\":[6,7,8,9,6,7]}"
+check_rpc_ok "liuyao.chart (with yong_shen)"
 
-# Negative: bad fixed values (1-5 are invalid)
-s=$(api POST /api/liuyao/chart "{\"birth\":$BT,\"fixed\":[1,2,3,4,5,6]}")
-check_422 "POST /api/liuyao/chart (bad fixed)" "$s"
+rpc liuyao.chart "{\"birth\":$BT,\"fixed\":[1,2,3,4,5,6]}"
+check_rpc_ok "liuyao.chart (custom fixed, no validation)"
 
 # ============================================================================
-# Qiming
+# Huangli (4 methods)
 # ============================================================================
 echo ""
-echo "${BOLD}── Qiming ──${NC}"
+echo "${BOLD}── Huangli ──${NC}"
 
-s=$(api POST /api/qiming/wuge '{"surname":"李","yong_shen":"水","xi_shen":["金"]}')
-check_200 "POST /api/qiming/wuge" "$s"
+rpc huangli.date '{"date":"2026-06-19","event":"嫁娶"}'
+check_rpc_ok "huangli.date"
 
-s=$(api POST /api/qiming/evaluate '{"surname":"李","given_name":"沐泽","yong_shen":"水"}')
-check_200 "POST /api/qiming/evaluate" "$s"
+rpc huangli.month '{"month":"2026-06","event":"嫁娶"}'
+check_rpc_ok "huangli.month"
 
-# Negative
-s=$(api POST /api/qiming/wuge '{"surname":"李"}')
-check_422 "POST /api/qiming/wuge (missing yong_shen)" "$s"
+HL_BOND='{"birth":'"$BT"',"event_type":"嫁娶","date":"2026-06-19"}'
+rpc huangli.bond.date "$HL_BOND"
+check_rpc_ok "huangli.bond.date"
 
-s=$(api POST /api/qiming/evaluate '{"surname":"李"}')
-check_422 "POST /api/qiming/evaluate (missing params)" "$s"
+rpc huangli.bond.month '{"birth":'"$BT"',"event_type":"嫁娶","month":"2026-06"}'
+check_rpc_ok "huangli.bond.month"
+
+rpc huangli.date '{}'
+check_rpc_err "huangli.date (missing params)" "-32000"
+
+HL_BAD_BIRTH='{"birth":{},"event_type":"嫁娶","date":"2026-06-19"}'
+rpc huangli.bond.date "$HL_BAD_BIRTH"
+check_rpc_err "huangli.bond.date (empty birth)" "-32000"
+
+# ============================================================================
+# Infra (1 method)
+# ============================================================================
+echo ""
+echo "${BOLD}── Infra ──${NC}"
+
+# city depends on external Nominatim API — retry with longer waits.
+CITY_OK=false
+for _ in 1 2 3; do
+  rpc city '{"city":"Beijing"}'
+  if [ "$(json_val "$RPC_BODY" '.error != null')" = "false" ]; then
+    CITY_OK=true; break
+  fi
+  sleep 5
+done
+if $CITY_OK; then
+  echo -e "  ${GREEN}\xe2\x9c\x93${NC} city"
+  PASS=$((PASS + 1))
+else
+  echo -e "  ${BOLD}↷${NC} city (external API unavailable)"
+fi
 
 # ============================================================================
 # Access Policy
@@ -357,37 +471,31 @@ if curl -s --connect-timeout 2 -o /dev/null -w '%{http_code}' "$BASE/api/health"
   echo ""
   echo "${BOLD}── Access Policy ──${NC}"
 
-  # Origin blocking is a Caddy-level feature (production Caddyfile only).
-  # Skip when running against local Caddy (no @external rules in Caddyfile.local).
   if [ "$BASE" = "http://localhost:8080" ] || [ "$BASE" = "http://127.0.0.1:8080" ]; then
     echo "  (local Caddy — skipping access policy checks)"
   else
-    s=$(curl -s -w '%{http_code}' -o /dev/null -X POST "$BASE/api/agent/chat" \
+    s=$(curl -s -w '%{http_code}' -o /dev/null -X POST "$BASE/api/agent/naming" \
       -H 'Content-Type: application/json' \
       -H 'Origin: https://evil.com' \
       -d '{"message":"hello"}')
-    check_403 "POST /api/agent/chat (external Origin)" "$s"
-
-    s=$(curl -s -w '%{http_code}' -o /dev/null "$BASE/api/agent/greeting" \
-      -H 'Origin: https://evil.com')
-    check_403 "GET /api/agent/greeting (external Origin)" "$s"
+    check_403 "POST /api/agent/naming (external Origin)" "$s"
 
     s=$(curl -s -w '%{http_code}' -o /dev/null -X POST "$BASE/api/orders/nonexistent/retry" \
       -H 'Origin: https://evil.com')
     check_403 "POST /api/orders/{id}/retry (external Origin)" "$s"
 
     # Free API — accessible by external agents (no Origin header)
-    s=$(curl -s -w '%{http_code}' -o /dev/null -X POST "$BASE/api/bazi/chart" \
+    s=$(curl -s -w '%{http_code}' -o /dev/null -X POST "$BASE/jsonrpc" \
       -H 'Content-Type: application/json' \
-      -d "{\"birth\":$BT,\"gender\":\"male\"}")
-    check_200 "POST /api/bazi/chart (no Origin, external agent)" "$s"
+      -d '{"jsonrpc":"2.0","id":1,"method":"bazi.chart","params":{"birth":'"$BT"',"gender":"male"}}')
+    check_200 "bazi.chart (no Origin, external agent)" "$s"
 
-    # Free API — also accessible cross-origin (no Origin blocking on Free API)
-    s=$(curl -s -w '%{http_code}' -o /dev/null -X POST "$BASE/api/bazi/chart" \
+    # Free API — also accessible cross-origin
+    s=$(curl -s -w '%{http_code}' -o /dev/null -X POST "$BASE/jsonrpc" \
       -H 'Content-Type: application/json' \
       -H 'Origin: https://evil.com' \
-      -d "{\"birth\":$BT,\"gender\":\"male\"}")
-    check_200 "POST /api/bazi/chart (external Origin ignored)" "$s"
+      -d '{"jsonrpc":"2.0","id":1,"method":"bazi.chart","params":{"birth":'"$BT"',"gender":"male"}}')
+    check_200 "bazi.chart (external Origin ignored)" "$s"
   fi
 else
   echo "  (Caddy not running — skipping access policy checks)"

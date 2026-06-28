@@ -51,7 +51,7 @@ func computeLiuRi(bz ganzhi.Bazi, year, month, day int, daYunZhu *ganzhi.Zhu, li
 	}
 
 	// Na yin.
-	naYin := ganzhi.NaYinLabel(dp.Gan, dp.Zhi)
+	naYin := ganzhi.NayinLabel(dp.Gan, dp.Zhi)
 
 	// Daily shensha: day stem/branch vs bazi.
 	var shensha []shenShaEntry
