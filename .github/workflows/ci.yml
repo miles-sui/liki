@@ -137,6 +137,8 @@ jobs:
         run: go build -o bin/liki ./cmd/liki/
 
       - name: Start servers
+        env:
+          JWT_SECRET: liki-ci-e2e
         run: |
           ./bin/liki -addr :8081 -db /tmp/liki-ci.db &
           # Wait for Go server to be ready before starting Caddy (avoids 503 on reverse_proxy)
