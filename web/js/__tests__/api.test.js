@@ -143,7 +143,8 @@ async function apiPost(path, body, opts = {}) {
 
 function isMobileDevice() {
   if (/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) return true;
-  if (navigator.maxTouchPoints > 0 && window.innerWidth < 1024) return true;
+  // iPadOS 13+ spoofs as desktop Safari — check touch points
+  if (navigator.maxTouchPoints > 1) return true;
   return false;
 }
 

@@ -3,11 +3,12 @@
 
 function isMobileDevice() {
   if (/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) return true;
-  if (navigator.maxTouchPoints > 0 && window.innerWidth < 1024) return true;
+  // iPadOS 13+ spoofs as desktop Safari — check touch points
+  if (navigator.maxTouchPoints > 1) return true;
   return false;
 }
 
-function showQRModal(qrcodeUrl) {
+function showQRModal(qrcodeUrl, fallbackUrl) {
   var existing = document.querySelector('.qr-modal-overlay');
   if (existing) existing.remove();
 
@@ -17,10 +18,15 @@ function showQRModal(qrcodeUrl) {
     '<div class="qr-modal" role="dialog" aria-modal="true" aria-label="' + escapeHTML(i18next.t('payment.scanQR')) + '">' +
       '<button class="qr-modal-close" aria-label="' + escapeHTML(i18next.t('payment.qrClose')) + '">&times;</button>' +
       '<p class="qr-modal-title">' + escapeHTML(i18next.t('payment.scanQR')) + '</p>' +
-      '<img class="qr-modal-img" src="' + escapeHTML(qrcodeUrl) + '" alt="QR Code"' +
-        ' onerror="this.onerror=null; location.href=document.querySelector(\'#purchase-btn\').dataset.checkoutUrl||\'\';">' +
+      '<img class="qr-modal-img" alt="QR Code">' +
       '<p class="qr-modal-hint">' + escapeHTML(i18next.t('payment.qrHint')) + '</p>' +
     '</div>';
+
+  var img = overlay.querySelector('.qr-modal-img');
+  img.src = qrcodeUrl;
+  if (fallbackUrl) {
+    img.onerror = function() { this.onerror = null; location.href = fallbackUrl; };
+  }
 
   var prevFocus = document.activeElement;
   var closeBtn = overlay.querySelector('.qr-modal-close');
@@ -61,10 +67,7 @@ async function goPay(orderID) {
 
   // Desktop with QR code available: show modal
   if (data.qrcode_url && !isMobileDevice()) {
-    // Store checkout_url as fallback for image load failures
-    var btn = document.getElementById('purchase-btn');
-    if (btn && data.checkout_url) btn.dataset.checkoutUrl = data.checkout_url;
-    showQRModal(data.qrcode_url);
+    showQRModal(data.qrcode_url, data.checkout_url);
     return;
   }
 
