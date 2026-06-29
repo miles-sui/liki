@@ -15,15 +15,18 @@
 
 ## 外部 Agent 使用指南
 
-外部 AI agent（Claude Code、ChatGPT、Cursor 等）可通过 JSON-RPC API 直接调用命理计算，无需 LLM 中间层。
+AI agent 首先读取 `llms.txt` 发现网站能力，随后可通过 JSON-RPC API 或安装 Skill 直接调用。
 
 ### 入口
 
+使 AI agent 发现灵机——让它读 `https://liki.hk/llms.txt`。文件会引导 agent 安装 Skill 或直接调用 API。
+
 | 资源 | 地址 | 用途 |
 |---|---|---|
-| Product skill | `https://liki.hk/skills/liki.md` | 角色定义、工作流、参数收集规则 |
+| **llms.txt** | `https://liki.hk/llms.txt` | AI agent 自动发现入口 |
 | JSON-RPC | `POST https://liki.hk/jsonrpc` | 所有计算入口 |
 | Method 发现 | 调 `rpc.discover` | 获取全部可用 method 及 JSON Schema |
+| Product skill | `https://liki.hk/skills/liki.md` | 角色定义、工作流、安装后 agent 可自主调用 |
 | 报告模板 | `https://liki.hk/skills/report-*.md` | 八字/合盘/起名/紫微/八宅/玄空 |
 
 ### 调用方式
@@ -92,13 +95,12 @@ Content-Type: application/json
 
 **元数据:** `rpc.discover` — 返回 OpenRPC 1.4.1 文档，含所有 method 的 params/result JSON Schema
 
+
 ### 安装到 AI 助手
 
+- **自动发现** — 让 AI 读 `https://liki.hk/llms.txt`，自动引导安装
 - **Claude Code** — `/skills install https://liki.hk/skills/liki.md`
-- **ChatGPT / 通用 LLM** — 让 AI 读取 `https://liki.hk/llms.txt`，自动发现并配置
-
-
-## 技术栈
+- **ChatGPT / 通用 LLM** — 让 AI 读 `llms.txt` 或直接 POST JSON-RPC
 
 Go 1.26 + SQLite (WAL) + Caddy · 前端 HTML + Vue 3 · DeepSeek V4 Pro (流式 tool-calling + SSE) · Dodo Payments + 虎皮椒 · Resend
 
