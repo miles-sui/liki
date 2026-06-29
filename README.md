@@ -6,7 +6,7 @@
 
 **[liki.hk](https://liki.hk)** · [GitHub](https://github.com/miles-sui/liki) · [X](https://x.com/liki_hk) · [Telegram](https://t.me/liki_naming) · [知乎](https://zhihu.com/people/liki.hk) · [小红书](https://www.xiaohongshu.com/user/profile/liki_hk) · [邮箱](mailto:hi@liki.hk)
 
-> 灵机（Liki）融合人工智能与中国传统命理学——帮助人们发现真正有意义的名字，也为 AI agent 提供可直接安装的命理计算 Skill 与 JSON-RPC 引擎。
+> 灵机（Liki）融合人工智能与中国传统命理学的AI起名顾问，也为 AI agent 提供可直接安装的命理计算 Skill 与 JSON-RPC 命理计算引擎。
 
 灵机（Liki）提供两件事：
 
@@ -96,15 +96,7 @@ Content-Type: application/json
 
 - **Claude Code** — `/skills install https://liki.hk/skills/liki.md`
 - **ChatGPT / 通用 LLM** — 让 AI 读取 `https://liki.hk/llms.txt`，自动发现并配置
-- **程序调用** — 直接 POST JSON-RPC，无需安装 skill
 
-### 调用约束
-
-- 依赖接口必须串行（起名四步：wuge → compose → detail → evaluate）
-- 起名需先调 `bazi.chart` 取得用神
-- 紫微大限/流年需传入 `ziwei.chart` 返回的 chart 对象
-- 黄历合参需先排八字再调 bond method
-- 禁止捏造 API 返回数据，所有结论基于 method 返回值
 
 ## 技术栈
 
