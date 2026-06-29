@@ -1,6 +1,12 @@
 # 灵机 Liki — AI 起名顾问 · AI 命理引擎
 
 [![Wikidata](https://img.shields.io/badge/Wikidata-Q140329242-blue?logo=wikidata)](https://www.wikidata.org/wiki/Q140329242)
+[![License](https://img.shields.io/badge/license-AGPL--3.0-green)](./LICENSE)
+[![Go](https://img.shields.io/badge/Go-1.26-00ADD8?logo=go)](https://go.dev)
+
+**[liki.hk](https://liki.hk)** · [GitHub](https://github.com/miles-sui/liki) · [X](https://x.com/liki_hk) · [Telegram](https://t.me/liki_naming) · [知乎](https://zhihu.com/people/liki.hk) · [小红书](https://www.xiaohongshu.com/user/profile/liki_hk) · [邮箱](mailto:hi@liki.hk)
+
+> 灵机（Liki）是一位融合人工智能与中国传统命理学的顾问——帮助人们发现真正有意义的名字，也为开发者提供可编程的命理计算引擎。
 
 灵机（Liki）提供两件事：
 
