@@ -496,17 +496,6 @@
       var oid = data.data?.order_id;
       if (!oid) throw new Error(i18next.t('index.cta.errorOrder'));
 
-      // 2. Checkout
-      resp = await fetch('/api/payments/checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ order_id: oid, email: email }),
-      });
-      data = await resp.json();
-      if (!resp.ok) throw new Error(data.error?.message || i18next.t('index.cta.errorRequest'));
-      var oid = data.data?.order_id;
-      if (!oid) throw new Error(i18next.t('index.cta.errorOrder'));
-
       sessionStorage.setItem('likiOrderID', oid);
       await goPay(oid);
       return;
