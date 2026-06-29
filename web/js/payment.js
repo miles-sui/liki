@@ -76,3 +76,9 @@ async function goPay(orderID) {
   if (!url) throw new Error(i18next.t('error.noCheckoutUrl'));
   window.location.href = url;
 }
+
+// ── namespace extension ──
+window.Liki = window.Liki || {};
+window.Liki.goPay = goPay;
+window.Liki.showQRModal = showQRModal;
+window.Liki.isMobileDevice = isMobileDevice;

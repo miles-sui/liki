@@ -107,4 +107,4 @@ function showToast(msg, type = 'error') {
 
 // ── namespace ──
 const t = (key) => i18next.t(key);
-window.Liki = { apiGet, apiPost, goPay, showQRModal, isMobileDevice, escapeHTML, renderMD, showToast, t, get isOnline() { return online; } };
+window.Liki = { apiGet, apiPost, escapeHTML, renderMD, showToast, t, get isOnline() { return online; } };
