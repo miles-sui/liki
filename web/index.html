@@ -21,23 +21,52 @@
 <link rel="alternate" hreflang="zh-Hans" href="https://liki.hk/zh-Hans/">
 <link rel="alternate" hreflang="en" href="https://liki.hk/en/">
 <link rel="alternate" hreflang="x-default" href="https://liki.hk/zh-Hant/">
+    <link rel="canonical" href="https://liki.hk/zh-Hant/">
 <title>靈機 Liki · 發現好名字</title>
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
-  "@type": "WebApplication",
+  "@type": "SoftwareApplication",
   "name": "Liki",
   "description": "Liki is an AI Chinese naming advisor. Discover names that are meaningful, culturally rooted, and truly yours.",
   "url": "https://liki.hk",
   "applicationCategory": "LifestyleApplication",
   "operatingSystem": "Web",
-  "offers": [
+  "sameAs": [
+    "https://github.com/miles-sui/liki",
+    "https://x.com/liki_hk",
+    "https://t.me/liki_naming",
+    "https://zhihu.com/people/liki.hk",
+    "https://www.xiaohongshu.com/user/profile/liki_hk"
+  ],
+  "offers": {
+    "@type": "Offer",
+    "name": "起名服務",
+    "description": "AI Chinese naming advisor — personalized name suggestions based on BaZi, WuGe, and ZiWei.",
+    "price": "29.90",
+    "priceCurrency": "USD"
+  }
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
     {
-      "@type": "Offer",
-      "name": "起名服務",
-      "description": "Liki is an AI Chinese naming advisor. Discover names that are meaningful, culturally rooted, and truly yours.",
-      "price": "29.90",
-      "priceCurrency": "USD"
+      "@type": "Question",
+      "name": "靈機是如何起名的？",
+      "acceptedAnswer": { "@type": "Answer", "text": "靈機融合八字、五格三才、紫微斗數、音韻典故等中國傳統命名原則，由 AI 生成個性化起名建議。" }
+    },
+    {
+      "@type": "Question",
+      "name": "起名需要提供什麼資訊？",
+      "acceptedAnswer": { "@type": "Answer", "text": "需要提供姓氏、性別、出生日期與時間（精確到小時）、出生地點。系統會根據這些資訊計算八字用神與五行平衡。" }
+    },
+    {
+      "@type": "Question",
+      "name": "起名服務的費用是多少？",
+      "acceptedAnswer": { "@type": "Answer", "text": "中國大陸地區人民幣 99 元，其他地區 29.90 美元。一次付費可在 7 天內無限次諮詢。" }
     }
   ]
 }
