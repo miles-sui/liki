@@ -2,4 +2,4 @@ User-agent: *
 Allow: /
 Disallow: /api/
 
-Sitemap: https://liki.hk/sitemap-index.xml
+Sitemap: https://liki.hk/sitemap.xml

@@ -74,7 +74,7 @@ http://localhost:8080 {
 
 	route {
 		root * web
-		file_server
 		try_files {path} {path}.html /index.html
+		file_server
 	}
 }

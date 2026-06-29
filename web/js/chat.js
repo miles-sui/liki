@@ -212,7 +212,11 @@ function mountApp() {
         timer = null;
         lastRender = Date.now();
         asst.html = _thinkingHTML() + renderMD(asst.content);
-        scrollDown();
+        // Always scroll to bottom during streaming.
+        nextTick(() => {
+          const el = chatMessagesEl.value;
+          if (el) el.scrollTop = el.scrollHeight;
+        });
       };
 
       return {

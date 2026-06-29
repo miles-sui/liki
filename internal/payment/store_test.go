@@ -3,6 +3,7 @@ package payment
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"strings"
 	"testing"
 	"liki/internal/product"
@@ -327,5 +328,96 @@ func TestCreateOrder_DuplicateID(t *testing.T) {
 	err = store.CreateOrder(ctx, "dup-order", product.ProductNaming, 1990, "CNY", "", `{}`, "", "")
 	if err == nil {
 		t.Error("expected error for duplicate order_id")
+	}
+}
+
+func TestMarkPaidViaCallback_NewPayment(t *testing.T) {
+	db := openTestDB(t)
+	store, err := NewStore(db)
+	if err != nil {
+		t.Fatalf("NewStore: %v", err)
+	}
+	ctx := context.Background()
+
+	orderID := "test-callback-new"
+	if err := store.CreateOrder(ctx, orderID, product.ProductNaming, 990, "USD", "", `{}`, "", ""); err != nil {
+		t.Fatalf("CreateOrder: %v", err)
+	}
+
+	newPayment, email, prod, err := store.MarkPaidViaCallback(ctx, orderID)
+	if err != nil {
+		t.Fatalf("MarkPaidViaCallback: %v", err)
+	}
+	if !newPayment {
+		t.Error("first call should be new payment")
+	}
+	if prod != product.ProductNaming {
+		t.Errorf("product = %q, want naming", prod)
+	}
+
+	// Verify order is paid.
+	o, err := store.GetOrder(ctx, orderID)
+	if err != nil {
+		t.Fatalf("GetOrder: %v", err)
+	}
+	if o.Status != OrderPaid {
+		t.Errorf("status = %q, want paid", o.Status)
+	}
+	if o.ChatExpiresAt == "" {
+		t.Error("chat_expires_at should be set")
+	}
+
+	// Email is empty because we didn't set one.
+	_ = email
+}
+
+func TestMarkPaidViaCallback_Idempotent(t *testing.T) {
+	db := openTestDB(t)
+	store, err := NewStore(db)
+	if err != nil {
+		t.Fatalf("NewStore: %v", err)
+	}
+	ctx := context.Background()
+
+	orderID := "test-callback-idempotent"
+	if err := store.CreateOrder(ctx, orderID, product.ProductNaming, 990, "USD", "a@b.co", `{}`, "", ""); err != nil {
+		t.Fatalf("CreateOrder: %v", err)
+	}
+
+	// First call
+	newPayment, email, _, err := store.MarkPaidViaCallback(ctx, orderID)
+	if err != nil {
+		t.Fatalf("first MarkPaidViaCallback: %v", err)
+	}
+	if !newPayment {
+		t.Error("first call should be new payment")
+	}
+	if email != "a@b.co" {
+		t.Errorf("email = %q, want a@b.co", email)
+	}
+
+	// Second call — should be idempotent.
+	newPayment2, email2, _, err := store.MarkPaidViaCallback(ctx, orderID)
+	if err != nil {
+		t.Fatalf("second MarkPaidViaCallback: %v", err)
+	}
+	if newPayment2 {
+		t.Error("second call should not be new payment")
+	}
+	if email2 != "a@b.co" {
+		t.Errorf("email = %q, want a@b.co", email2)
+	}
+}
+
+func TestMarkPaidViaCallback_NonExistent(t *testing.T) {
+	db := openTestDB(t)
+	store, err := NewStore(db)
+	if err != nil {
+		t.Fatalf("NewStore: %v", err)
+	}
+
+	_, _, _, err = store.MarkPaidViaCallback(context.Background(), "nonexistent")
+	if !errors.Is(err, ErrOrderNotFound) {
+		t.Errorf("expected ErrOrderNotFound, got %v", err)
 	}
 }

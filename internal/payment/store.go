@@ -252,6 +252,36 @@ func (s *Store) UpdateBirthInfoIfEmpty(ctx context.Context, orderID, birthInfo s
 	return n > 0, err
 }
 
+// MarkPaidViaCallback marks a pending order as paid when the payment gateway
+// callback confirms success (GET /api/payments/return/{id}?status=succeeded).
+// Unlike MarkPaidIdempotent, paymentID is optional here because the callback
+// may arrive before the webhook. If the order is already paid, this is a no-op.
+func (s *Store) MarkPaidViaCallback(ctx context.Context, orderID string) (newPayment bool, email string, prod product.Product, err error) {
+	var e sql.NullString
+	var p string
+	err = s.db.QueryRowContext(ctx,
+		`UPDATE orders SET status = 'paid', chat_expires_at = COALESCE(NULLIF(chat_expires_at,''), datetime('now', '+7 days')), updated_at = datetime('now') WHERE order_id = ? AND status = 'pending' RETURNING email, product`,
+		orderID).Scan(&e, &p)
+	if err == nil {
+		return true, e.String, product.Product(p), nil
+	}
+	if !errors.Is(err, sql.ErrNoRows) {
+		return false, "", "", err
+	}
+
+	// Already paid — read existing data.
+	err = s.db.QueryRowContext(ctx,
+		`SELECT email, product FROM orders WHERE order_id = ? AND status = 'paid'`,
+		orderID).Scan(&e, &p)
+	if errors.Is(err, sql.ErrNoRows) {
+		return false, "", "", ErrOrderNotFound
+	}
+	if err != nil {
+		return false, "", "", err
+	}
+	return false, e.String, product.Product(p), nil
+}
+
 // FindActiveOrdersByEmail finds paid, unexpired orders for an email.
 func (s *Store) FindActiveOrdersByEmail(ctx context.Context, email string) ([]Order, error) {
 	rows, err := s.db.QueryContext(ctx,

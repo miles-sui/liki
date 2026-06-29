@@ -51,7 +51,7 @@ func persistChatResult(ctx context.Context, store *payment.Store, orderID string
 	}
 	batch := make([]payment.ChatMessage, 0, len(result)-(skipCount+2))
 	for _, m := range result[skipCount+2:] {
-		if m.Content == "" {
+		if m.Content == "" || m.Role == llm.RoleTool {
 			continue
 		}
 		batch = append(batch, payment.ChatMessage{Role: payment.Role(m.Role), Content: m.Content})

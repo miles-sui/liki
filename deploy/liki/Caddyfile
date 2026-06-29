@@ -102,7 +102,7 @@
 
 	route {
 		root * /srv/web
-		file_server
 		try_files {path} {path}.html /index.html
+		file_server
 	}
 }

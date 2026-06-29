@@ -330,3 +330,111 @@
   .typing-dots span { animation: none; opacity: .6; }
   .chip { transition: none; }
 }
+
+/* ── Login overlay ── */
+.login-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(0,0,0,.3);
+}
+.login-card {
+  width: 100%;
+  max-width: 20rem;
+  background: #fff;
+  border-radius: 1rem;
+  box-shadow: 0 20px 60px rgba(0,0,0,.15);
+  padding: 1.5rem;
+}
+.login-card h2 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #292524;
+  margin-bottom: .5rem;
+}
+.login-card p {
+  font-size: .875rem;
+  color: #78716c;
+  margin-bottom: 1rem;
+}
+.login-card input {
+  width: 100%;
+  padding: .625rem 1rem;
+  border: 1px solid #d6d3d1;
+  border-radius: .5rem;
+  font-size: .875rem;
+  outline: none;
+  margin-bottom: .75rem;
+  transition: border-color .15s, box-shadow .15s;
+}
+.login-card input:focus {
+  border-color: #d97706;
+  box-shadow: 0 0 0 3px rgba(217,119,6,.1);
+}
+.login-card button {
+  width: 100%;
+  padding: .625rem 1rem;
+  background: #d97706;
+  color: #fff;
+  border: none;
+  border-radius: .5rem;
+  font-size: .875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background .15s;
+}
+.login-card button:hover { background: #b45309; }
+.login-card button:disabled { background: #d6d3d1; cursor: not-allowed; }
+.login-card [role="alert"] {
+  color: #ef4444;
+  font-size: .75rem;
+  margin-top: .5rem;
+}
+.login-no-order {
+  text-align: center;
+  margin-top: 1rem;
+}
+.login-no-order a {
+  font-size: .75rem;
+  color: #a8a29e;
+  text-decoration: underline;
+}
+.login-no-order a:hover { color: #78716c; }
+
+/* ── Select overlay ── */
+.select-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(0,0,0,.3);
+}
+.select-card {
+  width: 100%;
+  max-width: 24rem;
+  max-height: 80vh;
+  overflow-y: auto;
+  background: #fff;
+  border-radius: 1rem;
+  box-shadow: 0 20px 60px rgba(0,0,0,.15);
+  padding: 1.5rem;
+}
+.select-card p {
+  font-size: .875rem;
+  color: #78716c;
+  margin-bottom: 1rem;
+}
+.select-card .order-card {
+  cursor: pointer;
+  border: 1px solid #e7e5e4;
+  border-radius: .75rem;
+  padding: 1rem;
+  margin-bottom: .75rem;
+}

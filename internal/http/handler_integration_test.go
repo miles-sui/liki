@@ -123,7 +123,7 @@ func TestCheckoutToReportLifecycle(t *testing.T) {
 		t.Errorf("return redirect = %q, want /chat?order_id=lifecycle-1", loc)
 	}
 
-	// 4. Order status — returns pending (not yet paid via webhook).
+	// 4. Order status — returns paid (callback now marks order as paid immediately).
 	statusHandler := handleOrderStatus(svc.Store)
 	statusReq := httptest.NewRequest("GET", "/api/orders/lifecycle-1/status", nil)
 	statusReq.SetPathValue("id", "lifecycle-1")
@@ -140,11 +140,11 @@ func TestCheckoutToReportLifecycle(t *testing.T) {
 		} `json:"data"`
 	}
 	json.NewDecoder(statusW.Body).Decode(&statusEnv)
-	if statusEnv.Data.Status != "pending" {
-		t.Errorf("status = %q, want pending", statusEnv.Data.Status)
+	if statusEnv.Data.Status != "paid" {
+		t.Errorf("status = %q, want paid", statusEnv.Data.Status)
 	}
 
-	// 5. Report with pending status — llm_json is hidden.
+	// 5. Report with paid status — llm_json is accessible.
 	reportHandler := handleReport(svc, &Analytics{})
 	reportReq := httptest.NewRequest("GET", "/api/reports/lifecycle-1", nil)
 	reportReq.SetPathValue("id", "lifecycle-1")
@@ -161,11 +161,8 @@ func TestCheckoutToReportLifecycle(t *testing.T) {
 		} `json:"data"`
 	}
 	json.NewDecoder(reportW.Body).Decode(&reportEnv)
-	if reportEnv.Data.Status != "pending" {
-		t.Errorf("report status = %q, want pending", reportEnv.Data.Status)
-	}
-	if reportEnv.Data.LlmJSON != "" {
-		t.Errorf("pending order must not expose llm_json, got %q", reportEnv.Data.LlmJSON)
+	if reportEnv.Data.Status != "paid" {
+		t.Errorf("report status = %q, want paid", reportEnv.Data.Status)
 	}
 }
 

@@ -170,21 +170,26 @@ func handlePaymentReturn(store *payment.Store) http.HandlerFunc {
 			return
 		}
 
-		o, err := store.GetOrder(r.Context(), orderID)
+		// Mark order as paid via the callback — this ensures the user can
+		// access chat immediately even if the webhook arrives later.
+		newPayment, email, _, err := store.MarkPaidViaCallback(r.Context(), orderID)
 		if err != nil {
-			slog.Error("payment: return get order", "orderID", orderID, "err", err)
+			slog.Error("payment: return mark paid", "orderID", orderID, "err", err)
 			http.Redirect(w, r, "/", http.StatusFound)
 			return
 		}
 
-		if o.ChatExpiresAt == "" {
-			expiresAt := payment.DefaultChatExpiry()
-			if err := store.SetChatExpiresAtIfEmpty(r.Context(), orderID, expiresAt); err != nil {
-				slog.Warn("payment: return set chat_expires_at", "orderID", orderID, "err", err)
-			}
+		if email == "" {
+			slog.Error("payment: return order has no email", "orderID", orderID)
+			http.Redirect(w, r, "/", http.StatusFound)
+			return
 		}
 
-		setJWTCookie(w, o.Email, orderID)
+		if newPayment {
+			slog.Info("payment: order marked paid via callback", "orderID", orderID)
+		}
+
+		setJWTCookie(w, email, orderID)
 		http.Redirect(w, r, "/chat?order_id="+orderID, http.StatusFound)
 	}
 }

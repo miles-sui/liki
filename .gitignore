@@ -27,3 +27,4 @@ CLAUDE.local.md
 # Generated
 data/pdfs/
 node_modules/
+coverage.out
