@@ -141,12 +141,6 @@ async function apiPost(path, body, opts = {}) {
   throw lastErr;
 }
 
-function isMobileDevice() {
-  if (/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) return true;
-  // iPadOS 13+ spoofs as desktop Safari: MacIntel + multitouch
-  if (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1) return true;
-  return false;
-}
 
 function showQRModal(qrcodeUrl, fallbackUrl) {
   var existing = document.querySelector('.qr-modal-overlay');
@@ -205,7 +199,7 @@ async function goPay(orderID) {
   var data = await apiPost('/payments/checkout', { order_id: orderID });
   if (!data) throw new Error(i18next.t('error.noCheckoutUrl'));
 
-  if (data.qrcode_url && !isMobileDevice()) {
+  if (data.qrcode_url) {
     showQRModal(data.qrcode_url, data.checkout_url);
     return;
   }
@@ -381,16 +375,6 @@ describe('goPay', () => {
     }
   });
 
-  it('redirects on mobile even when qrcode_url is present', async () => {
-    vi.stubGlobal('navigator', { userAgent: 'iPhone', maxTouchPoints: 1 });
-    vi.stubGlobal('innerWidth', 375);
-    fetch.mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve({ data: { checkout_url: 'https://pay.example.com/checkout/xyz', qrcode_url: 'https://qr.example.com/qr.png' } }),
-    });
-    await goPay('order-1');
-    expect(window.location.href).toBe('https://pay.example.com/checkout/xyz');
-  });
 
   it('redirects on desktop when qrcode_url is absent (omitempty)', async () => {
     fetch.mockResolvedValue({

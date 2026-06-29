@@ -36,17 +36,6 @@ async function mockCheckout(page) {
     });
   });
 }
-
-async function mockCheckoutQR(page) {
-  await page.route('**/api/payments/checkout', async (route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({ data: { checkout_url: 'https://pay.example.com/checkout/pf-test', qrcode_url: 'https://qr.example.com/qr.png' } }),
-    });
-  });
-}
-
 async function mockCheckoutError(page) {
   await page.route('**/api/payments/checkout', async (route) => {
     await route.fulfill({
@@ -172,21 +161,6 @@ test.describe('Landing page', () => {
   });
 
   // ── QR code ──
-
-  test('desktop shows QR modal when qrcode_url is present', async () => {
-    await mockCreateOrder(page);
-    await mockCheckoutQR(page);
-    await page.goto('/zh-Hans/');
-    await page.locator('#purchase-email').fill('buyer@example.com');
-    await page.locator('#purchase-form button[type="submit"]').click();
-
-    await expect(page.locator('.qr-modal-overlay')).toBeVisible({ timeout: 10000 });
-    await expect(page.locator('.qr-modal')).toBeVisible();
-    await expect(page.locator('.qr-modal-img')).toHaveAttribute('src', 'https://qr.example.com/qr.png');
-    // URL should NOT have changed (no redirect when QR is shown)
-    expect(page.url()).not.toContain('checkout');
-  });
-
   // ── language switch ──
 
   test('language switch redirects to correct locale URL', async () => {

@@ -1,12 +1,6 @@
 // payment.js — Checkout flow with QR code support for desktop.
 // Uses apiPost from api.js and i18next for translations.
 
-function isMobileDevice() {
-  if (/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) return true;
-  // iPadOS 13+ spoofs as desktop Safari: MacIntel + multitouch
-  if (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1) return true;
-  return false;
-}
 
 function showQRModal(qrcodeUrl, fallbackUrl) {
   var existing = document.querySelector('.qr-modal-overlay');
@@ -66,7 +60,7 @@ async function goPay(orderID) {
   if (!data) throw new Error(i18next.t('error.noCheckoutUrl'));
 
   // Desktop with QR code available: show modal
-  if (data.qrcode_url && !isMobileDevice()) {
+  if (data.qrcode_url) {
     showQRModal(data.qrcode_url, data.checkout_url);
     return;
   }
@@ -81,4 +75,3 @@ async function goPay(orderID) {
 window.Liki = window.Liki || {};
 window.Liki.goPay = goPay;
 window.Liki.showQRModal = showQRModal;
-window.Liki.isMobileDevice = isMobileDevice;
