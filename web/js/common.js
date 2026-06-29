@@ -221,7 +221,7 @@ var i18nextHttpBackend=(function(){let e=[];e.forEach,e.slice;let t=[`__proto__`
         this.innerHTML =
           '<header class="header-dark border-b border-stone-700">' +
           '<div class="max-w-4xl mx-auto px-4 py-6 flex items-center justify-between">' +
-          '<div><h1 class="text-3xl font-brand text-amber-100 tracking-tight" data-i18n="site.name">' + esc(titleFallback) + '</h1></div>' +
+          '<div><span class="text-3xl font-brand text-amber-100 tracking-tight" data-i18n="site.name">' + esc(titleFallback) + '</span></div>' +
           '<lang-switcher></lang-switcher>' +
           '</div></header>';
       } else {
@@ -281,7 +281,7 @@ var i18nextHttpBackend=(function(){let e=[];e.forEach,e.slice;let t=[`__proto__`
       var product = (productKey ? i18next.t(productKey) : '') || this.getAttribute('product') || '';
       this.innerHTML =
         '<div class="print-cover no-print" style="display:none;">' +
-        '<h1 class="font-brand">Liki</h1>' +
+        '<span class="font-brand">Liki</span>' +
         '<div class="pc-sub" id="print-cover-sub">' + esc(product) + '</div>' +
         '<div class="pc-date" id="print-date"></div></div>';
     }
