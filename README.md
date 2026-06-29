@@ -6,12 +6,12 @@
 
 **[liki.hk](https://liki.hk)** · [GitHub](https://github.com/miles-sui/liki) · [X](https://x.com/liki_hk) · [Telegram](https://t.me/liki_naming) · [知乎](https://zhihu.com/people/liki.hk) · [小红书](https://www.xiaohongshu.com/user/profile/liki_hk) · [邮箱](mailto:hi@liki.hk)
 
-> 灵机（Liki）融合人工智能与中国传统命理学的AI起名顾问，也为 AI agent 提供可直接安装的命理计算 Skill 与 JSON-RPC 命理计算引擎。
+> 灵机（Liki）融合人工智能与中国传统命理学——帮助人们发现真正有意义的名字，也为 AI agent 提供可直接安装的命理计算 Skill 与 JSON-RPC 引擎。
 
 灵机（Liki）提供两件事：
 
 1. **AI 起名顾问** — 付费 Chat 产品，基于八字用神、五行喜忌、三才五格，推荐中文名字
-2. **AI 命理引擎** — 免费 JSON-RPC API，供 AI agent 与开发者调用（八字、紫微、奇门、六爻、风水、黄历）
+2. **AI 命理引擎** — 免费 JSON-RPC API，供 AI agent 调用（八字、紫微、奇门、六爻、风水、黄历）
 
 ## 外部 Agent 使用指南
 
@@ -19,7 +19,7 @@ AI agent 首先读取 `llms.txt` 发现网站能力，随后可通过 JSON-RPC A
 
 ### 入口
 
-使 AI agent 发现灵机——让它读 `https://liki.hk/llms.txt`。文件会引导 agent 安装 Skill 或直接调用 API。
+让 AI agent 发现灵机——让它读 `https://liki.hk/llms.txt`。文件会引导 agent 安装 Skill 或直接调用 API。
 
 | 资源 | 地址 | 用途 |
 |---|---|---|
@@ -96,11 +96,10 @@ Content-Type: application/json
 **元数据:** `rpc.discover` — 返回 OpenRPC 1.4.1 文档，含所有 method 的 params/result JSON Schema
 
 
-### 安装到 AI 助手
+> Claude Code 用户：`/skills install https://liki.hk/skills/liki.md`
 
-- **自动发现** — 让 AI 读 `https://liki.hk/llms.txt`，自动引导安装
-- **Claude Code** — `/skills install https://liki.hk/skills/liki.md`
-- **ChatGPT / 通用 LLM** — 让 AI 读 `llms.txt` 或直接 POST JSON-RPC
+## 技术栈
+
 
 Go 1.26 + SQLite (WAL) + Caddy · 前端 HTML + Vue 3 · DeepSeek V4 Pro (流式 tool-calling + SSE) · Dodo Payments + 虎皮椒 · Resend
 
