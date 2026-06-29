@@ -517,9 +517,11 @@
       sessionStorage.setItem('likiOrderID', oid);
 
       if (qrcode) {
-        // Show QR code for scan-to-pay instead of redirecting
-        showQRCode(qrcode);
-        return;
+        // Don't show QR in WeChat browser — user is already on the phone
+        if (!/MicroMessenger/i.test(navigator.userAgent)) {
+          showQRCode(qrcode);
+          return;
+        }
       }
       location.href = url;
     } catch(e) {
@@ -540,7 +542,9 @@
     btn.style.display = 'none';
     var price = currency === 'CNY' ? '¥99' : '$29.90';
     document.getElementById('qrcode-price').textContent = price;
-    document.getElementById('qrcode-img').src = qrcodeUrl;
+    var img = document.getElementById('qrcode-img');
+    img.onerror = function() { location.href = url; };
+    img.src = qrcodeUrl;
     document.getElementById('qrcode-box').classList.remove('hidden');
     document.getElementById('qrcode-done').onclick = function() { location.href = '/chat'; };
     document.getElementById('qrcode-cancel').onclick = function() { location.reload(); };
