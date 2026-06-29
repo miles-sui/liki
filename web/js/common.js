@@ -70,22 +70,10 @@ var i18nextHttpBackend=(function(){let e=[];e.forEach,e.slice;let t=[`__proto__`
     }
   });
 
-  // ── hreflang + canonical ──
+  // canonical (self-referencing per locale) — hreflang via sitemap
   var base = location.protocol + '//' + location.host;
   var path = location.pathname.replace(/^\/(zh-Hans|zh-Hant|en)\/?/, '/');
   if (path !== '/' && !path.startsWith('/')) path = '/' + path;
-  var HREFLANG = { 'zh-Hans': 'zh-Hans', 'zh-Hant': 'zh-Hant', en: 'en' };
-  LOCALES.forEach(function(loc){
-    var link = document.createElement('link');
-    link.rel = 'alternate';
-    link.hreflang = HREFLANG[loc];
-    link.href = base + '/' + loc + (path === '/' ? '/' : path);
-    document.head.appendChild(link);
-  });
-  var xd = document.createElement('link');
-  xd.rel = 'alternate'; xd.hreflang = 'x-default';
-  xd.href = base + '/en' + (path === '/' ? '/' : path);
-  document.head.appendChild(xd);
   var canonical = document.createElement('link');
   canonical.rel = 'canonical';
   canonical.href = base + '/' + l + (path === '/' ? '/' : path);
