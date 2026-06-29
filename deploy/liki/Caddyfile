@@ -100,6 +100,11 @@
 		try_files /report.html
 	}
 
+	handle_path /wiki/* {
+		root * /srv/web/wiki
+		file_server
+	}
+
 	route {
 		root * /srv/web
 		try_files {path} {path}.html /index.html
