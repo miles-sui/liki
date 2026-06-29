@@ -3,8 +3,8 @@
 
 function isMobileDevice() {
   if (/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) return true;
-  // iPadOS 13+ spoofs as desktop Safari — check touch points
-  if (navigator.maxTouchPoints > 1) return true;
+  // iPadOS 13+ spoofs as desktop Safari: MacIntel + multitouch
+  if (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1) return true;
   return false;
 }
 

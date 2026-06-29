@@ -176,11 +176,6 @@ test.describe('Landing page', () => {
   test('desktop shows QR modal when qrcode_url is present', async () => {
     await mockCreateOrder(page);
     await mockCheckoutQR(page);
-
-    await page.addInitScript(() => {
-      Object.defineProperty(navigator, "maxTouchPoints", { get: () => 0 });
-    });
-
     await page.goto('/zh-Hans/');
     await page.locator('#purchase-email').fill('buyer@example.com');
     await page.locator('#purchase-form button[type="submit"]').click();
