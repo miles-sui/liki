@@ -332,7 +332,9 @@
 }
 
 /* ── Login overlay ── */
-.login-overlay {
+/* ── Overlay shared styles ── */
+.login-overlay,
+.select-overlay {
   position: fixed;
   inset: 0;
   z-index: 50;
@@ -342,6 +344,7 @@
   padding: 1rem;
   background: rgba(0,0,0,.3);
 }
+
 .login-card {
   width: 100%;
   max-width: 20rem;
@@ -404,17 +407,6 @@
   text-decoration: underline;
 }
 .login-no-order a:hover { color: #78716c; }
-
-/* ── Select overlay ── */
-.select-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 50;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 1rem;
-  background: rgba(0,0,0,.3);
 }
 .select-card {
   width: 100%;

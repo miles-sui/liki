@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"liki/internal/agent"
 	"liki/internal/payment"
@@ -61,8 +62,7 @@ func RegisterRoutes(mux *http.ServeMux, deps ServerDeps, buildTime string, rl *R
 
 // findWebDir looks for the web/ directory relative to the working directory.
 func findWebDir() string {
-	candidates := []string{"web", "../web", "../../web"}
-	for _, d := range candidates {
+	for _, d := range []string{"web", "../web", "../../web"} {
 		if fi, err := os.Stat(d); err == nil && fi.IsDir() {
 			if abs, err := filepath.Abs(d); err == nil {
 				return abs
@@ -73,35 +73,23 @@ func findWebDir() string {
 }
 
 // devFileServer wraps an API handler with a static file server fallback.
-// If the request path doesn't start with /api/ or /jsonrpc and a file exists
-// under webDir, it serves that file. Otherwise it delegates to the API handler.
 func devFileServer(webDir string, next http.Handler) http.Handler {
 	fs := http.FileServer(http.Dir(webDir))
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// API and JSON-RPC requests always go to the API handler.
-		if len(r.URL.Path) >= 4 && r.URL.Path[:4] == "/api" {
+		if strings.HasPrefix(r.URL.Path, "/api/") || r.URL.Path == "/jsonrpc" {
 			next.ServeHTTP(w, r)
 			return
 		}
-		if r.URL.Path == "/jsonrpc" {
-			next.ServeHTTP(w, r)
-			return
-		}
-
-		// Try to serve as a static file, with .html fallback.
 		p := filepath.Join(webDir, filepath.Clean(r.URL.Path))
 		if fi, err := os.Stat(p); err == nil && !fi.IsDir() {
 			fs.ServeHTTP(w, r)
-			return
-		}
-		// Try .html extension (e.g. /chat → /chat.html).
-		if fi, err := os.Stat(p + ".html"); err == nil && !fi.IsDir() {
+		} else if fi, err := os.Stat(p + ".html"); err == nil && !fi.IsDir() {
+			_ = fi
 			r2 := r.Clone(r.Context())
 			r2.URL.Path = r.URL.Path + ".html"
 			fs.ServeHTTP(w, r2)
-			return
+		} else {
+			next.ServeHTTP(w, r)
 		}
-		// Fall back to API handler (returns 404 for unknown paths).
-		next.ServeHTTP(w, r)
 	})
 }
