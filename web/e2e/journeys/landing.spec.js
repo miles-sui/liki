@@ -197,10 +197,10 @@ test.describe('Landing page', () => {
 
     await page.goto(`/zh-Hans/chat.html?order_id=${ORDER_ID}`);
 
-    await expect(page.locator('.login-form')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('.login-overlay')).toBeVisible({ timeout: 10000 });
 
-    await page.locator('.login-form input[type="email"]').fill('buyer@example.com');
-    await page.locator('.login-form button').click();
+    await page.locator('.login-card input[type="email"]').fill('buyer@example.com');
+    await page.locator('.login-card button').click();
 
     await expect(page.locator('.chat-messages')).toBeVisible({ timeout: 10000 });
   });
@@ -241,10 +241,10 @@ test.describe('Landing page', () => {
     });
 
     await page.goto(`/zh-Hans/chat.html?order_id=${ORDER_ID}`);
-    await expect(page.locator('.login-form')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('.login-overlay')).toBeVisible({ timeout: 10000 });
 
-    await page.locator('.login-form input[type="email"]').fill('buyer@example.com');
-    await page.locator('.login-form button').click();
+    await page.locator('.login-card input[type="email"]').fill('buyer@example.com');
+    await page.locator('.login-card button').click();
     await expect(page.locator('.chat-messages')).toBeVisible({ timeout: 10000 });
 
     // Send message and verify SSE response.

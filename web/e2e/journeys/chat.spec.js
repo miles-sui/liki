@@ -64,8 +64,8 @@ async function gotoChat(page, lang = 'zh-Hans') {
 }
 
 async function enterChatViaLogin(page) {
-  await page.locator('.login-form input[type="email"]').fill('user@example.com');
-  await page.locator('.login-form button').click();
+  await page.locator('.login-card input[type="email"]').fill('user@example.com');
+  await page.locator('.login-card button').click();
   await page.waitForSelector('.chat-messages', { timeout: 10000 });
 }
 
@@ -126,7 +126,7 @@ const SSE_ERROR_CASES = [
       });
     },
     assert: async (page) => {
-      await expect(page.locator('.login-form')).toBeVisible({ timeout: 5000 });
+      await expect(page.locator('.login-overlay')).toBeVisible({ timeout: 5000 });
     },
   },
   {
@@ -186,14 +186,14 @@ test.describe('Chat page', () => {
 
   test('loads in login state by default', async () => {
     await gotoChat(page);
-    await expect(page.locator('.login-form')).toBeVisible();
-    await expect(page.locator('.login-form button')).toContainText('继续');
+    await expect(page.locator('.login-overlay')).toBeVisible();
+    await expect(page.locator('.login-card button')).toContainText('继续');
     await expect(page.locator('.chat-shell')).toBeVisible();
   });
 
   test('login button is disabled when email is empty', async () => {
     await gotoChat(page);
-    await expect(page.locator('.login-form button')).toBeDisabled();
+    await expect(page.locator('.login-card button')).toBeDisabled();
   });
 
   // ── login flow ──
@@ -204,7 +204,7 @@ test.describe('Chat page', () => {
     await gotoChat(page);
     await enterChatViaLogin(page);
 
-    await expect(page.locator('.login-form')).not.toBeVisible();
+    await expect(page.locator('.login-overlay')).not.toBeVisible();
     await expect(page.locator('.msg-asst')).toBeVisible();
   });
 
@@ -212,22 +212,22 @@ test.describe('Chat page', () => {
     await mockLoginError(page);
     await gotoChat(page);
 
-    await page.locator('.login-form input[type="email"]').fill('nobody@example.com');
-    await page.locator('.login-form button').click();
+    await page.locator('.login-card input[type="email"]').fill('nobody@example.com');
+    await page.locator('.login-card button').click();
 
-    await expect(page.locator('.login-form p.text-red-500')).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('.login-card [role="alert"]')).toBeVisible({ timeout: 5000 });
   });
 
   test('multiple orders show order selection state', async () => {
     await mockLoginMulti(page);
     await gotoChat(page);
 
-    await page.locator('.login-form input[type="email"]').fill('user@example.com');
-    await page.locator('.login-form button').click();
+    await page.locator('.login-card input[type="email"]').fill('user@example.com');
+    await page.locator('.login-card button').click();
 
-    await expect(page.locator('.order-list')).toBeVisible({ timeout: 5000 });
-    await expect(page.locator('.order-card')).toHaveCount(2);
-    await expect(page.locator('.order-card').first()).toContainText('起名服务 #1');
+    await expect(page.locator('.select-overlay')).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('.select-card .order-card')).toHaveCount(2);
+    await expect(page.locator('.select-card .order-card').first()).toContainText('起名服务 #1');
   });
 
   test('clicking order card transitions to chat', async () => {
@@ -236,11 +236,11 @@ test.describe('Chat page', () => {
     await mockOrderStatus(page, 'o-001');
     await gotoChat(page);
 
-    await page.locator('.login-form input[type="email"]').fill('user@example.com');
-    await page.locator('.login-form button').click();
-    await expect(page.locator('.order-list')).toBeVisible({ timeout: 5000 });
+    await page.locator('.login-card input[type="email"]').fill('user@example.com');
+    await page.locator('.login-card button').click();
+    await expect(page.locator('.select-overlay')).toBeVisible({ timeout: 5000 });
 
-    await page.locator('.order-card').first().click();
+    await page.locator('.select-card .order-card').first().click();
     await expect(page.locator('.chat-messages')).toBeVisible({ timeout: 5000 });
   });
 
@@ -386,8 +386,8 @@ test.describe('Chat page', () => {
     await mockOrderStatusExpired(page);
     await gotoChat(page);
 
-    await page.locator('.login-form input[type="email"]').fill('user@example.com');
-    await page.locator('.login-form button').click();
+    await page.locator('.login-card input[type="email"]').fill('user@example.com');
+    await page.locator('.login-card button').click();
 
     await expect(page.locator('.expired-banner')).toBeVisible({ timeout: 5000 });
     await expect(page.locator('#chat-input')).not.toBeVisible();
