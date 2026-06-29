@@ -148,7 +148,7 @@ function isMobileDevice() {
   return false;
 }
 
-function showQRModal(qrcodeUrl) {
+function showQRModal(qrcodeUrl, fallbackUrl) {
   var existing = document.querySelector('.qr-modal-overlay');
   if (existing) existing.remove();
 
@@ -158,9 +158,15 @@ function showQRModal(qrcodeUrl) {
     '<div class="qr-modal" role="dialog" aria-modal="true" aria-label="' + escapeHTML(i18next.t('payment.scanQR')) + '">' +
       '<button class="qr-modal-close" aria-label="' + escapeHTML(i18next.t('payment.qrClose')) + '">&times;</button>' +
       '<p class="qr-modal-title">' + escapeHTML(i18next.t('payment.scanQR')) + '</p>' +
-      '<img class="qr-modal-img" src="' + escapeHTML(qrcodeUrl) + '" alt="QR Code">' +
+      '<img class="qr-modal-img" alt="QR Code">' +
       '<p class="qr-modal-hint">' + escapeHTML(i18next.t('payment.qrHint')) + '</p>' +
     '</div>';
+
+  var img = overlay.querySelector('.qr-modal-img');
+  img.src = qrcodeUrl;
+  if (fallbackUrl) {
+    img.onerror = function() { this.onerror = null; location.href = fallbackUrl; };
+  }
 
   var prevFocus = document.activeElement;
   var closeBtn = overlay.querySelector('.qr-modal-close');
@@ -196,16 +202,15 @@ function showQRModal(qrcodeUrl) {
 }
 
 async function goPay(orderID) {
-  const data = await apiPost('/payments/checkout', { order_id: orderID });
+  var data = await apiPost('/payments/checkout', { order_id: orderID });
+  if (!data) throw new Error(i18next.t('error.noCheckoutUrl'));
 
-  // Desktop + xunhu (qrcode_url present): show QR code for scanning
   if (data.qrcode_url && !isMobileDevice()) {
-    showQRModal(data.qrcode_url);
+    showQRModal(data.qrcode_url, data.checkout_url);
     return;
   }
 
-  // Mobile or dodo: redirect directly
-  const url = data.checkout_url;
+  var url = data.checkout_url;
   if (!url) throw new Error(i18next.t('error.noCheckoutUrl'));
   window.location.href = url;
 }
@@ -359,9 +364,9 @@ describe('goPay', () => {
   });
 
   it('shows QR modal on desktop when qrcode_url is present', async () => {
-    var calledUrl = null;
+    var calledUrl = null, calledFallback = null;
     var orig = showQRModal;
-    showQRModal = function(url) { calledUrl = url; };
+    showQRModal = function(url, fb) { calledUrl = url; calledFallback = fb; };
     try {
       fetch.mockResolvedValue({
         ok: true,
@@ -370,6 +375,7 @@ describe('goPay', () => {
       await goPay('order-1');
       expect(window.location.href).toBe('');
       expect(calledUrl).toBe('https://qr.example.com/qr.png');
+      expect(calledFallback).toBe('https://pay.example.com/checkout/xyz');
     } finally {
       showQRModal = orig;
     }
@@ -384,6 +390,29 @@ describe('goPay', () => {
     });
     await goPay('order-1');
     expect(window.location.href).toBe('https://pay.example.com/checkout/xyz');
+  });
+
+  it('redirects on desktop when qrcode_url is absent (omitempty)', async () => {
+    fetch.mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ data: { checkout_url: 'https://pay.example.com/checkout/xyz' } }),
+    });
+    await goPay('order-1');
+    expect(window.location.href).toBe('https://pay.example.com/checkout/xyz');
+  });
+
+  it('redirects on desktop when qrcode_url is empty string', async () => {
+    fetch.mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ data: { checkout_url: 'https://pay.example.com/checkout/xyz', qrcode_url: '' } }),
+    });
+    await goPay('order-1');
+    expect(window.location.href).toBe('https://pay.example.com/checkout/xyz');
+  });
+
+  it('propagates network error from apiPost', async () => {
+    fetch.mockRejectedValue(new TypeError('Failed to fetch'));
+    await expect(goPay('order-1')).rejects.toThrow('Failed to fetch');
   });
 });
 
