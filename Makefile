@@ -94,3 +94,16 @@ test-golden:
 
 update-golden:
 	UPDATE_GOLDEN=1 go test -count=1 -run TestGolden ./internal/engine/...
+
+# ── IndexNow ──
+# Submit all locale homepages to Bing for immediate indexing.
+# Docs: https://www.bing.com/indexnow
+INDEXNOW_KEY := e2af3ac5940b47a78a12e8018331ac6e
+INDEXNOW_HOST := liki.hk
+
+indexnow:
+	@curl -s -X POST https://www.bing.com/IndexNow \
+		-H "Content-Type: application/json" \
+		-d '{"host":"$(INDEXNOW_HOST)","key":"$(INDEXNOW_KEY)","keyLocation":"https://$(INDEXNOW_HOST)/$(INDEXNOW_KEY).txt","urlList":["https://$(INDEXNOW_HOST)/en/","https://$(INDEXNOW_HOST)/zh-Hans/","https://$(INDEXNOW_HOST)/zh-Hant/"]}'
+	@echo ""
+	@echo "IndexNow submitted for /en/ /zh-Hans/ /zh-Hant/"
