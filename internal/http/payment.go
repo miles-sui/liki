@@ -216,7 +216,15 @@ func handleWebhook(svc *payment.Service) http.HandlerFunc {
 			return
 		}
 
-		respondStatus(w, http.StatusOK, "ok")
+		respondSuccess(w, "success")
+	}
+}
+
+func respondSuccess(w http.ResponseWriter, body string) {
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	if _, err := w.Write([]byte(body)); err != nil {
+		slog.Warn("respondSuccess write", "err", err)
 	}
 }
 

@@ -144,8 +144,8 @@ func (c *Client) VerifyWebhook(rawBody []byte, headers http.Header) (*payment.We
 	if err != nil {
 		amount = 0
 	}
-	eventType := values.Get("trade_status")
-	if eventType == "TRADE_SUCCESS" {
+	eventType := values.Get("status")
+	if eventType == "OD" {
 		eventType = "payment.succeeded"
 	}
 
@@ -159,7 +159,7 @@ func (c *Client) VerifyWebhook(rawBody []byte, headers http.Header) (*payment.We
 			OrderID:   orderID,
 			Amount:    amount,
 			Email:     values.Get("openid"),
-			PaymentID: values.Get("trade_no"),
+			PaymentID: values.Get("transaction_id"),
 		},
 	}, nil
 }

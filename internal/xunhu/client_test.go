@@ -190,16 +190,16 @@ func TestVerifyWebhook_PaymentSuccess(t *testing.T) {
 		"appid":         {"test_appid"},
 		"trade_order_id":  {"order-1"},
 		"total_fee":     {"990"},
-		"trade_no":      {"txn_123"},
-		"trade_status":  {"TRADE_SUCCESS"},
+		"transaction_id":      {"txn_123"},
+		"status":  {"OD"},
 		"openid":        {"user_openid"},
 	}
 	formParams := map[string]string{
 		"appid":        "test_appid",
 		"trade_order_id": "order-1",
 		"total_fee":    "990",
-		"trade_no":     "txn_123",
-		"trade_status": "TRADE_SUCCESS",
+		"transaction_id":     "txn_123",
+		"status": "OD",
 		"openid":       "user_openid",
 	}
 	form.Set("hash", sign(formParams, "test_secret"))
@@ -235,7 +235,7 @@ func TestVerifyWebhook_BadSignature(t *testing.T) {
 		"appid":        {"test_appid"},
 		"trade_order_id": {"order-1"},
 		"total_fee":    {"990"},
-		"trade_status": {"TRADE_SUCCESS"},
+		"status": {"OD"},
 		"hash":         {"bad_signature_here"},
 	}
 	body := []byte(form.Encode())
@@ -256,7 +256,7 @@ func TestVerifyWebhook_MissingHash(t *testing.T) {
 	form := url.Values{
 		"appid":        {"test_appid"},
 		"trade_order_id": {"order-1"},
-		"trade_status": {"TRADE_SUCCESS"},
+		"status": {"OD"},
 	}
 	body := []byte(form.Encode())
 	headers := http.Header{"Content-Type": {"application/x-www-form-urlencoded"}}
@@ -277,7 +277,7 @@ func TestVerifyWebhook_NonPaymentStatus(t *testing.T) {
 		"appid":        "test_appid",
 		"trade_order_id": "order-1",
 		"total_fee":    "990",
-		"trade_status": "ORDER_CREATED",
+		"status": "ORDER_CREATED",
 	}
 	form := url.Values{}
 	for k, v := range formParams {
@@ -486,8 +486,8 @@ func TestVerifyWebhook_LegacyOrderID(t *testing.T) {
 		"appid":        "test_appid",
 		"out_trade_no": "legacy-order-1",
 		"total_fee":    "990",
-		"trade_no":     "txn_123",
-		"trade_status": "TRADE_SUCCESS",
+		"transaction_id":     "txn_123",
+		"status": "OD",
 	}
 	form := url.Values{}
 	for k, v := range formParams {
