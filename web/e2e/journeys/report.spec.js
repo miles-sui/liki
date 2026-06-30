@@ -10,7 +10,7 @@ import { test, expect } from '../fixtures.js';
 const NAMING_CHART_JSON = JSON.stringify({
   naming: {
     analysis: { surname: '陈', yong_shen: '火', zodiac: '鼠' },
-    candidates: [{ name: '陈明远', score: 95, wuxing: '火木土' }],
+    candidates: [{ name: '陈明远', wuxing: '火木土' }],
   },
 });
 

@@ -106,7 +106,7 @@ namingHandler 每次 POST：
 | compute_naming_wuge | 姓氏→三才五格分析 |
 | compute_naming_compose | 八字+姓氏→候选名列表 |
 | compute_naming_detail | 单个名字→字形音韵详析 |
-| compute_naming_evaluate | 候选名列表→综合评分排序 |
+| compute_naming_evaluate | 单个名字→八字五行五格音韵分析 |
 
 ### RPCRegistry（29 tools，外部 API）
 

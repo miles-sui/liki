@@ -106,7 +106,7 @@
     },
     {
       "name": "compute_naming_evaluate",
-      "description": "起名单名评分",
+      "description": "起名单名评价分析",
       "parameters": {
         "type": "object",
         "properties": {
