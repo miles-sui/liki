@@ -67,8 +67,8 @@ Method：`qimen.pan`。kind 默认 `"shi"`（时家），可选 `"ri"`/`"yue"`/`
 串行四步：
 
 1. `qiming.wuge` — yong_shen 取 `"木"|"火"|"土"|"金"|"水"`。优先取 `fu_yi.yong`；若 `fu_yi.yong` 为空则 fallback 到 `tiao_hou.yong`。
-2. 过滤字库 — 剔除生僻字、读音拗口字、字形丑陋字、含义消极字。某笔画字全被剔除时对应 combo 也去掉。
-3. `qiming.compose` — 传入过滤后的 combos 和字库。从返回的候选名字中选 8 个进 detail。
+2. **过滤字库（必做，不可跳过）** — 从 yong_chars 和 xi_chars 中剔除生僻字、读音拗口字、字形丑陋字、含义消极字。示例：死/亡/病/残/怨/恨/仇/穷/败。某笔画字全被剔除时对应 combo 也去掉。**这一步完成后才能调 compose。**
+3. `qiming.compose` — 传入过滤后的 combos 和字库。禁止自行添加字。从返回的候选名字中选 8 个进 detail。
 
 **选字原则**（按优先级）：
 
