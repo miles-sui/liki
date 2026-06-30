@@ -63,7 +63,7 @@ test.describe('Landing page', () => {
     await page.goto('/en/');
     await page.waitForSelector('[data-i18n]', { timeout: 10000 });
 
-    await expect(page.locator('h1').first()).toHaveText('Liki');
+    await expect(page.locator('.header-dark span.font-brand')).toContainText('Liki');
     await expect(page.locator('main h2:first-of-type')).toContainText('Find Your Name');
     await expect(page.locator('#purchase-form')).toBeVisible();
     await expect(page.locator('#purchase-email')).toBeVisible();
@@ -75,7 +75,7 @@ test.describe('Landing page', () => {
     await page.goto('/zh-Hans/');
     await page.waitForSelector('[data-i18n]', { timeout: 10000 });
 
-    await expect(page.locator('h1').first()).toContainText('Liki');
+    await expect(page.locator('.header-dark span.font-brand')).toContainText('Liki');
     await expect(page.locator('main h2:first-of-type')).toContainText('找到你的名字');
     await expect(page.locator('#purchase-form')).toBeVisible();
     await expect(page.locator('.name-scroll')).toBeVisible();
