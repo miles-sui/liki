@@ -64,6 +64,8 @@ Method：`qimen.pan`。kind 默认 `"shi"`（时家），可选 `"ri"`/`"yue"`/`
 
 **前置**：必须先排八字（`bazi.chart`），取得用神后才能起名。若用户尚未排盘，引导先排。
 
+**铁律**：起名必须串行四步（wuge → 过滤 → compose → detail），不可跳过、不可编造名字。所有候选名只能来自 compose 的输出。
+
 串行四步：
 
 1. `qiming.wuge` — yong_shen 取 `"木"|"火"|"土"|"金"|"水"`。优先取 `fu_yi.yong`；若 `fu_yi.yong` 为空则 fallback 到 `tiao_hou.yong`。
@@ -77,7 +79,7 @@ Method：`qimen.pan`。kind 默认 `"shi"`（时家），可选 `"ri"`/`"yue"`/`
 - **经典出处优先**：优先选有古文诗词出处的名字组合。经典来源：诗经、楚辞、论语、孟子、易经、道德经、韩非子等。无明确出处的也可选但需有文化寓意
 - **五行匹配**：至少一字五行与用神一致，两字五行相生优于相克
 - **音韵优美**：优先平仄相间，避免负面谐音
-4. `qiming.detail` — 传入筛选后的 8 个名字。
+4. `qiming.detail` — 传入 compose 返回的候选名（只能从 compose 结果中选 8 个，禁止自编）。
 
 用户自选名字时跳过 1-4，直接调 `qiming.evaluate`。
 
