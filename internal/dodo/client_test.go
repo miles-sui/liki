@@ -267,7 +267,7 @@ func TestCreateCheckout_Success(t *testing.T) {
 	c := newTestClientWithURL("sk_test", srv.URL)
 	ctx := context.Background()
 
-	result, err := c.CreateCheckout(ctx, product.ProductNaming, 990, "order-1", "user@test.com", "https://liki.hk/return")
+	result, err := c.CreateCheckout(ctx, product.ProductNaming, 990, "order-1", "user@test.com", "https://liki.hk/return", "")
 	if err != nil {
 		t.Fatalf("CreateCheckout: %v", err)
 	}
@@ -289,7 +289,7 @@ func TestCreateCheckout_HTTPError(t *testing.T) {
 	c := newTestClientWithURL("sk_test", srv.URL)
 	ctx := context.Background()
 
-	_, err := c.CreateCheckout(ctx, product.ProductNaming, 990, "order-1", "", "https://liki.hk/return")
+	_, err := c.CreateCheckout(ctx, product.ProductNaming, 990, "order-1", "", "https://liki.hk/return", "")
 	if err == nil {
 		t.Fatal("expected error for 500 response")
 	}
@@ -301,7 +301,7 @@ func TestCreateCheckout_InvalidBaseURL(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 
-	_, err := c.CreateCheckout(ctx, product.ProductNaming, 990, "order-1", "", "https://liki.hk/return")
+	_, err := c.CreateCheckout(ctx, product.ProductNaming, 990, "order-1", "", "https://liki.hk/return", "")
 	if err == nil {
 		t.Fatal("expected connection error for invalid URL")
 	}

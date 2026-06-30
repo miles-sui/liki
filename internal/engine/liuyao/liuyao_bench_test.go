@@ -14,6 +14,6 @@ func BenchmarkComputeChart(b *testing.B) {
 	)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		ComputeChart(st, YongGuanGui, [6]int{})
+		ComputeChart(st, YongGuanGui, [6]int{7, 7, 7, 7, 7, 7})
 	}
 }

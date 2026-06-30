@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -50,7 +51,7 @@ func newHandlerTestService(t *testing.T, db *sql.DB) *payment.Service {
 
 type stubProviderForHandler struct{}
 
-func (d *stubProviderForHandler) CreateCheckout(_ context.Context, _ product.Product, _ int, _, _, _ string) (*payment.CheckoutResult, error) {
+func (d *stubProviderForHandler) CreateCheckout(_ context.Context, _ product.Product, _ int, _, _, _, _ string) (*payment.CheckoutResult, error) {
 	return &payment.CheckoutResult{SessionID: "sess-test", CheckoutURL: "https://pay.example.com/checkout"}, nil
 }
 
@@ -81,6 +82,10 @@ func createHandlerTestOrder(t *testing.T, db *sql.DB, orderID string, status pay
 // ── Checkout → payment return → order status → report: full lifecycle ──
 
 func TestCheckoutToReportLifecycle(t *testing.T) {
+	// JWT_SECRET must be set for return token verification.
+	os.Setenv("JWT_SECRET", "test-secret-for-integration")
+	t.Cleanup(func() { os.Unsetenv("JWT_SECRET") })
+
 	db := openHandlerTestDB(t)
 	svc := newHandlerTestService(t, db)
 
@@ -111,7 +116,7 @@ func TestCheckoutToReportLifecycle(t *testing.T) {
 
 	// 3. Payment return (succeeded) — sets JWT, redirects to chat.
 	returnHandler := handlePaymentReturn(svc.Store)
-	returnReq := httptest.NewRequest("GET", "/api/payments/return/lifecycle-1?status=succeeded", nil)
+	returnReq := httptest.NewRequest("GET", "/api/payments/return/lifecycle-1?status=succeeded&t="+ReturnToken("lifecycle-1"), nil)
 	returnReq.SetPathValue("id", "lifecycle-1")
 	returnW := httptest.NewRecorder()
 	returnHandler(returnW, returnReq)

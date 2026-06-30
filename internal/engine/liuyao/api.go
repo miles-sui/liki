@@ -14,12 +14,41 @@
 //   ganzhi: WSWang, WSXiang, WSXiu, WSQiu, WSSi
 //
 // Functions
-//   ComputeChart(st SolarTime, yongShen YongShen, fixed [6]int) → Chart
+//   Qigua() → QiguaResult           纯起卦（三枚铜钱摇六次）
+//   ComputeChart(st, yongShen, yaos) → Chart  装卦 + 用神 + 旺衰 + 应期
 package liuyao
 
-import "liki/internal/engine/tianwen"
+import (
+	"math/rand"
+	"time"
 
-// ComputeChart computes a complete 六爻 chart from solar time, question type, and optional fixed yaos.
-func ComputeChart(st tianwen.SolarTime, yongShen YongShen, fixed [6]int) Chart {
-	return computeChart(tianwen.ComputeBazi(st), yongShen, fixed)
+	"liki/internal/engine/tianwen"
+)
+
+// QiguaResult is the bare output of a coin-toss hexagram draw.
+type QiguaResult struct {
+	Yaos    [6]int `json:"yaos"`     // 初爻到上爻，6/7/8/9
+	DongYao []int  `json:"dong_yao"` // 动爻位置 1-6
+}
+
+// Qigua simulates three coins tossed six times.
+func Qigua() QiguaResult {
+	yaos := shakeCoins(rand.New(rand.NewSource(time.Now().UnixNano())))
+	return QiguaResult{
+		Yaos:    yaosToInts(yaos),
+		DongYao: dongYao(yaos),
+	}
+}
+
+func yaosToInts(y [6]YaoType) [6]int {
+	var out [6]int
+	for i, v := range y {
+		out[i] = int(v)
+	}
+	return out
+}
+
+// ComputeChart builds a full 六爻 chart from solar time, question type, and yaos.
+func ComputeChart(st tianwen.SolarTime, yongShen YongShen, yaos [6]int) Chart {
+	return computeChart(tianwen.ComputeBazi(st), yongShen, yaos)
 }

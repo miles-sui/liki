@@ -55,7 +55,7 @@ type WebhookEventData struct {
 
 // paymentProvider abstracts a payment gateway (Dodo, Xunhu, etc.).
 type paymentProvider interface {
-	CreateCheckout(ctx context.Context, product product.Product, amount int, orderID, email, returnURL string) (*CheckoutResult, error)
+	CreateCheckout(ctx context.Context, product product.Product, amount int, orderID, email, returnURL, returnToken string) (*CheckoutResult, error)
 	VerifyWebhook(rawBody []byte, headers http.Header) (*WebhookEvent, error)
 }
 
@@ -108,7 +108,8 @@ func (s *Service) Shutdown(ctx context.Context) error {
 }
 
 // CreateCheckout creates a checkout session for an existing order via the given provider.
-func (s *Service) CreateCheckout(ctx context.Context, provider, orderID, userEmail string) (*CheckoutResult, error) {
+// The returnToken is an HMAC-SHA256 token used to verify the payment return callback.
+func (s *Service) CreateCheckout(ctx context.Context, provider, orderID, userEmail, returnToken string) (*CheckoutResult, error) {
 	order, err := s.Store.GetOrder(ctx, orderID)
 	if err != nil {
 		return nil, fmt.Errorf("payment: checkout: %w", err)
@@ -131,7 +132,10 @@ func (s *Service) CreateCheckout(ctx context.Context, provider, orderID, userEma
 	}
 
 	returnURL := s.returnURL + "/api/payments/return/" + orderID
-	result, err := p.CreateCheckout(ctx, order.Product, order.Amount, orderID, userEmail, returnURL)
+	if returnToken != "" {
+		returnURL += "?t=" + returnToken
+	}
+	result, err := p.CreateCheckout(ctx, order.Product, order.Amount, orderID, userEmail, returnURL, returnToken)
 	if err != nil {
 		return nil, fmt.Errorf("payment: %s checkout: %w", provider, err)
 	}

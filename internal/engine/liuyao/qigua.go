@@ -2,7 +2,6 @@ package liuyao
 
 import (
 	"math/rand"
-	"time"
 
 	"liki/internal/engine/ganzhi"
 )
@@ -167,16 +166,10 @@ type YongShenResult struct {
 	FuShen   *FuShen  `json:"fu_shen,omitempty"`
 }
 
-// computeChart computes a complete 六爻 chart from bazi, question type, and optional fixed yaos.
-func computeChart(bz ganzhi.Bazi, yongShen YongShen, fixed [6]int) Chart {
-	var yaos [6]YaoType
-	if fixed != [6]int{} {
-		yaos = shakeCoinsFixed(fixed)
-	} else {
-		yaos = shakeCoins(rand.New(rand.NewSource(time.Now().UnixNano())))
-	}
-
-	chart := computeGuaPan(yaos, bz.Ri)
+// computeChart computes a complete 六爻 chart from bazi, question type, and yaos (required).
+func computeChart(bz ganzhi.Bazi, yongShen YongShen, yaos [6]int) Chart {
+	yts := shakeCoinsFixed(yaos)
+	chart := computeGuaPan(yts, bz.Ri)
 
 	// Month building from bazi.
 	chart.MonthZhi = bz.Yue.Zhi

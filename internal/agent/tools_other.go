@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"liki/internal/engine/bazhai"
 	"liki/internal/engine/ganzhi"
@@ -111,17 +112,25 @@ func computeSanYuanYunHandler(ctx context.Context, raw json.RawMessage) (json.Ra
 	return wrapResult("sanyuan_yun", result)
 }
 
+func computeLiuyaoQiguaHandler(ctx context.Context, raw json.RawMessage) (json.RawMessage, error) {
+	result := liuyao.Qigua()
+	return wrapResult("liuyao_qigua", result)
+}
+
 func computeLiuyaoHandler(ctx context.Context, raw json.RawMessage) (json.RawMessage, error) {
 	var p struct {
 		Birth    TimePoint `json:"birth"`
-		YongShen string     `json:"yong_shen"`
-		Fixed    [6]int     `json:"fixed"`
+		YongShen string    `json:"yong_shen"`
+		Yaos     [6]int    `json:"yaos"`
 	}
 	if err := json.Unmarshal(raw, &p); err != nil {
 		return nil, fmt.Errorf("compute_liuyao: %w", err)
 	}
 	if p.YongShen == "" {
 		p.YongShen = "世爻"
+	}
+	if p.Yaos == [6]int{} {
+		return nil, fmt.Errorf("compute_liuyao: yaos is required — use liuyao.qigua first to generate them")
 	}
 	ys, err := liuyao.ParseYongShen(p.YongShen)
 	if err != nil {
@@ -131,7 +140,7 @@ func computeLiuyaoHandler(ctx context.Context, raw json.RawMessage) (json.RawMes
 	if err != nil {
 		return nil, fmt.Errorf("compute_liuyao: %w", err)
 	}
-	result := liuyao.ComputeChart(ts.Solar, ys, p.Fixed)
+	result := liuyao.ComputeChart(ts.Solar, ys, p.Yaos)
 	return wrapResult("liuyao", result)
 }
 
@@ -206,4 +215,14 @@ func queryHuangliBondMonthHandler(ctx context.Context, raw json.RawMessage) (jso
 		return nil, fmt.Errorf("query_huangli_bond_month: %w", err)
 	}
 	return wrapResult("huangli_bond_month", result)
+}
+
+func nowTimeHandler(ctx context.Context, raw json.RawMessage) (json.RawMessage, error) {
+	now := time.Now().UTC()
+	result := map[string]string{
+		"utc":   now.Format(time.RFC3339),
+		"local": now.In(time.Local).Format(time.RFC3339),
+		"cst":   now.In(time.FixedZone("CST", 8*3600)).Format(time.RFC3339),
+	}
+	return wrapResult("time_now", result)
 }

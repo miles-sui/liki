@@ -159,24 +159,38 @@ type Chart struct {
 |------|------|
 | `ComputeChart(st tianwen.SolarTime, yongShen YongShen, fixed [6]int) → Chart` | 起卦+排盘+用神+旺衰+日建关系+应期（编排入口，api.go） |
 
-编排层 `api.go` 收 `tianwen.SolarTime` → `ComputeBazi` → 引擎 `computeChart(bz ganzhi.Bazi, yongShen YongShen, fixed [6]int)` 收精确实体。`computeGuaPan` 收 `ganzhi.Zhu` 而非 `time.Time`。
+编排层 `api.go` 收 `tianwen.SolarTime` → `ComputeBazi` → 引擎 `computeChart(bz ganzhi.Bazi, yongShen YongShen, yaos [6]int)` 收精确实体。`computeGuaPan` 收 `ganzhi.Zhu` 而非 `time.Time`。
 
-## JSON-RPC Method
+## JSON-RPC Methods
 
-```
-liuyao.chart
-```
+两步流程：先起卦 `liuyao.qigua`，再装卦 `liuyao.chart`。
+
+### `liuyao.qigua` — 起卦
 
 请求体：
+```json
+{}
+```
 
+返回：
 ```json
 {
-    "solar_time": "2026-06-16T14:30:00+08:00",
-    "yong_shen": "官鬼",
-    "fixed": [6, 7, 8, 9, 7, 6]
+    "yaos": [7, 8, 6, 7, 9, 7],
+    "dong_yao": [3, 5]
 }
 ```
 
-- `solar_time`: 用事时间，从 `bazi.chart` 获取的 `solar_time` 字段
+### `liuyao.chart` — 装卦
+
+请求体：
+```json
+{
+    "birth": {"time": "2026-06-16T14:30:00+08:00", "longitude": 116.4},
+    "yaos": [6, 7, 8, 9, 7, 6],
+    "yong_shen": "官鬼"
+}
+```
+
+- `birth`: 用事时间（真太阳时）
+- `yaos`: **必填**，六个爻值（6/7/8/9），先调 `liuyao.qigua` 获取
 - `yong_shen`: "父母"/"兄弟"/"官鬼"/"妻财"/"子孙"/"世爻"（默认 "世爻"）
-- `fixed`: 可选，手动指定 6 个爻（6/7/8/9），不传则为随机起卦

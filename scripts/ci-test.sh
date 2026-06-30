@@ -34,10 +34,10 @@ cleanup() {
 }
 trap cleanup EXIT
 
-# API 冒烟
+# API 冒烟 — 跳过外部 API（本地开发无法访问）
 echo ""
 echo "=== api ==="
-scripts/test-api.sh http://localhost:8080
+SKIP_EXTERNAL=1 scripts/test-api.sh http://localhost:8080
 
 # Go 检查
 echo ""

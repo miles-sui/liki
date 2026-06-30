@@ -16,7 +16,7 @@
   "bazhai.minggua":   {"gender":"male","birth_year":1984},
   "xuankong.sanyuan": {"year":2026},
   "xuankong.chart":   {"birth":{"time":"1984-02-15T08:00:00+08:00","longitude":116.4},"sit_mountain":0,"face_mountain":12},
-  "liuyao.chart":     {"birth":{"time":"1984-02-15T08:00:00+08:00","longitude":116.4}},
+  "liuyao.chart":     {"birth":{"time":"1984-02-15T08:00:00+08:00","longitude":116.4},"yaos":[7,7,7,7,7,7]},
   "huangli.date":     {"date":"2026-06-26","event":"嫁娶"},
   "huangli.month":    {"month":"2026-06","event":"嫁娶"},
   "huangli.bond.date":  {"birth":{"time":"1984-02-15T08:00:00+08:00","longitude":116.4},"event_type":"嫁娶","date":"2026-06-26"},

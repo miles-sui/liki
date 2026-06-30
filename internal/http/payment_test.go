@@ -23,7 +23,7 @@ type mockPaymentProvider struct {
 	webhookErr     error
 }
 
-func (m *mockPaymentProvider) CreateCheckout(_ context.Context, _ product.Product, _ int, _, _, _ string) (*payment.CheckoutResult, error) {
+func (m *mockPaymentProvider) CreateCheckout(_ context.Context, _ product.Product, _ int, _, _, _, _ string) (*payment.CheckoutResult, error) {
 	return m.checkoutResult, m.checkoutErr
 }
 
@@ -249,7 +249,7 @@ func TestHandlePaymentReturn_Succeeded(t *testing.T) {
 	createTestOrder(t, db, "order-1", product.ProductNaming, payment.OrderPaid, "user@example.com", "", "")
 
 	h := handlePaymentReturn(store)
-	r := httptest.NewRequest("GET", "/api/payments/return/order-1?status=succeeded", nil)
+	r := httptest.NewRequest("GET", "/api/payments/return/order-1?status=succeeded&t="+ReturnToken("order-1"), nil)
 	r.SetPathValue("id", "order-1")
 	w := httptest.NewRecorder()
 	h(w, r)

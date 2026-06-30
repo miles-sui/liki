@@ -543,12 +543,13 @@ func TestComputeYingQi_NotFound_WithFuShen(t *testing.T) {
 }
 
 // =============================================================================
-// ComputeChart — 随机摇卦路径 (无 fixed yaos)
+// ComputeChart — 随机摇卦路径 (先 Qigua 再装卦)
 // =============================================================================
 
 func TestComputeChart_RandomShake(t *testing.T) {
 	st := tianwen.SolarTime(time.Date(2000, 6, 15, 12, 0, 0, 0, time.FixedZone("CST", 8*3600)))
-	chart := ComputeChart(st, YongQiCai, [6]int{})
+	qigua := Qigua()
+	chart := ComputeChart(st, YongQiCai, qigua.Yaos)
 
 	if chart.Name == "" {
 		t.Error("Name is empty")
@@ -713,5 +714,144 @@ func TestDayGanShouOrder(t *testing.T) {
 					ganzhi.GanName(tt.dayGan), order[0].String(), tt.want0.String())
 			}
 		})
+	}
+}
+
+// =============================================================================
+// Qigua — 起卦校验
+// =============================================================================
+
+func TestQigua_ValuesInRange(t *testing.T) {
+	for i := 0; i < 20; i++ {
+		q := Qigua()
+		for pos, y := range q.Yaos {
+			if y < 6 || y > 9 {
+				t.Errorf("yao %d = %d, want [6,9]", pos+1, y)
+			}
+		}
+		for _, d := range q.DongYao {
+			if d < 1 || d > 6 {
+				t.Errorf("dong_yao position = %d, want [1,6]", d)
+			}
+		}
+	}
+}
+
+func TestQigua_DongYaoMatchesChangingLines(t *testing.T) {
+	for i := 0; i < 20; i++ {
+		q := Qigua()
+		for pos, y := range q.Yaos {
+			isChanging := y == 6 || y == 9
+			isInList := false
+			for _, d := range q.DongYao {
+				if d == pos+1 {
+					isInList = true
+					break
+				}
+			}
+			if isChanging != isInList {
+				t.Errorf("yao %d = %d (changing=%v), but dong_yao contains=%v",
+					pos+1, y, isChanging, isInList)
+			}
+		}
+	}
+}
+
+// =============================================================================
+// ComputeChart — 六十四卦 / yaos 各组合校验
+// =============================================================================
+
+func TestComputeChart_AllShunYangQianWeiTian(t *testing.T) {
+	st := tianwen.SolarTime(time.Date(2000, 1, 1, 12, 0, 0, 0, time.FixedZone("CST", 8*3600)))
+	chart := ComputeChart(st, YongShiYao, [6]int{7, 7, 7, 7, 7, 7})
+
+	if chart.Name != "乾为天" {
+		t.Errorf("Name = %q, want 乾为天 (all ShaoYang 7)", chart.Name)
+	}
+	if chart.Palace != "乾" {
+		t.Errorf("Palace = %q, want 乾", chart.Palace)
+	}
+	if chart.BianGua != 0 {
+		t.Errorf("BianGua = %d, want 0 (no changing lines)", chart.BianGua)
+	}
+	for i := 0; i < 6; i++ {
+		if chart.Lines[i].LiuQin.String() == "?" {
+			t.Errorf("line %d: liu_qin unset", i+1)
+		}
+	}
+}
+
+func TestComputeChart_AllLaoYinKunWeiDi(t *testing.T) {
+	st := tianwen.SolarTime(time.Date(2000, 1, 1, 12, 0, 0, 0, time.FixedZone("CST", 8*3600)))
+	chart := ComputeChart(st, YongShiYao, [6]int{6, 6, 6, 6, 6, 6})
+
+	if chart.Name != "坤为地" {
+		t.Errorf("Name = %q, want 坤为地 (all LaoYin 6)", chart.Name)
+	}
+	if len(chart.DongYao) != 6 {
+		t.Errorf("dong_yao = %v, want [1,2,3,4,5,6]", chart.DongYao)
+	}
+	if chart.BenGua == chart.BianGua {
+		t.Error("bianGua should differ from benGua (all lines changing)")
+	}
+}
+
+func TestComputeChart_OneChangingLine(t *testing.T) {
+	st := tianwen.SolarTime(time.Date(2000, 6, 15, 12, 0, 0, 0, time.FixedZone("CST", 8*3600)))
+	chart := ComputeChart(st, YongGuanGui, [6]int{7, 6, 7, 7, 7, 7})
+
+	if len(chart.DongYao) != 1 || chart.DongYao[0] != 2 {
+		t.Errorf("dong_yao = %v, want [2]", chart.DongYao)
+	}
+	if chart.BenGua == chart.BianGua {
+		t.Error("bianGua should differ from benGua")
+	}
+}
+
+func TestComputeChart_YongShenAnalysis(t *testing.T) {
+	st := tianwen.SolarTime(time.Date(2000, 1, 1, 12, 0, 0, 0, time.FixedZone("CST", 8*3600)))
+
+	// 乾为天: 官鬼 at line 4 (世=6)
+	chart := ComputeChart(st, YongGuanGui, [6]int{7, 7, 7, 7, 7, 7})
+	if chart.YongShen.Position != 4 {
+		t.Errorf("yong_shen position = %d, want 4 (官鬼 on 乾为天 line 4)", chart.YongShen.Position)
+	}
+	if chart.YongShen.FuShen != nil {
+		t.Error("FuShen should be nil when yong_shen is on a main line")
+	}
+	if chart.YongShen.Type != YongGuanGui {
+		t.Errorf("yong_shen type = %s, want 官鬼", chart.YongShen.Type.String())
+	}
+}
+
+func TestComputeChart_FullAnalysis(t *testing.T) {
+	st := tianwen.SolarTime(time.Date(2000, 6, 15, 12, 0, 0, 0, time.FixedZone("CST", 8*3600)))
+	chart := ComputeChart(st, YongFumu, [6]int{9, 8, 7, 6, 7, 8})
+
+	for i := 0; i < 6; i++ {
+		l := chart.Lines[i]
+		if l.Position != i+1 {
+			t.Errorf("line %d: position = %d", i+1, l.Position)
+		}
+		if l.Gan.String() == "" {
+			t.Errorf("line %d: gan empty", i+1)
+		}
+		if l.Zhi.String() == "" {
+			t.Errorf("line %d: zhi empty", i+1)
+		}
+		if l.LiuQin.String() == "?" {
+			t.Errorf("line %d: liu_qin = ?", i+1)
+		}
+	}
+	for i := 0; i < 6; i++ {
+		if chart.WangShuai[i].String() == "" {
+			t.Errorf("line %d: wang_shuai empty", i+1)
+		}
+		if chart.DayRelations[i].Relation == "" {
+			t.Errorf("line %d: day_relation empty", i+1)
+		}
+	}
+	if chart.YingQi.Assessment == "" {
+		t.Error("ying_qi.assessment empty")
 	}
 }

@@ -84,7 +84,6 @@ func devFileServer(webDir string, next http.Handler) http.Handler {
 		if fi, err := os.Stat(p); err == nil && !fi.IsDir() {
 			fs.ServeHTTP(w, r)
 		} else if fi, err := os.Stat(p + ".html"); err == nil && !fi.IsDir() {
-			_ = fi
 			r2 := r.Clone(r.Context())
 			r2.URL.Path = r.URL.Path + ".html"
 			fs.ServeHTTP(w, r2)

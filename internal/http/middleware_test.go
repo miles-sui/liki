@@ -74,8 +74,8 @@ func TestCORSMiddleware_NoOrigin(t *testing.T) {
 	w := httptest.NewRecorder()
 	handler.ServeHTTP(w, r)
 
-	if got := w.Header().Get("Access-Control-Allow-Origin"); got != "https://liki.hk" {
-		t.Errorf("Allow-Origin without Origin header = %s, want https://liki.hk", got)
+	if got := w.Header().Get("Access-Control-Allow-Origin"); got != "" {
+		t.Errorf("Allow-Origin without Origin header = %s, want empty (same-origin request)", got)
 	}
 }
 
@@ -89,8 +89,8 @@ func TestCORSMiddleware_UnknownOrigin(t *testing.T) {
 	w := httptest.NewRecorder()
 	handler.ServeHTTP(w, r)
 
-	if got := w.Header().Get("Access-Control-Allow-Origin"); got != "https://liki.hk" {
-		t.Errorf("Allow-Origin for unknown origin = %s, want https://liki.hk", got)
+	if got := w.Header().Get("Access-Control-Allow-Origin"); got != "" {
+		t.Errorf("Allow-Origin for unknown origin = %s, want empty (cross-origin rejected)", got)
 	}
 }
 
@@ -100,6 +100,7 @@ func TestCORSMiddleware_OPTIONS(t *testing.T) {
 	}))
 
 	r := httptest.NewRequest("OPTIONS", "/", nil)
+	r.Header.Set("Origin", "https://liki.hk")
 	w := httptest.NewRecorder()
 	handler.ServeHTTP(w, r)
 

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"testing"
 
 	"liki/internal/engine/ganzhi"
@@ -239,7 +240,7 @@ func TestHandler_QimenKindDefault(t *testing.T) {
 
 func TestHandler_LiuyaoYongShenDefault(t *testing.T) {
 	r := NewRPCRegistry()
-	params := json.RawMessage(fmt.Sprintf(`{"birth":%s}`, btOK))
+	params := json.RawMessage(fmt.Sprintf(`{"birth":%s,"yaos":[7,7,7,7,7,7]}`, btOK))
 	result, err := r.Execute(context.Background(), "liuyao.chart", params)
 	if err != nil {
 		t.Fatalf("liuyao.chart (default yong_shen): %v", err)
@@ -475,8 +476,8 @@ func TestOpenRPCDocument(t *testing.T) {
 	if !ok {
 		t.Fatal("missing methods array")
 	}
-	if len(methods) != 30 {
-		t.Errorf("method count = %d, want 30 (29 + rpc.discover)", len(methods))
+	if len(methods) != 32 {
+		t.Errorf("method count = %d, want 32 (31 + rpc.discover)", len(methods))
 	}
 }
 
@@ -492,5 +493,81 @@ func TestWrapResult(t *testing.T) {
 	}
 	if !hasKey(result, "data") {
 		t.Error("missing data field")
+	}
+}
+
+// ── liuyao.qigua ──
+
+func TestHandler_LiuyaoQigua(t *testing.T) {
+	r := NewRPCRegistry()
+	result, err := r.Execute(context.Background(), "liuyao.qigua", json.RawMessage(`{}`))
+	if err != nil {
+		t.Fatalf("liuyao.qigua: %v", err)
+	}
+	if getStr(result, "_product") != "liuyao_qigua" {
+		t.Errorf("_product = %q, want liuyao_qigua", getStr(result, "_product"))
+	}
+	// Check yaos and dong_yao exist.
+	var env struct {
+		Data struct {
+			Yaos    [6]int `json:"yaos"`
+			DongYao []int  `json:"dong_yao"`
+		} `json:"data"`
+	}
+	if err := json.Unmarshal(result, &env); err != nil {
+		t.Fatal(err)
+	}
+	for i, y := range env.Data.Yaos {
+		if y < 6 || y > 9 {
+			t.Errorf("yaos[%d] = %d, want [6,9]", i, y)
+		}
+	}
+	for _, d := range env.Data.DongYao {
+		if d < 1 || d > 6 {
+			t.Errorf("dong_yao contains %d, want [1,6]", d)
+		}
+	}
+}
+
+// ── liuyao.chart — yaos required ──
+
+func TestHandler_LiuyaoChart_MissingYaos(t *testing.T) {
+	r := NewRPCRegistry()
+	params := json.RawMessage(fmt.Sprintf(`{"birth":%s}`, btOK))
+	_, err := r.Execute(context.Background(), "liuyao.chart", params)
+	if err == nil {
+		t.Fatal("expected error for missing yaos")
+	}
+	if !strings.Contains(err.Error(), "yaos is required") {
+		t.Errorf("error = %q, want 'yaos is required'", err.Error())
+	}
+}
+
+// ── time.now ──
+
+func TestHandler_TimeNow(t *testing.T) {
+	r := NewRPCRegistry()
+	result, err := r.Execute(context.Background(), "time.now", json.RawMessage(`{}`))
+	if err != nil {
+		t.Fatalf("time.now: %v", err)
+	}
+	if getStr(result, "_product") != "time_now" {
+		t.Errorf("_product = %q, want time_now", getStr(result, "_product"))
+	}
+	// Check CST contains "+08:00" or "CST"
+	var env struct {
+		Data struct {
+			UTC string `json:"utc"`
+			CST string `json:"cst"`
+		} `json:"data"`
+	}
+	if err := json.Unmarshal(result, &env); err != nil {
+		t.Fatal(err)
+	}
+	if env.Data.UTC == "" {
+		t.Error("utc is empty")
+	}
+	if env.Data.CST == "" {
+		t.Error("cst is empty")
 	}
 }

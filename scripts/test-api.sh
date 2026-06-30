@@ -407,14 +407,21 @@ check_rpc_err "xuankong.chart (missing mountains)" "-32000"
 echo ""
 echo "${BOLD}── LiuYao ──${NC}"
 
-rpc liuyao.chart "{\"birth\":$BT}"
+rpc liuyao.qigua '{}'
+check_rpc_ok "liuyao.qigua"
+
+# Extract yaos from qigua result for use in chart
+YAOS=$(json_val "$RPC_BODY" '.result.data.yaos')
+YAOS_JSON=$(echo "$YAOS" | jq -c '.')
+
+rpc liuyao.chart "{\"birth\":$BT,\"yaos\":$YAOS_JSON}"
 check_rpc_ok "liuyao.chart"
 
-rpc liuyao.chart "{\"birth\":$BT,\"yong_shen\":\"妻财\",\"fixed\":[6,7,8,9,6,7]}"
+rpc liuyao.chart "{\"birth\":$BT,\"yaos\":[6,7,8,9,6,7],\"yong_shen\":\"妻财\"}"
 check_rpc_ok "liuyao.chart (with yong_shen)"
 
-rpc liuyao.chart "{\"birth\":$BT,\"fixed\":[1,2,3,4,5,6]}"
-check_rpc_ok "liuyao.chart (custom fixed, no validation)"
+rpc liuyao.chart "{\"birth\":$BT,\"yaos\":[7,8,7,6,9,7]}"
+check_rpc_ok "liuyao.chart (mixed yaos)"
 
 # ============================================================================
 # Huangli (4 methods)
@@ -443,25 +450,35 @@ rpc huangli.bond.date "$HL_BAD_BIRTH"
 check_rpc_err "huangli.bond.date (empty birth)" "-32000"
 
 # ============================================================================
-# Infra (1 method)
+# Infra (2 methods)
 # ============================================================================
 echo ""
 echo "${BOLD}── Infra ──${NC}"
 
-# city depends on external Nominatim API — retry with longer waits.
+rpc time.now '{}'
+check_rpc_ok "time.now"
+b=$(body)
+check "  has utc" "false" "$(json_val "$b" '.result.data.utc' | grep -q . && echo false || echo true)"
+check "  has cst" "false" "$(json_val "$b" '.result.data.cst' | grep -q . && echo false || echo true)"
+
+# city depends on external Nominatim API — skip if SKIP_EXTERNAL is set.
 CITY_OK=false
-for _ in 1 2 3; do
-  rpc city '{"city":"Beijing"}'
-  if [ "$(json_val "$RPC_BODY" '.error != null')" = "false" ]; then
-    CITY_OK=true; break
-  fi
-  sleep 5
-done
-if $CITY_OK; then
-  echo -e "  ${GREEN}\xe2\x9c\x93${NC} city"
-  PASS=$((PASS + 1))
+if [ "${SKIP_EXTERNAL:-}" = "1" ]; then
+  echo -e "  ${BOLD}↷${NC} city (skipped: SKIP_EXTERNAL=1)"
 else
-  echo -e "  ${BOLD}↷${NC} city (external API unavailable)"
+  for _ in 1 2; do
+    rpc city '{"city":"Beijing"}'
+    if [ "$(json_val "$RPC_BODY" '.error != null')" = "false" ]; then
+      CITY_OK=true; break
+    fi
+    sleep 3
+  done
+  if $CITY_OK; then
+    echo -e "  ${GREEN}\xe2\x9c\x93${NC} city"
+    PASS=$((PASS + 1))
+  else
+    echo -e "  ${BOLD}↷${NC} city (external API unavailable)"
+  fi
 fi
 
 # ============================================================================

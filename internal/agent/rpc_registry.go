@@ -205,12 +205,18 @@ func NewRPCRegistry() *RPCRegistry {
 		Result:  envelopeSchema(`{"type":"object","properties":{"yun":{"type":"object"},"palaces":{"type":"array"},"wang_shan":{"type":"boolean"}},"required":["yun","palaces","wang_shan"]}`),
 	})
 
-	// ── liuyao (1) ────────────────────────────────────────────
+	// ── liuyao (2) ────────────────────────────────────────────
 	r.mustRegister(RPCMethod{
-		Name: "liuyao.chart", Description: "六爻起卦。返回六爻卦象、六亲、六兽、用神分析、断卦。",
-		Params: mustSchema(`{"type":"object","properties":{"birth":` + schemaTimePoint + `,"yong_shen":{"type":"string","description":"用神六亲（如 妻财/官鬼/父母/兄弟/子孙），可选"},"fixed":{"type":"array","items":{"type":"integer"},"description":"固定爻位（6个值0或1），可选"}},"required":["birth"]}`),
+		Name: "liuyao.qigua", Description: "六爻起卦。摇卦（三枚铜钱起六次），返回原始爻值和动爻位置。",
+		Params: mustSchema(`{"type":"object","properties":{},"required":[]}`),
+		Handler: computeLiuyaoQiguaHandler,
+		Result:  envelopeSchema(`{"type":"object","properties":{"yaos":{"type":"array","items":{"type":"integer"}, "description":"六爻值 6-9"},"dong_yao":{"type":"array","items":{"type":"integer"},"description":"动爻位置 1-6"}},"required":["yaos","dong_yao"]}`),
+	})
+	r.mustRegister(RPCMethod{
+		Name: "liuyao.chart", Description: "六爻装卦。传入起卦结果和问事时辰，装卦并分析：纳甲、六亲、六兽、用神、旺衰、应期。",
+		Params: mustSchema(`{"type":"object","properties":{"birth":` + schemaTimePoint + `,"yong_shen":{"type":"string","description":"用神六亲（如 妻财/官鬼/父母/兄弟/子孙/世爻），可选，默认世爻"},"yaos":{"type":"array","items":{"type":"integer"},"minItems":6,"maxItems":6,"description":"六爻值（6-9），必填，先调 liuyao.qigua 获取"}},"required":["birth","yaos"]}`),
 		Handler: computeLiuyaoHandler,
-		Result:  envelopeSchema(`{"type":"object","properties":{"name":{"type":"string"},"ben_gua":{"type":"integer"},"lines":{"type":"array"}},"required":["name","ben_gua","lines"]}`),
+		Result:  envelopeSchema(`{"type":"object","properties":{"name":{"type":"string"},"ben_gua":{"type":"integer"},"lines":{"type":"array"},"yong_shen":{"type":"object"},"wang_shuai":{"type":"array"},"ying_qi":{"type":"object"}},"required":["name","ben_gua","lines","yong_shen"]}`),
 	})
 
 	// ── huangli (4) ───────────────────────────────────────────
@@ -239,7 +245,13 @@ func NewRPCRegistry() *RPCRegistry {
 		Result:  envelopeSchema(`{"type":"object","properties":{"month":{"type":"string"},"days":{"type":"array"}},"required":["month","days"]}`),
 	})
 
-	// ── infra (1) ─────────────────────────────────────────────
+	// ── infra (2) ─────────────────────────────────────────────
+	r.mustRegister(RPCMethod{
+		Name: "time.now", Description: "获取服务端当前时间。返回 UTC、本地、北京时间，用于 AI agent 获取准确时间避免幻觉。",
+		Params: mustSchema(`{"type":"object","properties":{},"required":[]}`),
+		Handler: nowTimeHandler,
+		Result:  mustSchema(`{"type":"object","properties":{"utc":{"type":"string"},"local":{"type":"string"},"cst":{"type":"string"}},"required":["utc","cst"]}`),
+	})
 	r.mustRegister(RPCMethod{
 		Name: "city", Description: "根据城市名查询经纬度。基于 Nominatim 服务。",
 		Params: mustSchema(`{"type":"object","properties":{"city":{"type":"string","description":"城市名称"}},"required":["city"]}`),

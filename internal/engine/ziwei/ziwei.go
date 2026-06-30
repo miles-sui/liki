@@ -123,7 +123,7 @@ type palace struct {
 	Zhi          Zhi         `json:"zhi"`
 	IsBodyPalace bool        `json:"is_body_palace"`
 	Stars        []starInfo  `json:"stars"`
-	ZiweiStar    *starIndex  `json:"ziwei_star,omitempty"` // TODO: set when applicable
+	ZiweiStar    *starIndex  `json:"ziwei_star,omitempty"`
 }
 
 // starInfo is one star entry in a palace.

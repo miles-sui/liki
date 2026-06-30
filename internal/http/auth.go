@@ -1,6 +1,9 @@
 package http
 
 import (
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"log/slog"
@@ -174,4 +177,20 @@ func jwtAuth(r *http.Request) (email, orderID string, ok bool) {
 	email, _ = claims["email"].(string)
 	orderID, _ = claims["order_id"].(string)
 	return email, orderID, email != "" && orderID != ""
+}
+
+// returnToken computes an HMAC-SHA256 token for payment return URL verification.
+// This prevents forged ?status=succeeded callbacks from marking orders as paid.
+func ReturnToken(orderID string) string {
+	mac := hmac.New(sha256.New, jwtSecret())
+	mac.Write([]byte("return:" + orderID))
+	return hex.EncodeToString(mac.Sum(nil))
+}
+
+// verifyReturnToken checks whether the provided token matches the expected one.
+func verifyReturnToken(orderID, token string) bool {
+	if token == "" {
+		return false
+	}
+	return hmac.Equal([]byte(ReturnToken(orderID)), []byte(token))
 }

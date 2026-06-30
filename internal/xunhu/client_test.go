@@ -118,7 +118,7 @@ func TestCreateCheckout_Success(t *testing.T) {
 	defer srv.Close()
 
 	c := newTestClient(srv)
-	result, err := c.CreateCheckout(context.Background(), product.ProductNaming, 990, "order-1", "user@test.com", "https://liki.hk/return")
+	result, err := c.CreateCheckout(context.Background(), product.ProductNaming, 990, "order-1", "user@test.com", "https://liki.hk/return", "")
 	if err != nil {
 		t.Fatalf("CreateCheckout: %v", err)
 	}
@@ -144,7 +144,7 @@ func TestCreateCheckout_APIError(t *testing.T) {
 	defer srv.Close()
 
 	c := newTestClient(srv)
-	_, err := c.CreateCheckout(context.Background(), product.ProductNaming, 990, "order-1", "", "https://liki.hk/return")
+	_, err := c.CreateCheckout(context.Background(), product.ProductNaming, 990, "order-1", "", "https://liki.hk/return", "")
 	if err == nil {
 		t.Fatal("expected error for API error response")
 	}
@@ -157,7 +157,7 @@ func TestCreateCheckout_HTTPError(t *testing.T) {
 	defer srv.Close()
 
 	c := newTestClient(srv)
-	_, err := c.CreateCheckout(context.Background(), product.ProductNaming, 990, "order-1", "", "https://liki.hk/return")
+	_, err := c.CreateCheckout(context.Background(), product.ProductNaming, 990, "order-1", "", "https://liki.hk/return", "")
 	if err == nil {
 		t.Fatal("expected error for 500 response")
 	}
@@ -173,7 +173,7 @@ func TestCreateCheckout_Timeout(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
 	defer cancel()
 
-	_, err := c.CreateCheckout(ctx, product.ProductNaming, 990, "order-1", "", "https://liki.hk/return")
+	_, err := c.CreateCheckout(ctx, product.ProductNaming, 990, "order-1", "", "https://liki.hk/return", "")
 	if err == nil {
 		t.Fatal("expected timeout error")
 	}
@@ -389,7 +389,7 @@ func TestCreateCheckout_ProductPricing(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := c.CreateCheckout(context.Background(), tt.prod, tt.amount, "order-1", "", "https://liki.hk/return")
+			result, err := c.CreateCheckout(context.Background(), tt.prod, tt.amount, "order-1", "", "https://liki.hk/return", "")
 			if err != nil {
 				t.Fatalf("CreateCheckout(%s): %v", tt.name, err)
 			}
@@ -434,7 +434,7 @@ func TestCreateCheckout_ParamFormat(t *testing.T) {
 	defer srv.Close()
 
 	c := newTestClient(srv)
-	_, err := c.CreateCheckout(context.Background(), product.ProductNaming, 990, "order-1", "", "https://liki.hk/return")
+	_, err := c.CreateCheckout(context.Background(), product.ProductNaming, 990, "order-1", "", "https://liki.hk/return", "")
 	if err != nil {
 		t.Fatalf("CreateCheckout: %v", err)
 	}
@@ -468,7 +468,7 @@ func TestCreateCheckout_AmountFormat(t *testing.T) {
 			defer srv.Close()
 
 			c := newTestClient(srv)
-			_, err := c.CreateCheckout(context.Background(), product.ProductNaming, tt.amount, "order-1", "", "https://liki.hk/return")
+			_, err := c.CreateCheckout(context.Background(), product.ProductNaming, tt.amount, "order-1", "", "https://liki.hk/return", "")
 			if err != nil {
 				t.Fatalf("CreateCheckout: %v", err)
 			}
@@ -525,7 +525,7 @@ func TestCreateCheckout_HashPresent(t *testing.T) {
 	defer srv.Close()
 
 	c := newTestClient(srv)
-	_, err := c.CreateCheckout(context.Background(), product.ProductNaming, 990, "order-1", "", "https://liki.hk/return")
+	_, err := c.CreateCheckout(context.Background(), product.ProductNaming, 990, "order-1", "", "https://liki.hk/return", "")
 	if err != nil {
 		t.Fatalf("CreateCheckout: %v", err)
 	}

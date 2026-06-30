@@ -1,66 +1,66 @@
 {
-  "name": "坤为地",
-  "ben_gua": 56,
-  "palace": "坤",
-  "palace_wuxing": "土",
+  "name": "乾为天",
+  "ben_gua": 0,
+  "palace": "乾",
+  "palace_wuxing": "金",
   "lines": [
     {
       "position": 1,
-      "type": 0,
-      "gan": "乙",
-      "zhi": "未",
-      "wuxing": "土",
-      "liu_qin": 1,
+      "type": 7,
+      "gan": "甲",
+      "zhi": "子",
+      "wuxing": "水",
+      "liu_qin": 4,
       "shi_ying": "",
       "liu_shou": 3
     },
     {
       "position": 2,
-      "type": 1,
-      "gan": "乙",
-      "zhi": "巳",
-      "wuxing": "火",
-      "liu_qin": 0,
+      "type": 7,
+      "gan": "甲",
+      "zhi": "寅",
+      "wuxing": "木",
+      "liu_qin": 3,
       "shi_ying": "",
       "liu_shou": 4
     },
     {
       "position": 3,
-      "type": 0,
-      "gan": "乙",
-      "zhi": "卯",
-      "wuxing": "木",
-      "liu_qin": 2,
+      "type": 7,
+      "gan": "甲",
+      "zhi": "辰",
+      "wuxing": "土",
+      "liu_qin": 0,
       "shi_ying": "应",
       "liu_shou": 5
     },
     {
       "position": 4,
-      "type": 1,
-      "gan": "乙",
-      "zhi": "丑",
-      "wuxing": "土",
-      "liu_qin": 1,
+      "type": 7,
+      "gan": "甲",
+      "zhi": "午",
+      "wuxing": "火",
+      "liu_qin": 2,
       "shi_ying": "",
       "liu_shou": 0
     },
     {
       "position": 5,
-      "type": 0,
-      "gan": "乙",
-      "zhi": "亥",
-      "wuxing": "水",
-      "liu_qin": 3,
+      "type": 7,
+      "gan": "甲",
+      "zhi": "申",
+      "wuxing": "金",
+      "liu_qin": 1,
       "shi_ying": "",
       "liu_shou": 1
     },
     {
       "position": 6,
-      "type": 0,
-      "gan": "乙",
-      "zhi": "酉",
-      "wuxing": "金",
-      "liu_qin": 4,
+      "type": 7,
+      "gan": "甲",
+      "zhi": "戌",
+      "wuxing": "土",
+      "liu_qin": 0,
       "shi_ying": "世",
       "liu_shou": 2
     }
@@ -133,24 +133,20 @@
   "dong_yao": null,
   "yong_shen": {
     "type": 2,
-    "position": 3
+    "position": 4
   },
   "wang_shuai": [
-    4,
-    1,
+    2,
     0,
     4,
-    2,
-    3
+    1,
+    3,
+    4
   ],
   "day_relations": [
     {
-      "relation": "克",
-      "strength": "衰"
-    },
-    {
-      "relation": "生",
-      "strength": "旺"
+      "relation": "平",
+      "strength": "平"
     },
     {
       "relation": "扶",
@@ -161,18 +157,22 @@
       "strength": "衰"
     },
     {
+      "relation": "生",
+      "strength": "旺"
+    },
+    {
       "relation": "平",
       "strength": "平"
     },
     {
-      "relation": "冲",
-      "strength": "衰"
+      "relation": "合",
+      "strength": "旺"
     }
   ],
   "ying_qi": {
     "yong_shen": "官鬼",
     "dong_yao_pos": 0,
     "ying_time": "",
-    "assessment": "官鬼在三爻，月建旺，日建扶(旺)，静爻待冲。冲酉之时为应"
+    "assessment": "官鬼在四爻，月建相，日建生(旺)，静爻待冲。冲子之时为应"
   }
 }

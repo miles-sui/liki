@@ -98,7 +98,7 @@ func handleCheckout(svc *payment.Service, a *Analytics) http.HandlerFunc {
 			}
 		}
 
-		result, err := svc.CreateCheckout(r.Context(), provider, req.OrderID, req.Email)
+		result, err := svc.CreateCheckout(r.Context(), provider, req.OrderID, req.Email, ReturnToken(req.OrderID))
 		if err != nil {
 			if errors.Is(err, payment.ErrOrderNotFound) || errors.Is(err, payment.ErrUnknownProvider) {
 				respondError(w, http.StatusNotFound, "not_found", i18n.T(i18n.DetectLang(r), "err.order_not_found"))
@@ -165,7 +165,9 @@ func handleRetryOrder(svc *payment.Service) http.HandlerFunc {
 func handlePaymentReturn(store *payment.Store) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		orderID := r.PathValue("id")
-		if orderID == "" || r.URL.Query().Get("status") != "succeeded" {
+		token := r.URL.Query().Get("t")
+		if orderID == "" || r.URL.Query().Get("status") != "succeeded" || !verifyReturnToken(orderID, token) {
+			slog.Warn("payment: invalid return callback", "orderID", orderID, "has_token", token != "")
 			http.Redirect(w, r, "/", http.StatusFound)
 			return
 		}

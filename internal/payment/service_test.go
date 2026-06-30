@@ -23,7 +23,7 @@ type mockPaymentProvider struct {
 	lastEmailSent string // email passed to CreateCheckout
 }
 
-func (m *mockPaymentProvider) CreateCheckout(_ context.Context, _ product.Product, _ int, _, email, _ string) (*CheckoutResult, error) {
+func (m *mockPaymentProvider) CreateCheckout(_ context.Context, _ product.Product, _ int, _, email, _, _ string) (*CheckoutResult, error) {
 	m.lastEmailSent = email
 	return m.createResult, m.createErr
 }
@@ -93,7 +93,7 @@ func newTestSvc(t *testing.T) (*Service, *Store, *mockPaymentProvider, *mockEmai
 
 func TestCreateCheckout_Success(t *testing.T) {
 	svc, _, _, _ := newTestSvc(t)
-	result, err := svc.CreateCheckout(context.Background(), "dodo", "order-1", "")
+	result, err := svc.CreateCheckout(context.Background(), "dodo", "order-1", "", "")
 	if err != nil {
 		t.Fatalf("CreateCheckout: %v", err)
 	}
@@ -104,7 +104,7 @@ func TestCreateCheckout_Success(t *testing.T) {
 
 func TestCreateCheckout_Xunhu(t *testing.T) {
 	svc, _, _, _ := newTestSvc(t)
-	result, err := svc.CreateCheckout(context.Background(), "xunhu", "order-1", "")
+	result, err := svc.CreateCheckout(context.Background(), "xunhu", "order-1", "", "")
 	if err != nil {
 		t.Fatalf("CreateCheckout xunhu: %v", err)
 	}
@@ -118,7 +118,7 @@ func TestCreateCheckout_Xunhu(t *testing.T) {
 
 func TestCreateCheckout_NotFound(t *testing.T) {
 	svc, _, _, _ := newTestSvc(t)
-	_, err := svc.CreateCheckout(context.Background(), "dodo", "nonexistent", "")
+	_, err := svc.CreateCheckout(context.Background(), "dodo", "nonexistent", "", "")
 	if err == nil {
 		t.Fatal("expected error for missing order")
 	}
@@ -129,7 +129,7 @@ func TestCreateCheckout_NotFound(t *testing.T) {
 
 func TestCreateCheckout_UnknownProvider(t *testing.T) {
 	svc, _, _, _ := newTestSvc(t)
-	_, err := svc.CreateCheckout(context.Background(), "unknown", "order-1", "")
+	_, err := svc.CreateCheckout(context.Background(), "unknown", "order-1", "", "")
 	if err == nil {
 		t.Fatal("expected error for unknown provider")
 	}
@@ -138,7 +138,7 @@ func TestCreateCheckout_UnknownProvider(t *testing.T) {
 func TestCreateCheckout_ProviderError(t *testing.T) {
 	svc, _, dodoMock, _ := newTestSvc(t)
 	dodoMock.createErr = errors.New("api error")
-	_, err := svc.CreateCheckout(context.Background(), "dodo", "order-1", "")
+	_, err := svc.CreateCheckout(context.Background(), "dodo", "order-1", "", "")
 	if err == nil {
 		t.Fatal("expected error from provider")
 	}
@@ -146,7 +146,7 @@ func TestCreateCheckout_ProviderError(t *testing.T) {
 
 func TestCreateCheckout_WithEmail(t *testing.T) {
 	svc, store, _, _ := newTestSvc(t)
-	_, err := svc.CreateCheckout(context.Background(), "dodo", "order-1", "user@example.com")
+	_, err := svc.CreateCheckout(context.Background(), "dodo", "order-1", "user@example.com", "")
 	if err != nil {
 		t.Fatalf("CreateCheckout: %v", err)
 	}
@@ -165,7 +165,7 @@ func TestCreateCheckout_EmailFallback(t *testing.T) {
 		t.Fatalf("UpdateEmail: %v", err)
 	}
 
-	result, err := svc.CreateCheckout(context.Background(), "dodo", "order-1", "")
+	result, err := svc.CreateCheckout(context.Background(), "dodo", "order-1", "", "")
 	if err != nil {
 		t.Fatalf("CreateCheckout: %v", err)
 	}

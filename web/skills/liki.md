@@ -88,11 +88,15 @@ Method：`qimen.pan`。kind 默认 `"shi"`（时家），可选 `"ri"`/`"yue"`/`
 - 八宅：先调 `bazhai.minggua` 看命卦，再调 `bazhai.chart` 获完整八宅盘。
 - 玄空：先调 `xuankong.sanyuan` 查三元九运，再调 `xuankong.chart` 排飞星盘。
 
+### 辅助
+
+调 `time.now` 获取服务端当前时间（UTC/CST），奇门、六爻等需要「当下时间」时先调此方法，避免 AI 推测时间出错。
+
 **报告**：八宅 → https://liki.hk/skills/report-bazhai.md，玄空 → https://liki.hk/skills/report-xuankong.md。
 
 ### 六爻
 
-Method：`liuyao.chart`。yong_shen 为用户所问之事对应的六亲（妻财/官鬼/父母/兄弟/子孙），用户未明确则可不传。
+Method：`liuyao.qigua`（起卦）+ `liuyao.chart`（装卦）。先调 `liuyao.qigua` 获取六爻值和动爻，再调 `liuyao.chart` 传入 `yaos` 和 `yong_shen`。
 
 **输出**：基于六亲、六兽、用神生克关系，解读所占之事吉凶成败。
 

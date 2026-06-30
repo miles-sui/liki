@@ -44,7 +44,7 @@ func New(appID, appSecret string) *Client {
 }
 
 // CreateCheckout creates a XunhuPay checkout session.
-func (c *Client) CreateCheckout(ctx context.Context, product product.Product, amount int, orderID, email, returnURL string) (*payment.CheckoutResult, error) {
+func (c *Client) CreateCheckout(ctx context.Context, product product.Product, amount int, orderID, email, returnURL, returnToken string) (*payment.CheckoutResult, error) {
 	webhookURL := deriveWebhookURL(returnURL)
 
 	nonce := make([]byte, 16)
@@ -165,6 +165,12 @@ func (c *Client) VerifyWebhook(rawBody []byte, headers http.Header) (*payment.We
 }
 
 // sign generates an MD5 signature for XunhuPay parameters.
+// NOTE: MD5 is a requirement of the XunhuPay gateway protocol — we cannot
+// choose a stronger hash on our end. To mitigate collision risks, we:
+//   - use subtle.ConstantTimeCompare for signature verification
+//   - validate payment status via webhook (server-to-server, signed)
+//   - the return callback is additionally protected by an HMAC-SHA256 token
+// Should XunhuPay ever support HMAC-SHA256 or SHA-256, upgrade immediately.
 func sign(params map[string]string, secret string) string {
 	keys := make([]string, 0, len(params))
 	for k := range params {

@@ -219,9 +219,9 @@ func TestRPC_DiscoverContainsAllMethods(t *testing.T) {
 		"qiming.wuge", "qiming.compose", "qiming.detail", "qiming.evaluate",
 		"bazhai.chart", "bazhai.minggua",
 		"xuankong.sanyuan", "xuankong.chart",
-		"liuyao.chart",
+		"liuyao.qigua", "liuyao.chart",
 		"huangli.date", "huangli.month", "huangli.bond.date", "huangli.bond.month",
-		"city",
+		"city", "time.now",
 	}
 	for _, name := range expected {
 		if !names[name] {
