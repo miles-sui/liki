@@ -95,15 +95,26 @@ test-golden:
 update-golden:
 	UPDATE_GOLDEN=1 go test -count=1 -run TestGolden ./internal/engine/...
 
-# ── IndexNow ──
-# Submit all locale homepages to Bing for immediate indexing.
-# Docs: https://www.bing.com/indexnow
-INDEXNOW_KEY := e2af3ac5940b47a78a12e8018331ac6e
-INDEXNOW_HOST := liki.hk
-
 indexnow:
 	@curl -s -X POST https://www.bing.com/IndexNow \
 		-H "Content-Type: application/json" \
 		-d '{"host":"$(INDEXNOW_HOST)","key":"$(INDEXNOW_KEY)","keyLocation":"https://$(INDEXNOW_HOST)/$(INDEXNOW_KEY).txt","urlList":["https://$(INDEXNOW_HOST)/en/","https://$(INDEXNOW_HOST)/zh-Hans/","https://$(INDEXNOW_HOST)/zh-Hant/"]}'
 	@echo ""
 	@echo "IndexNow submitted for /en/ /zh-Hans/ /zh-Hant/"
+
+# ── SEO Push ──
+# Submit all indexed URLs to Bing (IndexNow) and Baidu (URL push).
+BAIDU_TOKEN := ymj3f4TSxDvgc5kT
+INDEXNOW_KEY := e2af3ac5940b47a78a12e8018331ac6e
+
+seo-push:
+	@echo "==> Bing IndexNow"
+	@curl -s -X POST https://www.bing.com/IndexNow \
+		-H "Content-Type: application/json" \
+		-d '{"host":"liki.hk","key":"$(INDEXNOW_KEY)","keyLocation":"https://liki.hk/$(INDEXNOW_KEY).txt","urlList":["https://liki.hk/en/","https://liki.hk/zh-Hans/","https://liki.hk/zh-Hant/"]}'
+	@echo ""
+	@echo "==> Baidu ziyuan"
+	@curl -s -H 'Content-Type:text/plain' --data-binary @urls.txt \
+		"http://data.zz.baidu.com/urls?site=https://liki.hk&token=$(BAIDU_TOKEN)"
+	@echo ""
+	@echo "SEO push complete: Bing + Baidu"
