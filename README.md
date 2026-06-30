@@ -117,15 +117,18 @@ make test-deploy URL=http://localhost:8080  # 部署后四层测试
 ## 项目结构
 
 ```
-cmd/liki/         Entry point
+cmd/liki/           Entry point
 internal/
-  agent/            NamingChatAgent (8 tool) + RPCRegistry (29 method)
-  engine/           计算引擎 — 11 个包，纯 Go 计算，无 I/O 依赖
-  llm/              DeepSeek 客户端
-  http/             Handler + 中间件 + 路由 + JWT auth
-  payment/          支付服务 + Store (SQLite)
-data/prompts/       LLM 系统 prompt (内嵌)
-web/skills/         对外 skill + 报告模板
+  agent/              NamingChatAgent (8 tool) + RPCRegistry (29 method)
+  engine/             计算引擎 — 11 个包，纯 Go，无 I/O 依赖
+  http/               Handler + 中间件 + 路由 + JWT
+  llm/                DeepSeek 客户端
+  payment/            支付服务 + Store (SQLite)
+  dodo/ xunhu/        支付渠道
+  email/ i18n/        基础设施
+web/                前端 + i18n + e2e + wiki 静态站点
+scripts/            构建 / 部署 / 测试
+deploy/             Docker + Caddy 配置
 docs/               设计文档
 ```
 
