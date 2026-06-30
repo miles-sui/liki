@@ -9,7 +9,7 @@ import { test, expect } from '../fixtures.js';
 const PAGES = [
   { path: '/zh-Hans/',              marker: '[data-i18n]',      name: 'index (vanilla)',
     checks: [
-      { selector: 'h1.font-brand', text: '灵机 Liki' },
+      { selector: 'span.font-brand', text: 'Liki' },
       { selector: 'main h2:first-of-type', text: '找到你的名字' },
     ] },
   { path: '/zh-Hans/chat.html',     marker: '.chat-shell',     name: 'chat (Vue)',
@@ -26,7 +26,7 @@ const PAGES = [
     ] },
   { path: '/en/',              marker: '[data-i18n]',      name: 'index EN',
     checks: [
-      { selector: 'h1.font-brand', text: 'Liki' },
+      { selector: 'span.font-brand', text: 'Liki' },
       { selector: 'main h2:first-of-type', text: 'Find Your Name' },
     ] },
   { path: '/en/chat.html',     marker: '.chat-shell',     name: 'chat EN',
@@ -39,7 +39,7 @@ const PAGES = [
     ] },
   { path: '/zh-Hant/',              marker: '[data-i18n]',      name: 'index ZH-Hant',
     checks: [
-      { selector: 'h1.font-brand', text: '靈機 Liki' },
+      { selector: 'span.font-brand', text: 'Liki' },
       { selector: 'main h2:first-of-type', text: '找到你的名字' },
     ] },
   { path: '/zh-Hant/chat.html',     marker: '.chat-shell',     name: 'chat ZH-Hant',
