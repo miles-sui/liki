@@ -96,7 +96,7 @@ Content-Type: application/json
 **元数据:** `rpc.discover` — 返回 OpenRPC 1.4.1 文档，含所有 method 的 params/result JSON Schema
 
 
-> Claude Code 用户：`/skills install https://liki.hk/skills/liki.md`
+### 安装
 
 ## 技术栈
 
