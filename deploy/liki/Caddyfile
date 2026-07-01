@@ -1,4 +1,7 @@
 {$DOMAIN:localhost} {
+	# Allow cross-origin access to OG image for social preview cards
+	header /img/og-image.png Cross-Origin-Resource-Policy "cross-origin"
+
 	header {
 		X-Content-Type-Options "nosniff"
 		X-Frame-Options "DENY"
