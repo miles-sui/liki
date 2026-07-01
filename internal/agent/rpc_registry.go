@@ -56,7 +56,7 @@ type RPCRegistry struct {
 
 // NewRPCRegistry creates a registry with all 29 external compute methods.
 func NewRPCRegistry() *RPCRegistry {
-	r := &RPCRegistry{methods: make(map[string]*RPCMethod, 29)}
+	r := &RPCRegistry{methods: make(map[string]*RPCMethod, 31)}
 
 	// ── bazi (8) ──────────────────────────────────────────────
 	r.mustRegister(RPCMethod{
@@ -152,7 +152,7 @@ func NewRPCRegistry() *RPCRegistry {
 		Result:  envelopeSchema(`{"type":"object","properties":{"pan":{"type":"object"},"patterns":{"type":"array"}},"required":["pan","patterns"]}`),
 	})
 
-	// ── qiming (4) ────────────────────────────────────────────
+	// ── qiming (6) ────────────────────────────────────────────
 	r.mustRegister(RPCMethod{
 		Name: "qiming.wuge", Description: "起名五格。返回三才五格组合 + 可用字库。yong_shen 取值 木/火/土/金/水。",
 		Params: mustSchema(`{"type":"object","properties":{"surname":{"type":"string","minLength":1,"maxLength":2,"description":"姓氏"},"yong_shen":{"type":"string","enum":["木","火","土","金","水"],"description":"用神五行"},"xi_shen":{"type":"array","items":{"type":"string","enum":["木","火","土","金","水"]},"description":"喜神五行（可选）"}},"required":["surname","yong_shen"]}`),
@@ -160,8 +160,20 @@ func NewRPCRegistry() *RPCRegistry {
 		Result:  envelopeSchema(`{"type":"object","properties":{"surname":{"type":"string"},"combos":{"type":"array"},"yong_chars":{"type":"object"}},"required":["surname","combos","yong_chars"]}`),
 	})
 	r.mustRegister(RPCMethod{
+		Name: "qiming.sancai", Description: "取三才五格吉组合。仅返回笔画配对，不含字库。",
+		Params: mustSchema(`{"type":"object","properties":{"surname":{"type":"string","minLength":1,"maxLength":2,"description":"姓氏"}},"required":["surname"]}`),
+		Handler: computeNamingSancaiHandler,
+		Result:  envelopeSchema(`{"type":"object","properties":{"combos":{"type":"array","items":{"type":"object","properties":{"stroke1":{"type":"integer"},"stroke2":{"type":"integer"},"san_cai":{"type":"string"},"fortune":{"type":"string"}},"required":["stroke1","stroke2","san_cai","fortune"]}}},"required":["combos"]}`),
+	})
+	r.mustRegister(RPCMethod{
+		Name: "qiming.chars", Description: "按五行取可用起名字。可选笔画范围过滤。",
+		Params: mustSchema(`{"type":"object","properties":{"wuxing":{"type":"string","enum":["木","火","土","金","水"],"description":"五行"},"stroke_min":{"type":"integer","description":"笔画下限（可选）"},"stroke_max":{"type":"integer","description":"笔画上限（可选）"}},"required":["wuxing"]}`),
+		Handler: computeNamingCharsHandler,
+		Result:  envelopeSchema(`{"type":"object","properties":{"chars":{"type":"object","description":"按笔画分组的字列表"}},"required":["chars"]}`),
+	})
+	r.mustRegister(RPCMethod{
 		Name: "qiming.compose", Description: "起名组名。从上一步五格组合中选取 combos 生成候选名字。",
-		Params: mustSchema(`{"type":"object","properties":{"surname":{"type":"string","minLength":1,"maxLength":2,"description":"姓氏"},"combos":{"type":"array","description":"五格组合（从 wuge 返回的 combos 中选取）"},"yong_chars":{"type":"object","description":"用神字库（从 wuge 返回的 yong_chars）"},"xi_chars":{"type":"object","description":"喜神字库（从 wuge 返回的 xi_chars，可选）"}},"required":["surname","combos","yong_chars"]}`),
+		Params: mustSchema(`{"type":"object","properties":{"surname":{"type":"string","minLength":1,"maxLength":2,"description":"姓氏"},"combos":{"type":"array","description":"五格组合（从 sancai 或 wuge 返回的 combos 中选取）"},"yong_chars":{"type":"object","description":"用神字库（从 chars 返回）"},"xi_chars":{"type":"object","description":"喜神字库（从 chars 返回，可选）"}},"required":["surname","combos","yong_chars"]}`),
 		Handler: computeNamingComposeHandler,
 		Result:  envelopeSchema(`{"type":"array","items":{"type":"string"}}`),
 	})
@@ -172,10 +184,10 @@ func NewRPCRegistry() *RPCRegistry {
 		Result: envelopeSchema(`{"type":"array","items":{"type":"object","properties":{"name":{"type":"string"},"characters":{"type":"array"},"wu_ge":{"type":"object"},"san_cai":{"type":"object"},"phonetic":{"type":"object","properties":{"tones":{"type":"string"}},"required":["tones"]}},"required":["name","wu_ge","san_cai","phonetic"]}}`),
 	})
 	r.mustRegister(RPCMethod{
-		Name: "qiming.evaluate", Description: "起名评估。用户自选名字时评估单名。",
-		Params: mustSchema(`{"type":"object","properties":{"surname":{"type":"string","minLength":1,"maxLength":2,"description":"姓氏"},"given_name":{"type":"string","description":"名字"},"yong_shen":{"type":"string","enum":["木","火","土","金","水"],"description":"用神五行"}},"required":["surname","given_name","yong_shen"]}`),
+		Name: "qiming.evaluate", Description: "起名评估。批量评估名字，返回五格三才五行音韵全量判定。传入 yong_shen/xi_shen/ji_shen 时额外返回 wuxing 逐维度判定。",
+		Params: mustSchema(`{"type":"object","properties":{"surname":{"type":"string","minLength":1,"maxLength":2,"description":"姓氏"},"names":{"type":"array","items":{"type":"string"},"description":"候选名字列表"},"yong_shen":{"type":"string","enum":["木","火","土","金","水"],"description":"用神五行（可选）"},"xi_shen":{"type":"array","items":{"type":"string","enum":["木","火","土","金","水"]},"description":"喜神五行（可选）"},"ji_shen":{"type":"array","items":{"type":"string","enum":["木","火","土","金","水"]},"description":"忌神五行（可选）"}},"required":["surname"]}`),
 		Handler: computeNamingEvaluateHandler,
-		Result: envelopeSchema(`{"type":"object","properties":{"surname":{"type":"string"},"given_name":{"type":"string"},"wuxing_match":{"type":"boolean"},"phonetic":{"type":"object","properties":{"tones":{"type":"string"}},"required":["tones"]}},"required":["surname","given_name","wuxing_match","phonetic"]}`),
+		Result: envelopeSchema(`{"type":"array","items":{"type":"object","properties":{"surname":{"type":"string"},"given_name":{"type":"string"},"characters":{"type":"array"},"wu_ge":{"type":"object"},"san_cai":{"type":"object"},"phonetic":{"type":"object","properties":{"tones":{"type":"string"}},"required":["tones"]},"wuxing_match":{"type":"boolean"},"wuxing":{"type":"object","properties":{"yong":{"type":"boolean"},"xi":{"type":"boolean"},"ji":{"type":"boolean"}},"required":["yong"]}},"required":["surname","given_name","wu_ge","san_cai","phonetic","wuxing_match"]}}`),
 	})
 
 	// ── bazhai (2) ────────────────────────────────────────────

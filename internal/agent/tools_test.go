@@ -165,13 +165,13 @@ func TestNamingRegistry_Execute_ComputeNamingDetail(t *testing.T) {
 
 func TestNamingRegistry_Execute_ComputeNamingEvaluate(t *testing.T) {
 	r := NewNamingToolRegistry()
-	args := json.RawMessage(`{"surname":"王","given_name":"小明","yong_shen":"金"}`)
+	args := json.RawMessage(`{"surname":"王","names":["小明"],"yong_shen":"金"}`)
 	result, err := r.Execute(context.Background(), "compute_naming_evaluate", args)
 	if err != nil {
 		t.Fatalf("compute_naming_evaluate: %v", err)
 	}
 	var env struct {
-		Data struct {
+		Data []struct {
 			Surname   string `json:"surname"`
 			GivenName string `json:"given_name"`
 		} `json:"data"`
@@ -179,8 +179,11 @@ func TestNamingRegistry_Execute_ComputeNamingEvaluate(t *testing.T) {
 	if err := json.Unmarshal(result, &env); err != nil {
 		t.Fatal(err)
 	}
-	if env.Data.Surname != "王" {
-		t.Errorf("surname = %q, want 王", env.Data.Surname)
+	if len(env.Data) == 0 {
+		t.Fatal("empty result")
+	}
+	if env.Data[0].Surname != "王" {
+		t.Errorf("surname = %q, want 王", env.Data[0].Surname)
 	}
 }
 

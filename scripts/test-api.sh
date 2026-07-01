@@ -350,23 +350,27 @@ check_rpc_err "qimen.pan (bad kind)" "-32000"
 echo ""
 echo "${BOLD}── QiMing ──${NC}"
 
-rpc qiming.wuge '{"surname":"李","yong_shen":"水","xi_shen":["金"]}'
-check_rpc_ok "qiming.wuge"
+rpc qiming.sancai '{"surname":"李"}'
+check_rpc_ok "qiming.sancai"
+check_rpc "  has combos" '.result.data.combos != null' 'true'
+
+rpc qiming.chars '{"wuxing":"水"}'
+check_rpc_ok "qiming.chars"
+check_rpc "  has chars" '.result.data.chars != null' 'true'
 
 rpc qiming.compose '{"surname":"李","combos":[],"yong_chars":{}}'
 check_rpc_ok "qiming.compose"
 
-rpc qiming.detail '{"surname":"李","names":["沐泽","沐恩"]}'
-check_rpc_ok "qiming.detail"
-
-rpc qiming.evaluate '{"surname":"李","given_name":"沐泽","yong_shen":"水"}'
+rpc qiming.evaluate '{"surname":"李","names":["沐泽"],"yong_shen":"水"}'
 check_rpc_ok "qiming.evaluate"
+check_rpc "  has wuxing_match" '.result.data[0].wuxing_match != null' 'true'
 
-rpc qiming.wuge '{"surname":"李"}'
-check_rpc_err "qiming.wuge (missing yong_shen)" "-32000"
+rpc qiming.evaluate '{"surname":"李","names":["沐泽"],"yong_shen":"水","xi_shen":["金"],"ji_shen":["土"]}'
+check_rpc_ok "qiming.evaluate (with xi/ji)"
+check_rpc "  has wuxing.yong" '.result.data[0].wuxing.yong != null' 'true'
 
-rpc qiming.evaluate '{"surname":"李"}'
-check_rpc_err "qiming.evaluate (missing params)" "-32000"
+rpc qiming.evaluate '{}'
+check_rpc_err "qiming.evaluate (missing surname)" "-32000"
 
 # ============================================================================
 # Bazhai (2 methods)

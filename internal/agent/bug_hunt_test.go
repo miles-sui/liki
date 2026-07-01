@@ -95,12 +95,12 @@ func TestBugAgent_ComputeNamingWuge_InvalidYongShen(t *testing.T) {
 
 func TestBugAgent_ComputeNamingEvaluate_EmptyGivenName(t *testing.T) {
 	r := NewNamingToolRegistry()
-	args := json.RawMessage(`{"surname":"张","given_name":"","yong_shen":"木"}`)
+	args := json.RawMessage(`{"surname":"张","names":[""],"yong_shen":"木"}`)
 	_, err := r.Execute(context.Background(), "compute_naming_evaluate", args)
 	if err == nil {
-		t.Error("BUG: compute_naming_evaluate accepts empty given_name")
+		t.Error("BUG: compute_naming_evaluate accepts empty name")
 	} else {
-		t.Logf("OK: rejects empty given_name: %v", err)
+		t.Logf("OK: rejects empty name: %v", err)
 	}
 }
 

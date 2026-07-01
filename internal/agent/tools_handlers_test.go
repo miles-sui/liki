@@ -171,7 +171,7 @@ func TestHandler_MissingRequiredFields(t *testing.T) {
 		{"ziwei.daxian", `{}`},
 		{"ziwei.bond", fmt.Sprintf(`{"a":{"birth":%s,"gender":"male"}}`, btOK)},
 		{"qiming.wuge", `{"surname":"王"}`},
-		{"qiming.evaluate", `{"surname":"王"}`},
+		{"qiming.evaluate", `{}`},
 		{"xuankong.chart", fmt.Sprintf(`{"birth":%s}`, btOK)},
 	}
 	for _, tt := range tests {
@@ -476,8 +476,8 @@ func TestOpenRPCDocument(t *testing.T) {
 	if !ok {
 		t.Fatal("missing methods array")
 	}
-	if len(methods) != 32 {
-		t.Errorf("method count = %d, want 32 (31 + rpc.discover)", len(methods))
+	if len(methods) != 34 {
+		t.Errorf("method count = %d, want 34 (33 + rpc.discover)", len(methods))
 	}
 }
 
