@@ -114,8 +114,7 @@ func computeNamingEvaluateHandler(ctx context.Context, raw json.RawMessage) (jso
 		}
 		// Add wuxing detail if yong/xi/ji provided
 		if p.YongShen != "" && (len(p.XiShen) > 0 || len(p.JiShen) > 0) {
-			evals, _ := qiming.EvaluateNames(p.Surname, p.Names, p.YongShen, p.XiShen, p.JiShen)
-			if len(evals) > 0 {
+			if evals, err := qiming.EvaluateNames(p.Surname, p.Names, p.YongShen, p.XiShen, p.JiShen); err == nil && len(evals) > 0 {
 				ev.Wuxing = evals[0].Wuxing
 			}
 		}
