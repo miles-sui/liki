@@ -123,7 +123,37 @@ test.describe('Smoke — all pages render without errors or warnings', () => {
   }
 });
 
-// ── Images: critical images must load ──
+// ── OG meta tags: social sharing cards ──
+
+test.describe('OG / Twitter meta tags', () => {
+  test('index page has correct OG tags', async ({ page }) => {
+    await page.goto('/zh-Hans/');
+    await expect(page.locator('[data-i18n]').first()).toBeVisible({ timeout: 10000 });
+
+    const tags = {
+      'og:title':       await page.locator('meta[property="og:title"]').getAttribute('content'),
+      'og:description': await page.locator('meta[property="og:description"]').getAttribute('content'),
+      'og:image':       await page.locator('meta[property="og:image"]').getAttribute('content'),
+      'og:url':         await page.locator('meta[property="og:url"]').getAttribute('content'),
+      'og:type':        await page.locator('meta[property="og:type"]').getAttribute('content'),
+      'twitter:card':   await page.locator('meta[name="twitter:card"]').getAttribute('content'),
+    };
+
+    expect(tags['og:title']).toBeTruthy();
+    expect(tags['og:description']).toBeTruthy();
+    expect(tags['og:image']).toMatch(/^https:\/\/liki\.hk\/img\/og-image\.png$/);
+    expect(tags['og:url']).toBe('https://liki.hk');
+    expect(tags['og:type']).toBe('website');
+    expect(tags['twitter:card']).toBe('summary_large_image');
+  });
+
+  test('OG image is accessible', async ({ page }) => {
+    const resp = await page.goto('/img/og-image.png');
+    expect(resp.status()).toBe(200);
+    const ct = resp.headers()['content-type'];
+    expect(ct).toMatch(/^image\/png/);
+  });
+});
 
 test.describe('Images load without error', () => {
   test('index page images are valid', async ({ page }) => {
