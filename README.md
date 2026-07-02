@@ -14,7 +14,7 @@
 
 ## 命理引擎
 
-让 AI agent 调用八字、紫微、奇门、六爻、起名、风水、黄历——全部通过 `POST /jsonrpc`，不含 LLM，纯计算。
+让 AI agent 调用八字、紫微、奇门、六爻、起名、风水、黄历——全部通过 `POST /jsonrpc`，不含 LLM，纯计算。兼容 Claude Code、Codex、Cursor 等 AI 编码助手。
 
 ### 安装 Skill
 
