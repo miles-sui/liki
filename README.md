@@ -1,4 +1,4 @@
-# 灵机 Liki — AI 起名顾问 · AI 命理引擎
+# 灵机 Liki
 
 [![Wikidata](https://img.shields.io/badge/Wikidata-Q140329242-blue?logo=wikidata)](https://www.wikidata.org/wiki/Q140329242)
 [![License](https://img.shields.io/badge/license-AGPL--3.0-green)](./LICENSE)
@@ -6,30 +6,27 @@
 
 **[liki.hk](https://liki.hk)** · [GitHub](https://github.com/miles-sui/liki) · [X](https://x.com/liki_hk) · [Telegram](https://t.me/liki_naming) · [知乎](https://zhihu.com/people/liki.hk) · [小红书](https://www.xiaohongshu.com/user/profile/liki_hk) · [邮箱](mailto:hi@liki.hk)
 
-> 灵机（Liki）是 AI 起名顾问，帮助人们发现好名字。也为 AI agent 提供可直接安装的命理计算 Skill 与 JSON-RPC 引擎。
+> 全栈命理计算引擎，JSON-RPC 调用。驱动 [liki.hk](https://liki.hk) AI 起名顾问。
 
-灵机（Liki）提供两件事：
+## AI 起名顾问
 
-1. **AI 起名顾问** — 付费 Chat 产品，基于八字用神、五行喜忌、三才五格，推荐中文名字
-2. **AI 命理引擎** — 免费 JSON-RPC API，供 AI agent 调用（八字、紫微、奇门、六爻、风水、黄历）
+[liki.hk](https://liki.hk) — 基于八字用神、五行喜忌、三才五格，AI 取名 Chat 产品。
 
-## 外部 Agent 使用指南
+## 命理引擎
 
-AI agent 首先读取 `llms.txt` 发现网站能力，随后可通过 JSON-RPC API 或安装 Skill 直接调用。
+让 AI agent 调用八字、紫微、奇门、六爻、起名、风水、黄历——全部通过 `POST /jsonrpc`，不含 LLM，纯计算。
 
-### 入口
+### 安装 Skill
 
-让 AI agent 发现灵机——让它读 `https://liki.hk/llms.txt`。文件会引导 agent 安装 Skill 或直接调用 API。
+Agent 发现 `https://liki.hk/llms.txt`，互动后安装：
 
-| 资源 | 地址 | 用途 |
-|---|---|---|
-| **llms.txt** | `https://liki.hk/llms.txt` | AI agent 自动发现入口 |
-| JSON-RPC | `POST https://liki.hk/jsonrpc` | 所有计算入口 |
-| Method 发现 | 调 `rpc.discover` | 获取全部可用 method 及 JSON Schema |
-| Product skill | `https://liki.hk/skills/liki.md` | 角色定义、工作流、安装后 agent 可自主调用 |
-| 报告模板 | `https://liki.hk/skills/report-*.md` | 八字/合盘/起名/紫微/八宅/玄空 |
+```
+/skills install https://liki.hk/skills/liki.md
+```
 
-### 调用方式
+不安装也可直接调 API，Skill 作用是为 agent 注入灵机角色身份和工作流。
+
+### API 调用
 
 ```
 POST /jsonrpc
@@ -75,7 +72,7 @@ Content-Type: application/json
 }
 ```
 
-### Method 列表（29 个）
+### Method 列表（31 个）
 
 **八字 (bazi):** `bazi.chart` `bazi.bond` `bazi.liunian` `bazi.liuyue` `bazi.liuri` `bazi.liushi` `bazi.xiaoyun` `bazi.xiaoxian`
 
@@ -83,9 +80,9 @@ Content-Type: application/json
 
 **奇门遁甲 (qimen):** `qimen.pan`
 
-**起名 (qiming):** `qiming.wuge` `qiming.compose` `qiming.detail` `qiming.evaluate`
+**起名 (qiming):** `qiming.sancai` `qiming.chars` `qiming.compose` `qiming.evaluate`
 
-**六爻 (liuyao):** `liuyao.chart`
+**六爻 (liuyao):** `liuyao.qigua` `liuyao.chart`
 
 **黄历 (huangli):** `huangli.date` `huangli.month` `huangli.bond.date` `huangli.bond.month`
 
@@ -95,31 +92,16 @@ Content-Type: application/json
 
 **元数据:** `rpc.discover` — 返回 OpenRPC 1.4.1 文档，含所有 method 的 params/result JSON Schema
 
-
-### 安装
-
 ## 技术栈
 
-
 Go 1.26 + SQLite (WAL) + Caddy · 前端 HTML + Vue 3 · DeepSeek V4 Pro (流式 tool-calling + SSE) · Dodo Payments + 虎皮椒 · Resend
-
-## 快速开始
-
-```bash
-make build                          # 构建
-scripts/dev-liki.sh               # 开发服务器 (API :8081, Caddy :8080)
-make check                          # golangci-lint + go vet + go test -race ./...
-make test-deploy URL=http://localhost:8080  # 部署后四层测试
-```
-
-环境变量见 `.env.example`。
 
 ## 项目结构
 
 ```
 cmd/liki/           Entry point
 internal/
-  agent/              NamingChatAgent (8 tool) + RPCRegistry (29 method)
+  agent/              NamingChatAgent (8 tool) + RPCRegistry (31 method)
   engine/             计算引擎 — 11 个包，纯 Go，无 I/O 依赖
   http/               Handler + 中间件 + 路由 + JWT
   llm/                DeepSeek 客户端
